@@ -58,5 +58,5 @@ jobs:
       working-directory: ./shanmukha-stores
       run: |
         node server.js &
-        sleep 5
+        npx wait-on tcp:3000 -t 30000
         npm test
