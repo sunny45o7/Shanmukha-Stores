@@ -1,0 +1,66 @@
+<%- include('../admin/_header') %>
+
+<% if(success) { %><div class="alert alert-ok"><%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<div class="page-hd">
+  <div>
+    <h2>Return Requests</h2>
+    <p><%= returns.length %> return request<%= returns.length !== 1 ? 's' : '' %></p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Order</th>
+          <th>Customer</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Requested</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!returns.length) { %>
+          <tr>
+            <td colspan="7" class="text-muted">No return requests found.</td>
+          </tr>
+        <% } %>
+
+        <% returns.forEach(function(r) { %>
+          <tr>
+            <td>#<%= r.id %></td>
+            <td>
+              <a href="/staff/orders/<%= r.order_number %>">#<%= r.order_number %></a>
+              <div class="tiny"><%= r.order_status %> - &#8377;<%= Number(r.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 }).replace(/\.00$/, '') %></div>
+            </td>
+            <td>
+              <strong><%= r.user_name %></strong>
+              <div class="tiny"><%= r.user_email %></div>
+            </td>
+            <td><%= r.reason || '-' %></td>
+            <td><span class="status-pill"><%= r.status %></span></td>
+            <td><%= new Date(r.created_at).toLocaleString('en-IN') %></td>
+            <td>
+              <form action="/staff/returns/status/<%= r.id %>" method="POST" style="display:flex;gap:8px;align-items:center;">
+                <select name="status" class="inp" style="min-width:120px;">
+                  <option value="Pending" <%= r.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                  <option value="Approved" <%= r.status === 'Approved' ? 'selected' : '' %>>Approved</option>
+                  <option value="Rejected" <%= r.status === 'Rejected' ? 'selected' : '' %>>Rejected</option>
+                  <option value="Refunded" <%= r.status === 'Refunded' ? 'selected' : '' %>>Refunded</option>
+                </select>
+                <button type="submit" class="btn btn-black btn-sm">Update</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../admin/_footer') %>

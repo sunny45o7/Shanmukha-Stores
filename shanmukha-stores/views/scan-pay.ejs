@@ -1,0 +1,189 @@
+<%- include('./partials/navbar') %>
+
+<div class="auth-container">
+  <div class="auth-card scan-pay-card">
+    <div class="scan-pay-grid">
+      <div class="scan-pay-side">
+        <h2>Scan & Pay (UPI)</h2>
+        <p class="scan-pay-helper">Pay with your UPI app by scanning the QR code. Timer is 2:30 minutes.</p>
+
+        <% const qrCodeImage = (settings && settings.qr_code_image) ? settings.qr_code_image : ''; %>
+        <% const hasQr = String(qrCodeImage || '').trim().length > 0; %>
+
+        <div class="qr-frame" id="qrFrame">
+          <% if (hasQr) { %>
+            <img id="qrImage" src="<%= qrCodeImage %>" alt="UPI QR Code" class="qr-image" onerror="this.style.display='none'; document.getElementById('qrFallback').classList.remove('hide');">
+          <% } %>
+          <div id="qrFallback" class="qr-fallback <%= hasQr ? 'hide' : '' %>"><p>QR code is not configured yet.</p></div>
+          <div class="qr-timer-wrap">
+            <div class="qr-timer-label">Time Remaining</div>
+            <div id="qrTimer" class="qr-timer">02:30</div>
+          </div>
+          <button type="button" id="qrRefreshBtn" class="btn btn-outline" style="display:none;">Refresh QR</button>
+        </div>
+
+        <div class="scan-pay-summary">
+          <h3>Order Summary</h3>
+          <ul>
+            <li>Items: <%= totalItems || 0 %></li>
+            <li>Total: &#8377;<%= Number(total || 0).toLocaleString('en-IN') %></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="scan-pay-form-side">
+        <h2>Complete Payment</h2>
+        <p>Enter your UPI transaction ID to place the order.</p>
+
+        <% if (error) { %>
+          <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <% if (success) { %>
+          <div class="alert alert-success"><%= success %></div>
+        <% } %>
+
+        <form id="scanPayForm" method="POST" action="/orders/place">
+          <input type="hidden" name="payment_method" value="upi">
+          <input type="hidden" name="from" value="scanpay">
+
+          <div class="form-group">
+            <label for="addressSelect">Select Delivery Address</label>
+            <select name="address_id" id="addressSelect" class="form-control" required>
+              <% if (addresses && addresses.length > 0) { %>
+                <% addresses.forEach(address => { %>
+                  <option value="<%= address.id %>"><%= address.full_name %> - <%= address.address_line %>, <%= address.city %></option>
+                <% }); %>
+              <% } else { %>
+                <option value="">No address found. Add one in profile.</option>
+              <% } %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="transactionIdInput">UPI Transaction ID</label>
+            <input type="text" id="transactionIdInput" name="transaction_id" class="form-control" placeholder="Enter transaction ID" autocomplete="off" required>
+          </div>
+
+          <button type="submit" id="placeOrderBtn" class="btn btn-primary btn-block" disabled>Place Order</button>
+        </form>
+
+        <p class="text-sm text-muted" style="margin-top:6px;">
+          After successful transaction, click Place Order to confirm and get instant confirmation pop-up.
+        </p>
+
+        <a href="/orders/checkout" class="btn btn-link">Back to Checkout</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .scan-pay-card { max-width: 1000px; width: 100%; padding: 0; }
+  .scan-pay-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: start; }
+  .scan-pay-side, .scan-pay-form-side { padding: 26px 22px; }
+  .scan-pay-side { border-right: 1px solid #e6e6ea; }
+  .scan-pay-side h2, .scan-pay-form-side h2 { margin-bottom: 8px; }
+  .scan-pay-helper { margin-bottom: 16px; color: #65676b; }
+  .qr-frame { border: 1px dashed #ccc; border-radius: 14px; padding: 18px; text-align: center; position: relative; }
+  .qr-image { width: 220px; max-width: 100%; height: auto; transition: filter .2s ease, opacity .2s ease; }
+  .qr-image.expired { filter: blur(3px) brightness(0.65); opacity: 0.54; }
+  .qr-fallback { min-height: 250px; display: flex; align-items: center; justify-content: center; color: #888; }
+  .qr-timer-wrap { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .qr-timer-label { color: #5d5d5d; font-size: 13px; }
+  .qr-timer { font-size: 24px; font-weight: 700; color: #1b5f4b; }
+  .scan-pay-summary { margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 14px; }
+  .scan-pay-summary ul { padding-left: 16px; margin: 8px 0 0; }
+  .scan-pay-summary li { list-style: disc; margin-bottom: 4px; }
+  .form-group { margin-bottom: 14px; }
+  .btn-link { margin-top: 14px; display: inline-block; }
+  .hide { display: none !important; }
+  .auth-container { padding: 24px 12px 40px; }
+  @media (max-width: 912px) {
+    .scan-pay-grid { grid-template-columns: 1fr; }
+    .scan-pay-side { border-right: none; border-bottom: 1px solid #e6e6ea; }
+  }
+</style>
+
+<script>
+  const QR_TTL_MS = 2.5 * 60 * 1000;
+  let qrExpiresAt = Date.now() + QR_TTL_MS;
+  let timerInterval = null;
+
+  const qrImage = document.getElementById('qrImage');
+  const qrTimer = document.getElementById('qrTimer');
+  const qrRefreshBtn = document.getElementById('qrRefreshBtn');
+  const placeOrderBtn = document.getElementById('placeOrderBtn');
+  const transactionIdInput = document.getElementById('transactionIdInput');
+
+  const formatTime = (ms) => {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  };
+
+  const updateTimer = () => {
+    const remaining = qrExpiresAt - Date.now();
+    qrTimer.textContent = formatTime(remaining);
+
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      qrTimer.textContent = '00:00';
+      if (qrImage) qrImage.classList.add('expired');
+      qrRefreshBtn.style.display = 'inline-block';
+      placeOrderBtn.disabled = true;
+      return;
+    }
+
+    if (qrRefreshBtn) qrRefreshBtn.style.display = 'none';
+    if (qrImage) qrImage.classList.remove('expired');
+    if (transactionIdInput && transactionIdInput.value.trim()) {
+      placeOrderBtn.disabled = false;
+    }
+  };
+
+  const resetTimer = () => {
+    qrExpiresAt = Date.now() + QR_TTL_MS;
+    if (!timerInterval) {
+      timerInterval = setInterval(updateTimer, 500);
+    }
+    updateTimer();
+  };
+
+  qrRefreshBtn?.addEventListener('click', resetTimer);
+
+  transactionIdInput?.addEventListener('input', () => {
+    const value = transactionIdInput.value.trim();
+    if (value && Date.now() < qrExpiresAt) {
+      placeOrderBtn.disabled = false;
+    } else {
+      placeOrderBtn.disabled = true;
+    }
+  });
+
+  document.getElementById('scanPayForm')?.addEventListener('submit', (e) => {
+    if (Date.now() >= qrExpiresAt) {
+      e.preventDefault();
+      alert('QR code expired. Please refresh and scan again.');
+      resetTimer();
+      return;
+    }
+
+    const txn = transactionIdInput.value.trim();
+    if (!txn) {
+      e.preventDefault();
+      alert('Please enter a valid transaction ID to continue.');
+      transactionIdInput.focus();
+      return;
+    }
+
+    placeOrderBtn.textContent = 'Placing Order...';
+    placeOrderBtn.disabled = true;
+  });
+
+  resetTimer();
+</script>
+
+<%- include('./partials/footer') %>

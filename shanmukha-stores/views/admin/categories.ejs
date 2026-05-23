@@ -1,0 +1,146 @@
+<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok">✅ <%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err">❌ <%= error %></div><% } %>
+
+<div class="page-hd">
+    <div>
+        <h2>Categories</h2>
+        <p><%= categories.length %> categories total</p>
+    </div>
+    <button class="btn btn-black" onclick="openModal('addCat')">+ Add Category</button>
+</div>
+
+<div class="card">
+    <div class="tbl-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Description</th>
+                    <th>Products</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% categories.forEach(c => { %>
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <% if(c.image) { %>
+                            <img src="<%= c.image %>" style="width:36px;height:36px;border-radius:6px;object-fit:cover;" onerror="this.style.display='none'">
+                            <% } %>
+                            <span style="font-weight:500;color:var(--black)"><%= c.name %></span>
+                        </div>
+                    </td>
+                    <td style="color:var(--gray-500);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                        <%= c.description || '—' %>
+                    </td>
+                    <td><span class="badge bg-blue"><%= c.product_count %> products</span></td>
+                    <td>
+                        <div style="display:flex;gap:6px;">
+                            <!-- Use data attributes to avoid quote escaping issues -->
+                            <button 
+                                class="btn btn-blue btn-sm edit-cat-btn"
+                                data-id="<%= c.id %>"
+                                data-name="<%= c.name %>"
+                                data-desc="<%= c.description || '' %>"
+                                data-image="<%= c.image || '' %>"
+                            >Edit</button>
+                            <form action="/admin/categories/delete/<%= c.id %>" method="POST" onsubmit="return confirm('Delete this category?')">
+                                <button type="submit" class="btn btn-red btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+                <% if(!categories.length) { %>
+                <tr><td colspan="4">
+                    <div class="empty">
+                        <div class="big">🏷</div>
+                        <h3>No categories yet</h3>
+                        <p>Create categories to organise your products</p>
+                    </div>
+                </td></tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ADD CATEGORY MODAL -->
+<div class="modal-bg" id="addCat">
+    <div class="modal">
+        <div class="modal-hd">
+            <h3>Add Category</h3>
+            <button class="modal-close" onclick="closeModal('addCat')">✕</button>
+        </div>
+        <form action="/admin/categories/add" method="POST">
+            <div class="form-group">
+                <label>Category Name *</label>
+                <input type="text" name="name" required placeholder="e.g. Spices & Herbs">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" placeholder="Short description..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Image URL</label>
+                <input type="url" name="image" placeholder="https://...">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('addCat')">Cancel</button>
+                <button type="submit" class="btn btn-black">Add Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT CATEGORY MODAL -->
+<div class="modal-bg" id="editCat">
+    <div class="modal">
+        <div class="modal-hd">
+            <h3>Edit Category</h3>
+            <button class="modal-close" onclick="closeModal('editCat')">✕</button>
+        </div>
+        <form id="editCatForm" method="POST">
+            <div class="form-group">
+                <label>Category Name *</label>
+                <input type="text" name="name" id="editCatName" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" id="editCatDesc"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Image URL</label>
+                <input type="url" name="image" id="editCatImage">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('editCat')">Cancel</button>
+                <button type="submit" class="btn btn-black">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Use data attributes instead of inline onclick to avoid quote issues
+document.querySelectorAll('.edit-cat-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id    = this.dataset.id;
+        const name  = this.dataset.name;
+        const desc  = this.dataset.desc;
+        const image = this.dataset.image;
+
+        document.getElementById('editCatForm').action = '/admin/categories/edit/' + id;
+        document.getElementById('editCatName').value  = name;
+        document.getElementById('editCatDesc').value  = desc;
+        document.getElementById('editCatImage').value = image;
+
+        openModal('editCat');
+    });
+});
+</script>
+
+<%- include('_footer') %>

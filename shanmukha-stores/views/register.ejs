@@ -1,0 +1,66 @@
+<%- include('./partials/navbar') %>
+
+    <section class="auth-section">
+        <div class="auth-container">
+            <div class="auth-left">
+                <div class="section-label" style="margin-bottom:16px">Join Us</div>
+                <h1>Create Your Free Account</h1>
+                <p>Join thousands of happy customers enjoying fresh organic groceries delivered to their doorstep.</p>
+                <div class="auth-benefit"><span class="icon">🚚</span> Free delivery over ₹499</div>
+                <div class="auth-benefit"><span class="icon">🌿</span> 100% organic certified products</div>
+                <div class="auth-benefit"><span class="icon">🔄</span> Easy & hassle-free returns</div>
+                <div class="auth-benefit"><span class="icon">🎁</span> Exclusive new-member deals</div>
+            </div>
+            <div class="auth-card">
+                <h2>Create Account</h2>
+                <% if (typeof error !=='undefined' && error) { %>
+                    <div class="auth-alert error">⚠️ <%= error %>
+                    </div>
+                    <% } %>
+                        <% if (typeof success !=='undefined' && success) { %>
+                            <div class="auth-alert success">✅ <%= success %>
+                            </div>
+                            <% } %>
+                                <form action="/auth/register" method="POST" class="auth-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" name="full_name" class="form-input"
+                                            placeholder="Your full name" required autocomplete="name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" name="email" class="form-input"
+                                            placeholder="you@example.com" required autocomplete="email">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Phone (optional)</label>
+                                        <input type="tel" name="phone" class="form-input" placeholder="+91 98765 43210"
+                                            autocomplete="tel">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Password</label>
+                                        <div class="password-wrap">
+                                            <input type="password" name="password" class="form-input"
+                                                placeholder="Min. 6 characters" required id="regPass"
+                                                autocomplete="new-password">
+                                            <span class="toggle-pass" onclick="togglePass('regPass', this)">👁</span>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="auth-btn" style="margin-top:4px">Create Account
+                                        →</button>
+                                </form>
+                                <div class="auth-bottom">
+                                    Already have an account? <a href="/auth/login">Login</a>
+                                </div>
+            </div>
+        </div>
+    </section>
+
+    <%- include('./partials/footer') %>
+        <script>
+            function togglePass(id, btn) {
+                const input = document.getElementById(id);
+                if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+                else { input.type = 'password'; btn.textContent = '👁'; }
+            }
+        </script>

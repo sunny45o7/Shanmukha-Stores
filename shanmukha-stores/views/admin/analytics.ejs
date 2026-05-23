@@ -1,0 +1,236 @@
+<%# VS Code EJS extension: install "EJS language support" by DigitalBrainstem %>
+<%- include('_header') %>
+
+<div class="page-hd">
+  <div>
+    <h2>📊 Analytics & Reports</h2>
+    <p>Sales and performance overview</p>
+  </div>
+  <form method="GET" action="/admin/analytics" style="display:flex;align-items:center;gap:10px;">
+    <label style="font-size:13px;color:var(--gray-500);">Period:</label>
+    <select name="period" onchange="this.form.submit()" style="padding:7px 12px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;background:white;cursor:pointer;">
+      <option value="7"  <%= parseInt(period) === 7  ? 'selected' : '' %>>Last 7 days</option>
+      <option value="30" <%= parseInt(period) === 30 ? 'selected' : '' %>>Last 30 days</option>
+      <option value="90" <%= parseInt(period) === 90 ? 'selected' : '' %>>Last 90 days</option>
+    </select>
+  </form>
+</div>
+
+<!-- SUMMARY CARDS — uses .stats-row and .stat-val from _header -->
+<div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+  <div class="stat-card">
+    <div class="stat-icon">📦</div>
+    <div class="stat-label">Orders (period)</div>
+    <div class="stat-val"><%= revenueByDay.reduce((s, r) => s + parseInt(r.order_count || 0), 0) %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">💰</div>
+    <div class="stat-label">Revenue (period)</div>
+    <div class="stat-val">₹<%= revenueByDay.reduce((s, r) => s + Number(r.revenue || 0), 0).toLocaleString('en-IN') %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">👤</div>
+    <div class="stat-label">New Users (period)</div>
+    <div class="stat-val"><%= newUsersChart.reduce((s, r) => s + parseInt(r.users || 0), 0) %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🎯</div>
+    <div class="stat-label">Avg Order Value</div>
+    <div class="stat-val">₹<%= Number(avgOrderValue || 0).toLocaleString('en-IN') %></div>
+  </div>
+</div>
+
+<!-- CHARTS ROW 1 — uses .grid-2 from _header -->
+<div class="grid-2" style="margin-bottom:20px;">
+
+  <div class="card">
+    <div class="card-hd"><h3>Revenue Over Time</h3></div>
+    <div class="card-body">
+      <% if (revenueByDay.length === 0) { %>
+        <div class="empty"><p>No revenue data for this period.</p></div>
+      <% } else { %>
+        <canvas id="revenueChart"></canvas>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><h3>Orders by Status</h3></div>
+    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <% if (ordersByStatus.length === 0) { %>
+        <div class="empty"><p>No order data for this period.</p></div>
+      <% } else { %>
+        <canvas id="statusChart" style="max-width:220px;"></canvas>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+          <% ordersByStatus.forEach(s => { %>
+            <div style="display:flex;align-items:center;gap:6px;font-size:13px;">
+              <span class="badge bg-gray"><%= s.status %></span>
+              <span style="font-weight:600;"><%= s.count %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<!-- CHARTS ROW 2 -->
+<div class="grid-2" style="margin-bottom:20px;">
+
+  <div class="card">
+    <div class="card-hd"><h3>New Users Over Time</h3></div>
+    <div class="card-body">
+      <% if (newUsersChart.length === 0) { %>
+        <div class="empty"><p>No user data for this period.</p></div>
+      <% } else { %>
+        <canvas id="usersChart"></canvas>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><h3>Revenue by Category</h3></div>
+    <div class="card-body">
+      <% if (revenueByCategory.length === 0) { %>
+        <div class="empty"><p>No category data for this period.</p></div>
+      <% } else { %>
+        <canvas id="categoryChart"></canvas>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOP PRODUCTS TABLE -->
+<div class="card">
+  <div class="card-hd"><h3>🏆 Top Selling Products</h3></div>
+  <% if (topProducts.length === 0) { %>
+    <div class="empty" style="padding:40px;">
+      <div class="big">📦</div>
+      <h3>No sales data</h3>
+      <p>No products sold in this period.</p>
+    </div>
+  <% } else { %>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Units Sold</th>
+            <th>Revenue</th>
+            <th>Stock</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% topProducts.forEach((p, i) => { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><strong><%= p.name %></strong></td>
+              <td>₹<%= Number(p.price).toLocaleString('en-IN') %></td>
+              <td><%= p.total_sold %></td>
+              <td>₹<%= Number(p.total_revenue).toLocaleString('en-IN') %></td>
+              <td>
+                <% if (p.stock == 0) { %>
+                  <span class="badge bg-red">Out of Stock</span>
+                <% } else if (p.stock <= 5) { %>
+                  <span class="badge bg-orange"><%= p.stock %> left</span>
+                <% } else { %>
+                  <span class="badge bg-green"><%= p.stock %></span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- Chart.js: load BEFORE the data script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Step 1: EJS dumps all server data into JS variables (no conditionals here) -->
+<script>
+  var revenueLabels  = <%- JSON.stringify(revenueByDay.map(r => r.day)) %>;
+  var revenueData    = <%- JSON.stringify(revenueByDay.map(r => Number(r.revenue || 0))) %>;
+  var statusLabels   = <%- JSON.stringify(ordersByStatus.map(s => s.status)) %>;
+  var statusData     = <%- JSON.stringify(ordersByStatus.map(s => parseInt(s.count))) %>;
+  var usersLabels    = <%- JSON.stringify(newUsersChart.map(u => u.day)) %>;
+  var usersData      = <%- JSON.stringify(newUsersChart.map(u => parseInt(u.users || 0))) %>;
+  var categoryLabels = <%- JSON.stringify(revenueByCategory.map(c => c.category)) %>;
+  var categoryData   = <%- JSON.stringify(revenueByCategory.map(c => Number(c.revenue || 0))) %>;
+  var statusBgColors = <%- JSON.stringify(ordersByStatus.map(s => ({'Pending':'#f39c12','Confirmed':'#3498db','Processing':'#9b59b6','Shipped':'#1abc9c','Delivered':'#2ecc71','Cancelled':'#e74c3c'}[s.status] || '#95a5a6'))) %>;
+</script>
+
+<!-- Step 2: Pure JS renders charts — zero EJS tags in this block -->
+<script>
+  if (revenueLabels.length > 0) {
+    new Chart(document.getElementById('revenueChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: revenueLabels,
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: revenueData,
+          borderColor: '#2c7a4b',
+          backgroundColor: 'rgba(44,122,75,0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+  }
+
+  if (statusLabels.length > 0) {
+    new Chart(document.getElementById('statusChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: statusLabels,
+        datasets: [{ data: statusData, backgroundColor: statusBgColors }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  if (usersLabels.length > 0) {
+    new Chart(document.getElementById('usersChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: usersLabels,
+        datasets: [{
+          label: 'New Users',
+          data: usersData,
+          backgroundColor: 'rgba(52,152,219,0.7)',
+          borderRadius: 4
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+  }
+
+  if (categoryLabels.length > 0) {
+    new Chart(document.getElementById('categoryChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: categoryLabels,
+        datasets: [{
+          label: 'Revenue (₹)',
+          data: categoryData,
+          backgroundColor: 'rgba(155,89,182,0.7)',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+</script>
+
+<%- include('_footer') %>

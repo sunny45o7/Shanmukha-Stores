@@ -1,0 +1,367 @@
+<%- include('_header') %>
+
+    <div class="page-hd">
+        <div>
+            <h2>Store Settings</h2>
+            <p>Manage the global configuration of Shanmukha Stores.</p>
+        </div>
+    </div>
+
+    <% if (success) { %>
+        <div class="alert alert-ok">✅ <%= success %>
+        </div>
+        <% } %>
+            <% if (error) { %>
+                <div class="alert alert-err">❌ <%= error %>
+                </div>
+                <% } %>
+
+                    <div class="settings-container">
+                        <!-- Tabs Sidebar -->
+                        <div class="settings-tabs">
+                            <button class="tab-btn active" onclick="openTab(event, 'general')">🏢 General</button>
+                            <button class="tab-btn" onclick="openTab(event, 'localization')">🌍 Localization</button>
+                            <button class="tab-btn" onclick="openTab(event, 'finance')">💰 Tax & Shipping</button>
+                            <button class="tab-btn" onclick="openTab(event, 'offers')">🎟️ Coupons & Offers</button>
+                            <button class="tab-btn" onclick="openTab(event, 'legal')">📜 Legal & Policies</button>
+                            <button class="tab-btn" onclick="openTab(event, 'social')">🔗 Social & SEO</button>
+                            <button class="tab-btn" onclick="openTab(event, 'marketing')">📢 Marketing</button>
+                            <button class="tab-btn" onclick="openTab(event, 'system')">⚙️ System</button>
+                            <button class="tab-btn" onclick="openTab(event, 'security')">🔒 Security</button>
+                        </div>
+
+                        <!-- Content Area -->
+                        <form action="/admin/settings" method="POST" class="settings-content">
+                            <!-- General Tab -->
+                            <div id="general" class="tab-pane active">
+                                <h3>Store Identity</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Store Name</label>
+                                        <input type="text" name="store_name" value="<%= settings.store_name %>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Store Tagline</label>
+                                        <input type="text" name="store_tagline" value="<%= settings.store_tagline %>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Official Email</label>
+                                        <input type="email" name="store_email" value="<%= settings.store_email %>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Support Phone</label>
+                                        <input type="text" name="store_phone" value="<%= settings.store_phone %>">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>Physical Registry Address</label>
+                                        <textarea name="store_address" rows="3"><%= settings.store_address %></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Localization Tab -->
+                            <div id="localization" class="tab-pane">
+                                <h3>Regional Preferences</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Currency Code (e.g. INR)</label>
+                                        <input type="text" name="currency_code" value="<%= settings.currency_code %>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Currency Symbol (e.g. ₹)</label>
+                                        <input type="text" name="currency_symbol"
+                                            value="<%= settings.currency_symbol %>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Legal Tab -->
+                            <div id="legal" class="tab-pane">
+                                <h3>Registry Policies</h3>
+                                <div class="form-group">
+                                    <label>Privacy Policy</label>
+                                    <textarea name="policy_privacy" rows="6"><%= settings.policy_privacy %></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Terms of Service</label>
+                                    <textarea name="policy_terms" rows="6"><%= settings.policy_terms %></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Refund & Returns Policy</label>
+                                    <textarea name="policy_refund" rows="6"><%= settings.policy_refund %></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Social Tab -->
+                            <div id="social" class="tab-pane">
+                                <h3>Social & SEO Presence</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>WhatsApp Link</label>
+                                        <input type="text" name="social_whatsapp"
+                                            value="<%= settings.social_whatsapp %>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Instagram Handle</label>
+                                        <input type="text" name="social_instagram"
+                                            value="<%= settings.social_instagram %>">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>Meta Title (SEO)</label>
+                                        <input type="text" name="seo_title" value="<%= settings.seo_title %>">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>Meta Description (SEO)</label>
+                                        <textarea name="seo_description"
+                                            rows="3"><%= settings.seo_description %></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- System Tab -->
+                            <div id="system" class="tab-pane">
+                                <h3>Website System & Performance</h3>
+                                <div class="form-grid">
+                                    <div class="form-group checkbox-group full-width">
+                                        <input type="checkbox" name="marquee_active" id="marquee_active" value="true"
+                                            <%=settings.marquee_active==='true' ? 'checked' : '' %>>
+                                        <label for="marquee_active">Enable Announcement Marquee (Header)</label>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>Marquee Announcement Text/HTML</label>
+                                        <input type="text" name="marquee_text" value="<%= settings.marquee_text %>"
+                                            placeholder="Enter marquee text...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Marquee Scrolling Duration (seconds)</label>
+                                        <input type="number" name="marquee_speed"
+                                            value="<%= settings.marquee_speed || '30' %>" min="5" max="120">
+                                        <small style="font-size: 10px; color: var(--gray-500);">Lower = Faster, Higher =
+                                            Slower (Default: 30)</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="security" class="tab-pane">
+                                <h3>Admin & Staff Password Control</h3>
+                                <div class="form-group full-width">
+                                    <label>Choose Account</label>
+                                    <select name="target_user_id" form="resetPasswordForm">
+                                        <option value="">Select admin or staff</option>
+                                        <% if (admins && admins.length) { %>
+                                            <optgroup label="Admins">
+                                                <% admins.forEach(a => { %>
+                                                    <option value="<%= a.id %>"><%= a.full_name %> - <%= a.email %></option>
+                                                <% }) %>
+                                            </optgroup>
+                                        <% } %>
+                                        <% if (staff && staff.length) { %>
+                                            <optgroup label="Staff">
+                                                <% staff.forEach(s => { %>
+                                                    <option value="<%= s.id %>"><%= s.full_name %> - <%= s.email %></option>
+                                                <% }) %>
+                                            </optgroup>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <form id="resetPasswordForm" action="/admin/settings/reset-password" method="POST" class="form-grid">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <div class="form-group">
+                                        <label>New Password</label>
+                                        <input type="password" name="new_password" placeholder="New password" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Confirm Password</label>
+                                        <input type="password" name="confirm_password" placeholder="Confirm password" required>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <button type="submit" class="btn btn-black">Update Password</button>
+                                        <p style="font-size:11px;color:var(--gray-500);margin-top:8px;">
+                                            Only admins can reset admin or staff passwords.
+                                        </p>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="settings-foot">
+                                <button type="submit" class="btn btn-black">Save All Modifications</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <style>
+                        .settings-container {
+                            display: flex;
+                            gap: 40px;
+                            margin-top: 20px;
+                            align-items: flex-start;
+                        }
+
+                        .settings-tabs {
+                            width: 220px;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                            position: sticky;
+                            top: 100px;
+                        }
+
+                        .tab-btn {
+                            text-align: left;
+                            padding: 12px 20px;
+                            border: none;
+                            background: white;
+                            border-radius: 10px;
+                            font-weight: 600;
+                            font-family: inherit;
+                            color: var(--gray-600);
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            border: 1px solid transparent;
+                        }
+
+                        .tab-btn:hover {
+                            background: var(--gray-50);
+                            color: var(--black);
+                        }
+
+                        .tab-btn.active {
+                            background: var(--black);
+                            color: white;
+                            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+                        }
+
+                        .settings-content {
+                            flex: 1;
+                            background: white;
+                            padding: 40px;
+                            border-radius: 20px;
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+                            max-width: 800px;
+                        }
+
+                        .tab-pane {
+                            display: none;
+                            width: 100%;
+                            animation: fadeIn 0.3s ease;
+                        }
+
+                        .tab-pane.active {
+                            display: block;
+                        }
+
+                        .settings-content h3 {
+                            margin-top: 0;
+                            margin-bottom: 25px;
+                            font-size: 20px;
+                            letter-spacing: -0.5px;
+                        }
+
+                        .form-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 20px;
+                        }
+
+                        .form-group.full-width {
+                            grid-column: span 2;
+                        }
+
+                        .form-group label {
+                            display: block;
+                            font-size: 11px;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                            color: var(--gray-500);
+                            margin-bottom: 8px;
+                        }
+
+                        .form-group input,
+                        .form-group textarea,
+                        .form-group select {
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid var(--gray-100);
+                            border-radius: 10px;
+                            font-size: 14px;
+                            font-family: inherit;
+                            transition: border-color 0.2s;
+                        }
+
+                        .form-group input:focus,
+                        .form-group textarea:focus {
+                            border-color: var(--black);
+                            outline: none;
+                        }
+
+                        .checkbox-group {
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            margin-bottom: 20px;
+                        }
+
+                        .checkbox-group input {
+                            width: 20px;
+                            height: 20px;
+                            cursor: pointer;
+                            border-radius: 6px;
+                        }
+
+                        .checkbox-group label {
+                            margin: 0;
+                            font-size: 14px;
+                            text-transform: none;
+                            color: var(--black);
+                            cursor: pointer;
+                        }
+
+                        .settings-foot {
+                            margin-top: 40px;
+                            padding-top: 30px;
+                            border-top: 1px solid var(--gray-50);
+                        }
+
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                                transform: translateY(5px);
+                            }
+
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+
+                        @media (max-width: 900px) {
+                            .settings-container {
+                                flex-direction: column;
+                            }
+
+                            .settings-tabs {
+                                width: 100%;
+                                flex-direction: row;
+                                overflow-x: auto;
+                                position: static;
+                            }
+
+                            .tab-btn {
+                                white-space: nowrap;
+                            }
+                        }
+                    </style>
+
+                    <script>
+                        function openTab(evt, tabName) {
+                            var i, tabContent, tabBtns;
+                            tabContent = document.getElementsByClassName("tab-pane");
+                            for (i = 0; i < tabContent.length; i++) { tabContent[i].classList.remove("active"); }
+                            tabBtns = document.getElementsByClassName("tab-btn");
+                            for (i = 0; i < tabBtns.length; i++) { tabBtns[i].classList.remove("active"); }
+                            document.getElementById(tabName).classList.add("active");
+                            evt.currentTarget.classList.add("active");
+                        }
+                    </script>
+
+                    <%- include('_footer') %>

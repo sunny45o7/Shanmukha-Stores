@@ -1,0 +1,110 @@
+<%- include('_header') %>
+
+  <div class="page-hd">
+    <div>
+      <h2 class="luxury-text">👤 Curator's Sanctuary</h2>
+      <p>Manage your administrative identity and security credentials.</p>
+    </div>
+  </div>
+
+  <% if (typeof error !=='undefined' && error) { %>
+    <div class="alert alert-err" style="border-radius:12px; box-shadow: var(--shadow-sm);">
+      <%= error %>
+    </div>
+    <% } %>
+      <% if (typeof success !=='undefined' && success) { %>
+        <div class="alert alert-ok" style="border-radius:12px; box-shadow: var(--shadow-sm);">
+          <%= success %>
+        </div>
+        <% } %>
+
+          <div class="grid-2" style="gap:30px;">
+
+            <!-- Update Info -->
+            <div class="luxury-card"
+              style="padding:0; border:none; border-radius:20px; overflow:hidden; box-shadow: var(--shadow-md);">
+              <div class="card-hd" style="padding:24px 30px; background: var(--rich-black); border:none;">
+                <h3 class="luxury-text" style="color:white; font-size:18px;">Registry Identity</h3>
+              </div>
+              <div style="padding:30px;">
+                <form method="POST" action="/admin/profile/update">
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">Full
+                      Designation</label>
+                    <input type="text" name="name" value="<%= adminUser.name %>" required
+                      style="border-radius:10px; padding:12px 16px;">
+                  </div>
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">Digital
+                      Identity (Read-only)</label>
+                    <input type="email" value="<%= adminUser.email %>" disabled
+                      style="background:var(--bone); cursor:not-allowed; border-radius:10px; padding:12px 16px; border-color:transparent;">
+                  </div>
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">Direct
+                      Correspondence (Phone)</label>
+                    <input type="tel" name="phone" value="<%= adminUser.phone || '' %>" placeholder="+91 ..."
+                      style="border-radius:10px; padding:12px 16px;">
+                  </div>
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">Member
+                      Since</label>
+                    <div
+                      style="padding:12px 16px; background:var(--bone); border-radius:10px; font-size:14px; color:var(--gray-600); font-weight:500;">
+                      <%= new Date(adminUser.created_at).toLocaleDateString('en-IN',
+                        {year:'numeric',month:'long',day:'numeric'}) %>
+                    </div>
+                  </div>
+                  <div style="margin-top:30px;">
+                    <button type="submit" class="btn btn-luxury"
+                      style="width:100%; border-radius:30px; padding:14px;">Update Identity</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="luxury-card"
+              style="padding:0; border:none; border-radius:20px; overflow:hidden; box-shadow: var(--shadow-md);">
+              <div class="card-hd" style="padding:24px 30px; background: var(--bone); border:none;">
+                <h3 class="luxury-text" style="font-size:18px;">Security Credentials</h3>
+              </div>
+              <div style="padding:30px;">
+                <form method="POST" action="/admin/profile/change-password" novalidate>
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">Current
+                      Passphrase</label>
+                    <input type="password" name="current_password" required placeholder="••••••••"
+                      style="border-radius:10px; padding:12px 16px;">
+                  </div>
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">New
+                      Passphrase</label>
+                    <input type="password" name="new_password" required placeholder="••••••••"
+                      style="border-radius:10px; padding:12px 16px;">
+                  </div>
+                  <div class="form-group">
+                    <label
+                      style="text-transform:uppercase; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--gray-500);">Confirm
+                      New Passphrase</label>
+                    <input type="password" name="confirm_password" required placeholder="••••••••"
+                      style="border-radius:10px; padding:12px 16px;">
+                  </div>
+                  <div style="margin-top:30px;">
+                    <button type="submit" class="btn btn-black"
+                      style="width:100%; border-radius:30px; padding:14px; font-weight:600;">Secure New
+                      Credentials</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+          </div>
+
+          <%- include('_footer') %>

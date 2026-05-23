@@ -1,0 +1,175 @@
+﻿<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok"><%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<div class="page-hd">
+    <div>
+        <h2>Orders</h2>
+        <p><%= orders.length %> order<%= orders.length !== 1 ? 's' : '' %> found</p>
+    </div>
+    <form method="GET" action="/admin/orders" class="search-row">
+        <div class="search-box">
+            <span>Search</span>
+            <input type="text" name="search" value="<%= search %>" placeholder="Search by customer or order ID...">
+        </div>
+        <button type="submit" class="btn btn-black btn-sm">Search</button>
+        <% if(search) { %>
+            <a href="/admin/orders" class="btn btn-ghost btn-sm">Clear</a>
+        <% } %>
+    </form>
+</div>
+
+<div style="margin-bottom:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <div class="filter-tabs">
+        <a href="/admin/orders" class="ftab <%= currentStatus === 'all' ? 'on' : '' %>">All</a>
+        <a href="/admin/orders?status=Pending" class="ftab <%= currentStatus === 'Pending' ? 'on' : '' %>">Pending</a>
+        <a href="/admin/orders?status=Processing" class="ftab <%= currentStatus === 'Processing' ? 'on' : '' %>">Processing</a>
+        <a href="/admin/orders?status=Shipped" class="ftab <%= currentStatus === 'Shipped' ? 'on' : '' %>">Shipped</a>
+        <a href="/admin/orders?status=Delivered" class="ftab <%= currentStatus === 'Delivered' ? 'on' : '' %>">Delivered</a>
+        <a href="/admin/orders?status=Cancelled" class="ftab <%= currentStatus === 'Cancelled' ? 'on' : '' %>">Cancelled</a>
+    </div>
+    <a href="/admin/orders/cancelled" class="btn btn-ghost btn-sm">Cancelled Page</a>
+</div>
+
+<div class="card">
+    <div class="tbl-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#Order</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>City</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Delivery ETA</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% orders.forEach(o => { %>
+                <tr>
+                    <td style="font-weight:600;color:var(--black)">#<%= o.id %></td>
+                    <td>
+                        <div><span style="font-weight:500;color:var(--black)"><%= o.user_name %></span></div>
+                        <div style="font-size:12px;color:var(--gray-500)"><%= o.user_email %></div>
+                        <% if (o.status === 'Cancelled' && o.cancel_reason) { %>
+                          <div style="font-size:12px;color:var(--red);margin-top:4px;">Reason: <%= o.cancel_reason %></div>
+                        <% } %>
+                    </td>
+                    <td style="font-weight:600;">&#8377;<%= Number(o.total_amount).toLocaleString('en-IN') %></td>
+                    <td><%= (o.city && o.city.trim()) ? o.city : '-' %></td>
+                    <td style="color:var(--gray-500)"><%= new Date(o.created_at).toLocaleDateString('en-IN') %></td>
+                    <td>
+                        <% if(o.status === 'Delivered') { %>
+                            <span class="badge bg-green"><%= o.status %></span>
+                        <% } else if(o.status === 'Pending') { %>
+                            <span class="badge bg-orange"><%= o.status %></span>
+                        <% } else if(o.status === 'Cancelled') { %>
+                            <span class="badge bg-red"><%= o.status %></span>
+                        <% } else { %>
+                            <span class="badge bg-blue"><%= o.status %></span>
+                        <% } %>
+                    </td>
+                    <td style="color:var(--gray-500);">
+                        <% if (o.estimated_delivery_at) { %>
+                            <%= new Date(o.estimated_delivery_at).toLocaleString('en-IN') %>
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <a href="/admin/orders/<%= o.id %>" class="btn btn-ghost btn-sm">View</a>
+                            <a href="/admin/orders/<%= o.id %>/bill" class="btn btn-black btn-sm" target="_blank" rel="noopener">Print Bill</a>
+                            <button class="btn btn-blue btn-sm"
+                                data-order-id="<%= o.id %>"
+                                data-status="<%= o.status %>"
+                                data-eta="<%= o.estimated_delivery_at ? new Date(o.estimated_delivery_at).toISOString().slice(0,16) : '' %>"
+                                data-note="<%= o.delivery_note || '' %>"
+                                onclick="openStatusModal(this)">Update</button>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+                <% if(!orders.length) { %>
+                <tr><td colspan="8">
+                    <div class="empty">
+                        <h3>No orders found</h3>
+                        <p>Orders will appear here once customers place them</p>
+                    </div>
+                </td></tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-bg" id="statusModal">
+    <div class="modal" style="max-width:380px;">
+        <div class="modal-hd">
+            <h3>Update Order Status</h3>
+            <button class="modal-close" onclick="closeModal('statusModal')">x</button>
+        </div>
+        <form id="statusForm" method="POST">
+            <div class="form-group">
+                <label>Order ID</label>
+                <input type="text" id="statusOrderId" disabled style="background:var(--gray-100);">
+            </div>
+            <div class="form-group">
+                <label>New Status *</label>
+                <select name="status" id="statusSelect">
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Estimated Delivery Date & Time</label>
+                <input type="datetime-local" name="estimated_delivery_at" id="etaInput">
+            </div>
+            <div class="form-group">
+                <label>Delivery Note</label>
+                <input type="text" name="delivery_note" id="deliveryNoteInput" placeholder="Eg: Arriving today by evening">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('statusModal')">Cancel</button>
+                <button type="submit" class="btn btn-black">Update Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('show');
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  }
+  document.querySelectorAll('.modal-bg').forEach((bg) => {
+    bg.addEventListener('click', function(e) {
+      if (e.target === this) closeModal(this.id);
+    });
+  });
+
+  function openStatusModal(btn) {
+    const id = btn.dataset.orderId;
+    const status = btn.dataset.status;
+    const eta = btn.dataset.eta || '';
+    const note = btn.dataset.note || '';
+    document.getElementById('statusForm').action = '/admin/orders/status/' + id;
+    document.getElementById('statusOrderId').value = '#' + id;
+    document.getElementById('statusSelect').value = status;
+    document.getElementById('etaInput').value = eta;
+    document.getElementById('deliveryNoteInput').value = note;
+    openModal('statusModal');
+  }
+</script>
+
+<%- include('_footer') %>

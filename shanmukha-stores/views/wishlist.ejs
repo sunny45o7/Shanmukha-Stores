@@ -1,0 +1,79 @@
+﻿<%- include('./partials/navbar') %>
+
+<section class="wishlist-section">
+  <div class="section-page-header">
+    <div class="section-label">Account</div>
+    <h1>My Wishlist</h1>
+    <p>
+      <% if (wishlist && wishlist.length > 0) { %>
+        <%= wishlist.length %> saved item(s)
+      <% } else { %>
+        Your saved items appear here
+      <% } %>
+    </p>
+  </div>
+
+  <% if (!wishlist || wishlist.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">♡</div>
+      <h2>Your Wishlist is Empty</h2>
+      <p>Browse products and tap heart to save items here</p>
+      <a href="/products" class="btn-primary">Browse Products</a>
+    </div>
+  <% } else { %>
+    <div class="products-grid">
+      <% wishlist.forEach(item => { const pid = item.product_id || item.id; %>
+        <div class="product-card" id="wishlistCard-<%= pid %>">
+          <div class="product-image">
+            <a href="/products/<%= pid %>">
+              <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>" onerror="this.src='/images/placeholder.png'">
+            </a>
+            <form action="/wishlist/toggle/<%= pid %>" method="POST" class="wishlist-remove-form" data-product-id="<%= pid %>" style="display:contents">
+              <button type="submit" class="wishlist-btn active" title="Remove from wishlist">♥</button>
+            </form>
+          </div>
+          <div class="product-info">
+            <h3 class="product-name"><a href="/products/<%= pid %>"><%= item.name %></a></h3>
+            <p class="product-price">&#8377;<%= Number(item.price).toLocaleString('en-IN') %></p>
+            <% if (item.stock === 0) { %>
+              <div class="out-of-stock-label">Out of Stock</div>
+            <% } else { %>
+              <form action="/cart/add/<%= pid %>" method="POST">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="add-cart-btn">Add to Cart</button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<script>
+  document.querySelectorAll('.wishlist-remove-form').forEach((form) => {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const productId = this.dataset.productId;
+      try {
+        const res = await fetch(`/wishlist/toggle/${productId}`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) return;
+        if (data.status === 'removed') {
+          const card = document.getElementById(`wishlistCard-${productId}`);
+          if (card) card.remove();
+          if (!document.querySelector('.wishlist-remove-form')) {
+            window.location.reload();
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+</script>
+
+<%- include('./partials/footer') %>

@@ -1,0 +1,141 @@
+<% if (typeof popupAd !=='undefined' && popupAd) { %>
+    <div class="popup-ad-overlay" id="globalPopupAdOverlay">
+        <div class="popup-ad-modal" onclick="handlePopupClick(event, '<%= popupAd.target_url %>')"
+            style="cursor: <%= popupAd.target_url ? 'pointer': 'default' %>;">
+            <div class="popup-ad-content">
+                <img src="<%= popupAd.image_url %>" alt="<%= popupAd.title %>" class="popup-ad-img">
+            </div>
+            <button class="popup-ad-close" id="popupAdCloseBtn" disabled>Close</button>
+        </div>
+    </div>
+
+    <style>
+        .popup-ad-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .popup-ad-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup-ad-modal {
+            position: relative;
+            max-width: 600px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: transparent;
+        }
+
+        .popup-ad-overlay.show .popup-ad-modal {
+            transform: scale(1);
+        }
+
+        .popup-ad-content {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-ad-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            max-height: 80vh;
+        }
+
+        .popup-ad-close {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            color: #111;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 24px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .popup-ad-close:disabled {
+            background: rgba(255, 255, 255, 0.5);
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .popup-ad-close:not(:disabled):hover {
+            background: #fff;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+
+    <script>
+        function handlePopupClick(e, targetUrl) {
+            if (e.target.id === 'popupAdCloseBtn') return; // Don't navigate if clicking the close button
+            if (targetUrl && targetUrl !== 'undefined') {
+                window.location.href = targetUrl;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const popupId = 'popup_ad_<%= popupAd.id %>_shown';
+
+            // Check if we've already shown this exact popup id in this session
+            if (!sessionStorage.getItem(popupId)) {
+                setTimeout(() => {
+                    const overlay = document.getElementById('globalPopupAdOverlay');
+                    const closeBtn = document.getElementById('popupAdCloseBtn');
+
+                    if (!overlay || !closeBtn) return;
+
+                    overlay.classList.add('show');
+                    sessionStorage.setItem(popupId, 'true'); // Mark as shown
+
+                    let timeLeft = 5;
+                    closeBtn.innerText = `Ignore in ${timeLeft}s`;
+
+                    const timer = setInterval(() => {
+                        timeLeft--;
+                        if (timeLeft <= 0) {
+                            clearInterval(timer);
+                            closeBtn.innerText = 'Close';
+                            closeBtn.disabled = false;
+                        } else {
+                            closeBtn.innerText = `Ignore in ${timeLeft}s`;
+                        }
+                    }, 1000);
+
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // prevent modal click
+                        overlay.classList.remove('show');
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                        }, 400);
+                    });
+
+                }, 1500); // Small delay before showing ad on page load
+            }
+        });
+    </script>
+    <% } %>

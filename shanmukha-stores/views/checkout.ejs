@@ -1,0 +1,1169 @@
+<%- include('./partials/navbar') %>
+
+  <div class="container py-40 no-print checkout-modern">
+    <div class="page-header checkout-head">
+      <h1>Checkout</h1>
+      <div class="checkout-steps">
+        <a href="/cart" class="step done step-link" title="Back to Cart">1. Cart</a>
+        <span class="step-divider">&gt;</span>
+        <span class="step active">2. Checkout</span>
+        <span class="step-divider">&gt;</span>
+        <span class="step">3. Confirmation</span>
+      </div>
+      <div class="steps-track" aria-hidden="true"><span style="width:66%"></span></div>
+    </div>
+
+    <% if (typeof error !=='undefined' && error) { %>
+      <div class="alert alert-danger">
+        <%= error %>
+      </div>
+      <% } %>
+
+        <% if (typeof stockWarnings !=='undefined' && stockWarnings && stockWarnings.length> 0) { %>
+          <div class="alert alert-warning">
+            <strong>Stock warning:</strong>
+            <ul style="margin:4px 0 0 20px;">
+              <% stockWarnings.forEach(w=> { %><li>
+                  <%= w %>
+                </li>
+                <% }) %>
+            </ul>
+            <a href="/cart">Go back to cart to fix</a>
+          </div>
+          <% } %>
+
+            <form method="POST" action="/orders/place" id="checkoutForm">
+              <input type="hidden" name="transaction_id" id="transactionIdInput" value="">
+              <div class="checkout-grid">
+
+                <div>
+                  <div class="card mb-24">
+                    <div class="card-header">
+                      <div class="card-head-row">
+                        <h2>Delivery Address</h2>
+                        <a href="/addresses?from=checkout" class="btn btn-outline btn-sm">Add New Address</a>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <% var savedAddresses=(typeof addresses !=='undefined' && Array.isArray(addresses)) ? addresses :
+                        []; %>
+
+                        <% if (savedAddresses.length> 0) { %>
+                          <div class="address-selector">
+                            <% savedAddresses.forEach((addr, i)=> { %>
+                              <label class="address-option">
+                                <input type="radio" name="address_id" value="<%= addr.id %>" <%=i===0 ? 'checked' : ''
+                                  %> onchange="toggleNewAddress(false)">
+                                <div class="address-option-body">
+                                  <% if (addr.is_default) { %><span class="badge badge-success badge-sm">Default</span>
+                                    <% } %>
+                                      <strong>
+                                        <%= addr.full_name %>
+                                      </strong>
+                                      <% if (addr.phone) { %><span class="text-muted"> - <%= addr.phone %></span>
+                                        <% } %>
+                                          <p class="text-sm">
+                                            <%= addr.address_line %>, <%= addr.city %>, <%= addr.state %> - <%=
+                                                    addr.pincode %>
+                                          </p>
+                                </div>
+                              </label>
+                              <% }) %>
+
+                                <label class="address-option">
+                                  <input type="radio" name="address_id" value="new" onchange="toggleNewAddress(true)">
+                                  <div class="address-option-body"><strong>+ Use a new address</strong></div>
+                                </label>
+                          </div>
+                          <% } else { %>
+                            <input type="hidden" name="address_id" value="new">
+                            <p class="text-muted mb-16">No saved addresses. Please enter a delivery address below.</p>
+                            <% } %>
+
+                              <div id="newAddressForm" class="<%= savedAddresses.length === 0 ? 'show' : 'hide' %>" style="margin-top:16px;">
+                                <% if (savedAddresses.length> 0) { %>
+                                  <hr style="margin-bottom:16px;">
+                                  <% } %>
+                                    <h3 class="new-address-title">New Delivery Address</h3>
+
+                                    <div class="form-row-2">
+                                      <div class="form-group">
+                                        <label>Full Name *</label>
+                                        <input type="text" name="new_address[full_name]"
+                                          class="form-control new-address-field" placeholder="Recipient's name">
+                                      </div>
+                                      <div class="form-group">
+                                        <label>Phone *</label>
+                                        <input type="tel" name="new_address[phone]"
+                                          class="form-control new-address-field" placeholder="+91 9999999999">
+                                      </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                      <label>Address *</label>
+                                      <textarea name="new_address[address_line]" class="form-control new-address-field"
+                                        rows="2" placeholder="House/Flat no., Street, Area"></textarea>
+                                    </div>
+
+                                    <div class="form-row-3">
+                                      <div class="form-group">
+                                        <label>City *</label>
+                                        <input type="text" name="new_address[city]"
+                                          class="form-control new-address-field" placeholder="Vijayawada">
+                                      </div>
+                                      <div class="form-group">
+                                        <label>State *</label>
+                                        <input type="text" name="new_address[state]"
+                                          class="form-control new-address-field" placeholder="Andhra Pradesh">
+                                      </div>
+                                      <div class="form-group">
+                                        <label>Pincode *</label>
+                                        <input type="text" name="new_address[pincode]"
+                                          class="form-control new-address-field" placeholder="520001">
+                                      </div>
+                                    </div>
+                              </div>
+                    </div>
+                  </div>
+
+                  <div class="card mb-24">
+                    <div class="card-header">
+                      <h2>Payment Method</h2>
+                    </div>
+                    <div class="card-body">
+                      <div class="payment-options">
+                        <label class="payment-option">
+                          <input type="radio" name="payment_method" value="cod" checked>
+                          <div class="payment-option-body">
+                            <span class="payment-icon">COD</span>
+                            <div>
+                              <strong>Cash on Delivery</strong>
+                              <p class="text-sm text-muted">Pay when your order arrives</p>
+                            </div>
+                          </div>
+                        </label>
+                        <label class="payment-option">
+                          <input type="radio" name="payment_method" value="whatsapp">
+                          <div class="payment-option-body">
+                            <span class="payment-icon wa-icon">&#128172;</span>
+                            <div>
+                              <strong>Pay through WhatsApp</strong>
+                              <p class="text-sm text-muted">Send order details & pay via WhatsApp</p>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div class="whatsapp-pay-row" id="whatsappPayRow" style="display:none;">
+                        <div class="whatsapp-pay-info">
+                          <span class="wp-icon">&#128172;</span>
+                          <div class="wp-note">Send your order details to our WhatsApp team. We will confirm and process your order shortly.</div>
+                        </div>
+                        <button type="button" class="btn btn-whatsapp" id="whatsappPayBtn" style="margin-top:10px;">&#128172;&nbsp; Pay Now on WhatsApp</button>
+                      </div>
+
+                      <div class="form-group mt-16">
+                        <label>Order Notes (optional)</label>
+                        <textarea name="notes" id="orderNotes" class="form-control" rows="2"
+                          placeholder="Special instructions, preferred delivery time..."></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="card sticky-card checkout-summary-card">
+                    <div class="card-header">
+                      <h2>Order Summary</h2>
+                    </div>
+                    <div class="card-body">
+                      <div class="checkout-items">
+                        <% cartItems.forEach(item=> { %>
+                          <div class="checkout-item">
+                            <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>"
+                              class="checkout-item-img" onerror="this.src='/images/placeholder.png'">
+                            <div class="checkout-item-info">
+                              <p class="checkout-item-name">
+                                <a href="/products/<%= item.product_id %>" style="font-weight:500;color:var(--black)">
+                                  <%= item.name %>
+                                    <% if (item.selected_weight) { %>
+                                      <span style="font-size:0.85em;color:var(--gray-500);font-weight:400;">(<%=
+                                          item.selected_weight %>)</span>
+                                      <% } %>
+                                </a>
+                              </p>
+                              <p class="text-sm text-muted">Qty: <%= item.quantity %>
+                              </p>
+                              <% if (typeof item.stock !=='undefined' && item.quantity> item.stock) { %>
+                                <p class="text-sm" style="color:var(--danger);">Insufficient stock</p>
+                                <% } %>
+                            </div>
+                            <div class="checkout-item-price">&#8377;<%= Number(item.subtotal).toLocaleString('en-IN') %>
+                            </div>
+                          </div>
+                          <% }) %>
+                      </div>
+
+                      <div class="coupon-inline-box">
+                        <% if (appliedCoupon) { %>
+                          <div class="coupon-inline-applied">
+                            <div>
+                              <strong>Coupon Applied:</strong>
+                              <%= appliedCoupon.code %>
+                            </div>
+                            <a href="/cart" class="btn btn-outline btn-sm">Change</a>
+                          </div>
+                          <% } else { %>
+                            <div class="coupon-inline-applied">
+                              <div>Apply coupon from cart page.</div>
+                              <a href="/cart" class="btn btn-outline btn-sm">Go to Cart</a>
+                            </div>
+                            <% } %>
+                      </div>
+
+                      <hr>
+
+                      <div class="price-summary">
+                        <div class="price-row">
+                          <span>Subtotal (<%= typeof totalItems !=='undefined' ? totalItems : cartItems.reduce((s, i)=>
+                              s + i.quantity, 0) %> items)</span>
+                          <span>&#8377;<%= Number(typeof originalSubtotal !=='undefined' ? originalSubtotal : (typeof
+                              subtotal !=='undefined' ? subtotal : total)).toLocaleString('en-IN') %></span>
+                        </div>
+                        <% if (typeof offerDiscount !=='undefined' && Number(offerDiscount)> 0) { %>
+                          <div class="price-row" style="color:var(--success, green);">
+                            <span>Offer Discount</span>
+                            <span>-&#8377;<%= Number(offerDiscount).toLocaleString('en-IN') %></span>
+                          </div>
+                          <% } %>
+                            <% if (appliedCoupon) { %>
+                              <div class="price-row" style="color:var(--success, green);">
+                                <span>Coupon (<%= appliedCoupon.code %>)</span>
+                                <span>-&#8377;<%= Number(couponDiscount || 0).toLocaleString('en-IN') %></span>
+                              </div>
+                              <% } else if (couponError) { %>
+                                <div class="price-row" style="color:var(--danger, #d9534f);font-size:12px;">
+                                  <span>Coupon</span>
+                                  <span>
+                                    <%= couponError %>
+                                  </span>
+                                </div>
+                                <% } %>
+                                  <div class="price-row">
+                                    <span>Delivery</span>
+                                    <span style="color:var(--success, green);">Free</span>
+                                  </div>
+                                  <hr>
+                                  <div class="price-row total-row">
+                                    <strong>Total</strong>
+                                    <strong>&#8377;<%= Number(total).toLocaleString('en-IN') %></strong>
+                                  </div>
+                      </div>
+
+                      <div class="checkout-actions">
+                        <button type="button" class="btn btn-outline btn-block btn-print-modern"
+                          onclick="printBill()">PDF Bill Preview</button>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="placeOrderBtn">Place
+                          Order</button>
+                      </div>
+
+                      <p class="checkout-legal-note">
+                        By placing your order, you agree to our Terms of Service.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+  </div>
+
+
+
+  <section id="printBill" class="print-bill">
+    <div class="print-bill-header">
+      <h1>
+        <%= (settings && settings.store_name) ? settings.store_name : 'Shanmukha Stores' %>
+      </h1>
+      <p>Bill Preview</p>
+    </div>
+
+    <div class="print-bill-meta">
+      <div><strong>Bill No:</strong> <span id="printBillNo">-</span></div>
+      <div><strong>Date:</strong> <span id="printDate">-</span></div>
+      <div><strong>Payment:</strong> <span id="printPayment">Cash on Delivery</span></div>
+    </div>
+
+    <div class="print-address">
+      <h3>Delivery Address</h3>
+      <p id="printAddressText">-</p>
+    </div>
+
+    <table class="print-bill-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th style="text-align:right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% cartItems.forEach(item=> { %>
+          <tr>
+            <td>
+              <%= item.name %>
+                <% if (item.selected_weight) { %>
+                  <span style="color:#666;">(<%= item.selected_weight %>)</span>
+                  <% } %>
+            </td>
+            <td>
+              <%= item.quantity %>
+            </td>
+            <td style="text-align:right;">&#8377;<%= Number(item.subtotal).toLocaleString('en-IN') %>
+            </td>
+          </tr>
+          <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2"><strong>Total</strong></td>
+          <td style="text-align:right;"><strong>&#8377;<%= Number(total).toLocaleString('en-IN') %></strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p class="print-note">This is a system-generated bill preview from checkout.</p>
+  </section>
+
+  <!-- EJS variables for JavaScript use -->
+  <div id="checkout-data" style="display: none;"
+       data-bill-items='<%- JSON.stringify(cartItems || []) %>'
+       data-store-name='<%- ((settings && settings.store_name) ? settings.store_name.replace(/'/g, "\\'").replace(/</g, "\\u003c") : 'Shanmukha Stores') %>'
+       data-subtotal-value='<%- typeof originalSubtotal !== 'undefined' ? originalSubtotal : (typeof subtotal !== 'undefined' ? subtotal : total) %>'
+       data-offer-discount-value='<%- typeof offerDiscount !== 'undefined' ? offerDiscount : 0 %>'
+       data-coupon-discount-value='<%- typeof couponDiscount !== 'undefined' ? couponDiscount : 0 %>'
+       data-total-value='<%- total %>'
+       data-coupon-code-value='<%- ((appliedCoupon && appliedCoupon.code) ? appliedCoupon.code.replace(/'/g, "\\'").replace(/</g, "\\u003c") : '') %>'>
+  </div>
+
+  <script>
+    function setAddressRequired(isRequired) {
+      document.querySelectorAll(".new-address-field").forEach((el) => {
+        el.required = !!isRequired;
+      });
+    }
+
+    function toggleNewAddress(show) {
+      const form = document.getElementById("newAddressForm");
+      if (form) {
+        form.style.display = show ? "block" : "none";
+      }
+      setAddressRequired(show);
+    }
+
+    function selectedAddressText() {
+      const selected = document.querySelector("input[name='address_id']:checked");
+      if (!selected) return "Address not selected";
+
+      if (selected.value === "new") {
+        const fullName = document.querySelector("[name='new_address[full_name]']")?.value || "";
+        const phone = document.querySelector("[name='new_address[phone]']")?.value || "";
+        const line = document.querySelector("[name='new_address[address_line]']")?.value || "";
+        const city = document.querySelector("[name='new_address[city]']")?.value || "";
+        const state = document.querySelector("[name='new_address[state]']")?.value || "";
+        const pincode = document.querySelector("[name='new_address[pincode]']")?.value || "";
+
+        return [fullName, phone, line, city, state, pincode].filter(Boolean).join(", ");
+      }
+
+      const card = selected.closest("label")?.querySelector(".address-option-body");
+      return card ? card.innerText.replace(/\s+/g, " ").trim() : "Address not selected";
+    }
+
+    function buildWhatsAppMessage(orderId) {
+      const checkoutData = document.getElementById('checkout-data');
+      const billItems = JSON.parse(checkoutData.dataset.billItems || '[]');
+      const storeName = checkoutData.dataset.storeName || 'Shanmukha Stores';
+      const subtotalValue = parseFloat(checkoutData.dataset.subtotalValue) || 0;
+      const offerDiscountValue = parseFloat(checkoutData.dataset.offerDiscountValue) || 0;
+      const couponDiscountValue = parseFloat(checkoutData.dataset.couponDiscountValue) || 0;
+      const totalValue = parseFloat(checkoutData.dataset.totalValue) || 0;
+      const couponCodeValue = checkoutData.dataset.couponCodeValue || '';
+      const addressText = selectedAddressText();
+      const notes = document.getElementById('orderNotes')?.value?.trim() || '';
+
+      const inr = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
+
+      const itemLines = billItems.map((item, idx) => {
+        const weight = item.selected_weight ? ` (${item.selected_weight})` : '';
+        return `▫️ *${item.name}${weight}*\n    Qty: ${item.quantity}  |  Price: ${inr(item.subtotal)}`;
+      }).join('\n\n');
+
+      let msg = `🛒 *NEW ORDER - ${storeName.toUpperCase()}*\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+      if (orderId) msg += `🔖 *Order ID:* #${orderId}\n\n`;
+
+      msg += `📦 *ORDER ITEMS:*\n${itemLines}\n\n`;
+
+      msg += `💵 *PAYMENT SUMMARY:*\n`;
+      msg += `  ▫️ Subtotal: ${inr(subtotalValue)}\n`;
+      if (offerDiscountValue > 0) msg += `  ▫️ Offer Discount: -${inr(offerDiscountValue)}\n`;
+      if (couponDiscountValue > 0) msg += `  ▫️ Coupon${couponCodeValue ? ' (' + couponCodeValue + ')' : ''}: -${inr(couponDiscountValue)}\n`;
+      msg += `  ▫️ Delivery Fee: *FREE*\n`;
+      msg += `  ✨ *TOTAL PAYABLE: ${inr(totalValue)}*\n\n`;
+
+      msg += `📍 *DELIVERY ADDRESS:*\n${addressText}\n\n`;
+      msg += `💳 *PAYMENT METHOD:* WhatsApp Pay\n`;
+      if (notes) msg += `📝 *CUSTOMER NOTE:* ${notes}\n\n`;
+
+      msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `Hello! I just placed an order. Please confirm the details. 🙏✨`;
+      return msg;
+    }
+
+    async function openWhatsApp() {
+      const btn = document.getElementById('whatsappPayBtn');
+      const originalHTML = btn ? btn.innerHTML : '';
+      try {
+        // Validate address first
+        const selected = document.querySelector("input[name='address_id']:checked");
+        if (!selected) { alert("Please select a delivery address."); return; }
+        if (selected.value === "new") {
+          const fn = document.querySelector("[name='new_address[full_name]']")?.value?.trim();
+          const ph = document.querySelector("[name='new_address[phone]']")?.value?.trim();
+          const ln = document.querySelector("[name='new_address[address_line]']")?.value?.trim();
+          const ct = document.querySelector("[name='new_address[city]']")?.value?.trim();
+          const st = document.querySelector("[name='new_address[state]']")?.value?.trim();
+          const pi = document.querySelector("[name='new_address[pincode]']")?.value?.trim();
+          if (!fn || !ph || !ln || !ct || !st || !pi) { alert("Please fill all required address fields."); return; }
+          if (!/^[0-9+\-() ]{8,20}$/.test(ph)) { alert("Please enter a valid mobile number."); return; }
+        }
+
+        // Show loading
+        if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Placing order...'; }
+
+        // POST to JSON endpoint
+        const form = document.getElementById('checkoutForm');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        const response = await fetch('/orders/place-whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+
+        const data = await response.json();
+
+        if (!data.ok) {
+          if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+          alert(data.error || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        const orderId = data.orderId;
+
+        // Open WhatsApp with order details (including order ID)
+        const phone = '918886383838';
+        const msg = buildWhatsAppMessage(orderId);
+        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        window.open(waUrl, '_blank');
+
+        // Redirect to confirmation page
+        window.location.href = `/orders/success/${orderId}`;
+
+      } catch (err) {
+        console.error('WhatsApp order error:', err);
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+        alert('Something went wrong. Please try again.');
+      }
+    }
+
+    function printBill() {
+      const now = new Date();
+      const billNo = `PRE-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+      const selectedPayment = document.querySelector("input[name='payment_method']:checked")?.value || "cod";
+      const paymentLabel = selectedPayment === "cod" ? "Cash on Delivery" : selectedPayment === "whatsapp" ? "WhatsApp Pay" : selectedPayment.toUpperCase();
+      const addressText = selectedAddressText();
+
+      const checkoutData = document.getElementById('checkout-data');
+      const billItems = JSON.parse(checkoutData.dataset.billItems);
+      const storeName = checkoutData.dataset.storeName;
+      const subtotalValue = parseFloat(checkoutData.dataset.subtotalValue);
+      const offerDiscountValue = parseFloat(checkoutData.dataset.offerDiscountValue);
+      const couponDiscountValue = parseFloat(checkoutData.dataset.couponDiscountValue);
+      const totalValue = parseFloat(checkoutData.dataset.totalValue);
+      const couponCodeValue = checkoutData.dataset.couponCodeValue;
+
+      const inr = (n) => `Rs. ${Number(n || 0).toLocaleString("en-IN")}`;
+      const itemRows = billItems.map((item, idx) => {
+        const weight = item.selected_weight ? ` (${item.selected_weight})` : "";
+        return `<tr>
+          <td>${idx + 1}</td>
+          <td>${item.name}${weight}</td>
+          <td>${item.quantity}</td>
+          <td class="num">${inr(item.subtotal)}</td>
+        </tr>`;
+      }).join("");
+
+      const discountRows = `
+        ${offerDiscountValue > 0 ? `<div class="sum-row"><span>Offer Discount</span><strong>- ${inr(offerDiscountValue)}</strong></div>` : ""}
+        ${couponDiscountValue > 0 ? `<div class="sum-row"><span>Coupon${couponCodeValue ? ` (${couponCodeValue})` : ""}</span><strong>- ${inr(couponDiscountValue)}</strong></div>` : ""}
+      `;
+
+      const previewHtml = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${storeName} Bill Preview</title>
+  <style>
+    @page { size: A4; margin: 10mm; }
+    body { margin: 0; background: #eef1ef; font-family: Arial, sans-serif; color: #111; }
+    .toolbar { max-width: 840px; margin: 14px auto 8px; display: flex; justify-content: flex-end; }
+    .toolbar button { border: 1px solid #0a0a0a; background: #0a0a0a; color: #fff; border-radius: 999px; padding: 9px 14px; cursor: pointer; font-weight: 700; font-size: 12px; }
+    .sheet { width: 794px; min-height: 1123px; margin: 0 auto 18px; background: #fff; box-shadow: 0 14px 30px rgba(0,0,0,.12); box-sizing: border-box; padding: 24px; }
+    .h1 { margin: 0; font-size: 24px; }
+    .sub { margin: 4px 0 0; color: #666; font-size: 12px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; font-size: 12px; }
+    .card { border: 1px solid #e6e6e6; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.4; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12px; }
+    th, td { border-bottom: 1px solid #ececec; padding: 7px 6px; text-align: left; vertical-align: top; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: #555; background: #fafafa; }
+    .num { text-align: right; white-space: nowrap; }
+    .summary { margin-top: 12px; margin-left: auto; width: 300px; border: 1px solid #ececec; border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+    .sum-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #ececec; }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-row.total { font-size: 15px; font-weight: 700; color: #111; }
+    .foot { margin-top: 10px; font-size: 11px; color: #777; text-align: center; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .sheet { margin: 0; width: auto; min-height: auto; box-shadow: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button onclick="window.print()">Print / Save PDF</button></div>
+  <div class="sheet">
+    <h1 class="h1">${storeName}</h1>
+    <p class="sub">Compact Bill Preview</p>
+    <div class="meta">
+      <div><strong>Bill No:</strong> ${billNo}</div>
+      <div><strong>Date:</strong> ${now.toLocaleString("en-IN")}</div>
+      <div><strong>Payment:</strong> ${paymentLabel}</div>
+      <div><strong>Items:</strong> ${billItems.length}</div>
+    </div>
+    <div class="card"><strong>Delivery Address</strong><br>${addressText || "-"}</div>
+    <table>
+      <thead>
+        <tr><th style="width:40px">No</th><th>Item</th><th style="width:60px">Qty</th><th class="num" style="width:120px">Amount</th></tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    <div class="summary">
+      <div class="sum-row"><span>Subtotal</span><strong>${inr(subtotalValue)}</strong></div>
+      ${discountRows}
+      <div class="sum-row"><span>Delivery</span><strong>Free</strong></div>
+      <div class="sum-row total"><span>Total</span><strong>${inr(totalValue)}</strong></div>
+    </div>
+    <p class="foot">System-generated bill preview from checkout.</p>
+  </div>
+</body>
+</html>`;
+
+      const previewWindow = window.open("", "_blank", "width=980,height=900");
+      if (!previewWindow) {
+        alert("Please allow popups to view the PDF bill preview.");
+        return;
+      }
+      previewWindow.document.open();
+      previewWindow.document.write(previewHtml);
+      previewWindow.document.close();
+    }
+
+    document.getElementById("checkoutForm").addEventListener("submit", function (e) {
+      const selectedPayment = document.querySelector("input[name='payment_method']:checked")?.value || "cod";
+
+      const selected = document.querySelector("input[name='address_id']:checked");
+      if (!selected) {
+        e.preventDefault();
+        alert("Please select a delivery address.");
+        return;
+      }
+
+      if (selected.value === "new") {
+        const fullName = document.querySelector("[name='new_address[full_name]']")?.value?.trim();
+        const phone = document.querySelector("[name='new_address[phone]']")?.value?.trim();
+        const line = document.querySelector("[name='new_address[address_line]']")?.value?.trim();
+        const city = document.querySelector("[name='new_address[city]']")?.value?.trim();
+        const state = document.querySelector("[name='new_address[state]']")?.value?.trim();
+        const pincode = document.querySelector("[name='new_address[pincode]']")?.value?.trim();
+        if (!fullName || !phone || !line || !city || !state || !pincode) {
+          e.preventDefault();
+          alert("Please fill all required address fields including mobile number.");
+          return;
+        }
+        if (!/^[0-9+\-() ]{8,20}$/.test(phone)) {
+          e.preventDefault();
+          alert("Please enter a valid mobile number.");
+          return;
+        }
+      }
+
+      if (selectedPayment === "whatsapp") {
+        e.preventDefault();
+        openWhatsApp();
+        return;
+      }
+
+      const btn = document.getElementById("placeOrderBtn");
+      if (btn) btn.dataset.submitting = "true";
+      btn.disabled = true;
+      btn.textContent = "Placing Order...";
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const selected = document.querySelector("input[name='address_id']:checked");
+      toggleNewAddress(selected && selected.value === "new");
+
+      const paymentRadios = document.querySelectorAll("input[name='payment_method']");
+      const whatsappPayRow = document.getElementById("whatsappPayRow");
+      const whatsappPayBtn = document.getElementById("whatsappPayBtn");
+      const placeOrderBtn = document.getElementById("placeOrderBtn");
+
+      const updatePaymentUi = () => {
+        const selectedPayment = document.querySelector("input[name='payment_method']:checked")?.value || "cod";
+        if (selectedPayment === "whatsapp") {
+          whatsappPayRow.style.display = "flex";
+          placeOrderBtn.style.display = "none";
+        } else {
+          whatsappPayRow.style.display = "none";
+          placeOrderBtn.style.display = "";
+        }
+      };
+
+      paymentRadios.forEach((radio) => {
+        radio.addEventListener("change", updatePaymentUi);
+      });
+
+      whatsappPayBtn?.addEventListener("click", () => {
+        openWhatsApp();
+      });
+
+      updatePaymentUi();
+    });
+  </script>
+
+  <style>
+    .checkout-modern {
+      max-width: 1240px;
+    }
+
+    .show {
+      display: block !important;
+    }
+
+    .hide {
+      display: none !important;
+    }
+
+    .payment-option.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .btn {
+      border-radius: 50px !important;
+    }
+
+    .whatsapp-pay-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      margin-top: 12px;
+      border: 1px dashed rgba(37, 211, 102, 0.5);
+      border-radius: 12px;
+      background: rgba(37, 211, 102, 0.06);
+    }
+
+    .whatsapp-pay-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .wp-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .wp-note {
+      font-size: 13px;
+      color: #2a2a2a;
+      line-height: 1.45;
+    }
+
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      color: #fff !important;
+      border: none;
+      border-radius: 50px !important;
+      padding: 11px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+      text-decoration: none;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-whatsapp:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+    }
+
+    .wa-icon {
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .checkout-head h1 {
+      margin-bottom: 10px;
+    }
+
+    .checkout-steps {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .checkout-steps .step {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b6b6b;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+      transition: .25s ease;
+    }
+
+    .checkout-steps .step.done {
+      color: #fff;
+      background: linear-gradient(90deg, #1c4a30 0%, #2d5a3f 100%);
+      border-color: transparent;
+    }
+
+    .checkout-steps .step.active {
+      color: #1c4a30;
+      border-color: rgba(28, 74, 48, 0.3);
+      background: rgba(28, 74, 48, 0.09);
+      box-shadow: 0 0 0 5px rgba(28, 74, 48, 0.08);
+      animation: stepPulse 1.5s ease infinite;
+    }
+
+    .step-divider {
+      color: #999;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .checkout-steps .step-link {
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .checkout-steps .step-link:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.02);
+    }
+
+    .steps-track {
+      width: min(420px, 100%);
+      height: 8px;
+      border-radius: 999px;
+      background: #ececec;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .steps-track span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #1c4a30 0%, #d4af37 100%);
+      position: relative;
+    }
+
+    .steps-track span::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -35%;
+      width: 35%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+      animation: progressShine 2.2s ease-in-out infinite;
+    }
+
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff 0%, #fcfcfc 100%);
+      box-shadow: 0 14px 28px rgba(10, 10, 10, 0.06);
+    }
+
+    .card-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      background: linear-gradient(90deg, #ffffff 0%, #f7faf8 100%);
+    }
+
+    .card-head-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-header h2 {
+      font-size: 16px;
+      margin: 0;
+      letter-spacing: .2px;
+    }
+
+    .card-body {
+      padding: 16px 18px;
+    }
+
+    .new-address-title {
+      margin-bottom: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1c4a30;
+    }
+
+    .address-selector,
+    .payment-options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .address-option,
+    .payment-option {
+      display: block;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: .22s ease;
+    }
+
+    .address-option input,
+    .payment-option input {
+      margin-right: 8px;
+    }
+
+    .address-option:hover,
+    .payment-option:hover {
+      border-color: rgba(28, 74, 48, 0.34);
+      background: #fff;
+    }
+
+    .address-option-body,
+    .payment-option-body {
+      display: inline-block;
+      vertical-align: top;
+      width: calc(100% - 32px);
+    }
+
+    .payment-option-body {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .payment-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f2;
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #1c4a30;
+    }
+
+    .form-row-2,
+    .form-row-3 {
+      display: grid;
+      gap: 10px;
+    }
+
+    .form-row-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-row-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    .form-control {
+      width: 100%;
+      border: 1px solid #d7d7d7;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus {
+      border-color: #1c4a30;
+      box-shadow: 0 0 0 3px rgba(28, 74, 48, 0.1);
+    }
+
+    .checkout-summary-card .card-body {
+      display: grid;
+      gap: 12px;
+    }
+
+    .checkout-item {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px dashed #ececec;
+    }
+
+    .checkout-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkout-item-img {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid #efefef;
+      background: #fafafa;
+    }
+
+    .checkout-item-name {
+      margin-bottom: 4px;
+    }
+
+    .price-summary .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .price-summary .total-row {
+      font-size: 18px;
+    }
+
+    .checkout-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .checkout-actions .btn {
+      min-height: 46px;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .coupon-inline-box {
+      margin-top: 10px;
+    }
+
+    .coupon-inline-form,
+    .coupon-inline-applied {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--border-mid, #d2d2d2);
+      background: #fff;
+      color: var(--black);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--black);
+      background: #f8f8f8;
+    }
+
+    .btn-print-modern {
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      border-color: rgba(28, 74, 48, 0.3);
+      color: #1c4a30;
+      background: linear-gradient(180deg, #ffffff 0%, #f4f8f6 100%);
+    }
+
+    .btn-print-modern:hover {
+      border-color: #1c4a30;
+      background: linear-gradient(180deg, #f7fbf8 0%, #ebf5f0 100%);
+      color: #123222;
+    }
+
+    .btn-block {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-lg {
+      min-height: 46px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .checkout-legal-note {
+      font-size: 11px;
+      color: var(--gray-500);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .print-bill {
+      display: none;
+      max-width: 780px;
+      margin: 0 auto;
+      color: #111;
+      font-family: Arial, sans-serif;
+      padding: 24px;
+      background: #fff;
+    }
+
+    .print-bill-header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .print-bill-header p {
+      margin: 6px 0 0;
+      color: #666;
+    }
+
+    .print-bill-meta {
+      margin: 18px 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .print-address {
+      margin: 10px 0 18px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    .print-address h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .print-address p {
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .print-bill-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .print-bill-table th,
+    .print-bill-table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .print-bill-table th {
+      background: #f2f2f2;
+      text-align: left;
+    }
+
+    .print-note {
+      margin-top: 14px;
+      color: #666;
+      font-size: 12px;
+    }
+
+    @keyframes stepPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(28, 74, 48, 0.12);
+      }
+
+      50% {
+        box-shadow: 0 0 0 7px rgba(28, 74, 48, 0.02);
+      }
+    }
+
+    @keyframes progressShine {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(420%);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .checkout-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sticky-card {
+        position: static;
+      }
+    }
+  </style>

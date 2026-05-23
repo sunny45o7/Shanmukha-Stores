@@ -1,0 +1,541 @@
+<%- include('./partials/navbar') %>
+<% const defaultProfileImage = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"#f1f3f5\"/><circle cx=\"50\" cy=\"38\" r=\"18\" fill=\"#c7ccd1\"/><path d=\"M20 86c4-16 16-24 30-24s26 8 30 24\" fill=\"#c7ccd1\"/></svg>'); %>
+
+  <div class="luxury-profile-section page-enter">
+    <div class="container">
+
+      <div class="profile-header-luxury" data-animate>
+        <div class="header-content">
+          <h1 class="luxury-title">The Sanctuary</h1>
+          <p class="subtitle">Welcome back, <%= profileUser.name %>. Manage your bespoke experience.</p>
+        </div>
+        <div class="header-action">
+          <form action="/auth/logout" method="POST">
+            <button type="submit" class="btn-luxury-outline sm">Sign Out</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (typeof error !=='undefined' && error) { %>
+        <div class="luxury-alert error" data-animate>
+          <%= error %>
+        </div>
+        <% } %>
+          <% if (typeof success !=='undefined' && success) { %>
+            <div class="luxury-alert success" data-animate>
+              <%= success %>
+            </div>
+            <% } %>
+
+              <div class="profile-layout-luxury">
+
+                <!-- SIDEBAR NAV -->
+                <aside class="profile-sidebar-luxury" data-animate="stagger-1">
+                  <div class="user-brief">
+                    <div class="luxury-avatar">
+                      <img
+                        src="<%= profileUser.profile_image || defaultProfileImage %>"
+                        alt="Profile"
+                        class="luxury-avatar-img"
+                        onerror="this.onerror=null;this.src='<%= defaultProfileImage %>';"
+                      >
+                    </div>
+                    <div class="user-meta">
+                      <h3>
+                        <%= profileUser.name %>
+                      </h3>
+                      <p>
+                        <%= profileUser.email %>
+                      </p>
+                      <span class="member-tag">Member since <%= new Date(profileUser.created_at).getFullYear() %></span>
+                    </div>
+                  </div>
+
+                  <nav class="luxury-nav-list">
+                    <a href="#personal" class="nav-item active">
+                      <span class="icon">👤</span> Personal Details
+                    </a>
+                    <a href="/orders" class="nav-item">
+                      <span class="icon">📦</span> Order History
+                    </a>
+                    <a href="/addresses" class="nav-item">
+                      <span class="icon">📍</span> Saved Addresses
+                    </a>
+                    <a href="/wishlist" class="nav-item">
+                      <span class="icon">✨</span> Your Wishlist
+                    </a>
+                  </nav>
+                </aside>
+
+                <!-- MAIN CONTENT -->
+                <main class="profile-main-luxury" data-animate="stagger-2">
+
+                  <!-- PERSONAL INFO CARD -->
+                  <section id="personal" class="luxury-section-card">
+                    <div class="card-header">
+                      <h2>Personal Information</h2>
+                      <div class="verify-badge">
+                        <% if (profileUser.is_verified) { %>
+                          <span class="verified">✓ Verified Account</span>
+                          <% } else { %>
+                            <span class="unverified">! Unverified</span>
+                            <% } %>
+                      </div>
+                    </div>
+
+                    <form method="POST" action="/profile/update" class="luxury-form">
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label>Full Name</label>
+                          <input type="text" name="name" value="<%= profileUser.name %>" required>
+                        </div>
+                        <div class="form-group">
+                          <label>Phone Number</label>
+                          <input type="tel" name="phone" value="<%= profileUser.phone || '' %>"
+                            placeholder="Not provided">
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Profile Image URL</label>
+                        <input type="url" name="profile_image" value="<%= profileUser.profile_image || '' %>"
+                          placeholder="https://example.com/profile.jpg">
+                        <p class="input-hint">Paste a public image link. Leave empty to use the default profile image.</p>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" value="<%= profileUser.email %>" readonly class="readonly-input">
+                        <p class="input-hint">Your login email is uniquely assigned and immutable.</p>
+                      </div>
+
+                      <div class="form-footer">
+                        <button type="submit" class="btn-luxury">Save Refined Profiles</button>
+                      </div>
+                    </form>
+                  </section>
+
+                  <!-- RECENT ORDERS PREVIEW -->
+                  <section class="luxury-section-card mt-30">
+                    <div class="card-header">
+                      <h2>Recent Acquisitions</h2>
+                      <a href="/orders" class="text-link">View Gallery →</a>
+                    </div>
+
+                    <div class="orders-preview-list">
+                      <% if (recentOrders.length===0) { %>
+                        <div class="empty-preview">Your collection is empty. Discover our curated products.</div>
+                        <% } else { %>
+                          <% recentOrders.forEach(order=> { %>
+                            <div class="order-preview-item">
+                              <div class="item-id">#<%= order.id %>
+                              </div>
+                              <div class="item-details">
+                                <span class="status-dot <%= order.status.toLowerCase() %>"></span>
+                                <%= order.status %> · <%= order.item_count %> Items
+                              </div>
+                              <div class="item-price">₹<%= Number(order.total_amount).toLocaleString('en-IN') %>
+                              </div>
+                              <a href="/orders/<%= order.id %>" class="btn-luxury-outline xs">Details</a>
+                            </div>
+                            <% }) %>
+                              <% } %>
+                    </div>
+                  </section>
+
+                  <!-- SECURITY SECTION -->
+                  <section class="luxury-section-card mt-30">
+                    <div class="card-header">
+                      <h2>Security</h2>
+                    </div>
+                    <form method="POST" action="/profile/change-password" class="luxury-form">
+                      <div class="form-group">
+                        <label>Current Gateway Password</label>
+                        <input type="password" name="current_password" required placeholder="••••••••">
+                      </div>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label>New Password</label>
+                          <input type="password" name="new_password" required placeholder="••••••••">
+                        </div>
+                        <div class="form-group">
+                          <label>Confirm Password</label>
+                          <input type="password" name="confirm_password" required placeholder="••••••••">
+                        </div>
+                      </div>
+                      <div class="form-footer">
+                        <button type="submit" class="btn-luxury-outline">Update Security Key</button>
+                      </div>
+                    </form>
+                  </section>
+
+                </main>
+              </div>
+    </div>
+  </div>
+
+  <%- include('./partials/footer') %>
+
+    <style>
+      /* Luxury Profile Styles */
+      .luxury-profile-section {
+        padding: 60px 0;
+        background: var(--cream);
+        min-height: 80vh;
+      }
+
+      .profile-header-luxury {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 50px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 30px;
+      }
+
+      .luxury-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 42px;
+        color: var(--rich-black);
+        margin-bottom: 5px;
+      }
+
+      .subtitle {
+        font-size: 15px;
+        color: var(--gray-500);
+        font-weight: 300;
+      }
+
+      .profile-layout-luxury {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 50px;
+        align-items: start;
+      }
+
+      /* Sidebar */
+      .profile-sidebar-luxury {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        padding: 40px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .user-brief {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .luxury-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: var(--emerald);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin: 0 auto 20px;
+        border: 4px solid var(--champagne);
+        box-shadow: var(--shadow-md);
+      }
+
+      .luxury-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        border-radius: 50%;
+      }
+
+      .user-meta h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 22px;
+        color: var(--black);
+        margin-bottom: 5px;
+      }
+
+      .user-meta p {
+        font-size: 13px;
+        color: var(--gray-500);
+        margin-bottom: 12px;
+        word-break: break-all;
+      }
+
+      .member-tag {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--gold);
+        font-weight: 700;
+        background: var(--bone);
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+
+      .luxury-nav-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--gray-700);
+        transition: var(--transition);
+      }
+
+      .nav-item:hover {
+        background: var(--cream);
+        color: var(--emerald);
+        transform: translateX(5px);
+      }
+
+      .nav-item.active {
+        background: var(--bone);
+        color: var(--emerald);
+        font-weight: 600;
+        border-left: 3px solid var(--gold);
+      }
+
+      /* Card Section */
+      .luxury-section-card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        padding: 40px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+        padding-bottom: 15px;
+        border-bottom: 1px dotted var(--border);
+      }
+
+      .card-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 24px;
+        color: var(--rich-black);
+      }
+
+      .verify-badge .verified {
+        color: var(--emerald);
+        font-size: 12px;
+        font-weight: 600;
+        background: #e8f5e9;
+        padding: 4px 12px;
+        border-radius: 20px;
+      }
+
+      .verify-badge .unverified {
+        color: var(--red);
+        font-size: 12px;
+        font-weight: 600;
+        background: #ffebee;
+        padding: 4px 12px;
+        border-radius: 20px;
+      }
+
+      /* Form */
+      .luxury-form .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .luxury-form .form-group {
+        margin-bottom: 24px;
+      }
+
+      .luxury-form label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--gray-500);
+        margin-bottom: 8px;
+      }
+
+      .luxury-form input {
+        width: 100%;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 15px;
+        background: var(--bone);
+        transition: var(--transition);
+      }
+
+      .luxury-form input:focus {
+        border-color: var(--emerald);
+        background: #fff;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(28, 74, 48, 0.05);
+      }
+
+      .readonly-input {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      .input-hint {
+        font-size: 11px;
+        color: var(--gray-500);
+        margin-top: 6px;
+        font-style: italic;
+      }
+
+      .btn-luxury {
+        background: var(--black);
+        color: #fff;
+        padding: 16px 32px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 14px;
+        letter-spacing: 1px;
+        transition: var(--transition);
+      }
+
+      .btn-luxury:hover {
+        background: var(--emerald);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-luxury-outline {
+        background: transparent;
+        border: 1px solid var(--black);
+        color: var(--black);
+        padding: 14px 28px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 13px;
+        transition: var(--transition);
+      }
+
+      .btn-luxury-outline:hover {
+        background: var(--black);
+        color: #fff;
+      }
+
+      .btn-luxury-outline.sm {
+        padding: 10px 20px;
+        font-size: 12px;
+      }
+
+      .btn-luxury-outline.xs {
+        padding: 6px 14px;
+        font-size: 11px;
+        border-color: var(--border);
+      }
+
+      /* Orders list */
+      .order-preview-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .order-preview-item:last-child {
+        border-bottom: none;
+      }
+
+      .item-id {
+        font-weight: 700;
+        color: var(--black);
+        font-size: 14px;
+        width: 80px;
+      }
+
+      .item-details {
+        flex: 1;
+        font-size: 13px;
+        color: var(--gray-500);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .status-dot.delivered {
+        background: var(--emerald);
+      }
+
+      .status-dot.pending {
+        background: var(--gold);
+      }
+
+      .item-price {
+        font-weight: 600;
+        color: var(--black);
+        margin-right: 20px;
+      }
+
+      .mt-30 {
+        margin-top: 30px;
+      }
+
+      .text-link {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gold);
+      }
+
+      .text-link:hover {
+        color: var(--emerald);
+      }
+
+      .luxury-alert {
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        font-size: 14px;
+        font-weight: 500;
+        font-family: 'Playfair Display', serif;
+      }
+
+      .luxury-alert.error {
+        background: #ffebee;
+        color: var(--red);
+        border: 1px solid rgba(192, 57, 43, 0.1);
+      }
+
+      .luxury-alert.success {
+        background: #e8f5e9;
+        color: var(--emerald);
+        border: 1px solid rgba(28, 74, 48, 0.1);
+      }
+
+      @media (max-width: 900px) {
+        .profile-layout-luxury {
+          grid-template-columns: 1fr;
+          gap: 30px;
+        }
+
+        .profile-header-luxury {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 20px;
+        }
+      }
+    </style>

@@ -1,0 +1,204 @@
+﻿<%- include('./partials/navbar') %>
+
+<section class="cart-section">
+  <div class="cart-container">
+    <h1 class="cart-title">
+      My Cart
+      <% if (typeof cartItems !== 'undefined' && cartItems.length > 0) { %>
+        <span class="muted-text">(<%= cartItems.length %> items)</span>
+      <% } %>
+    </h1>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="flash-msg error"><%= error %></div>
+    <% } %>
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="flash-msg success"><%= success %></div>
+    <% } %>
+
+    <% if (!cartItems || cartItems.length === 0) { %>
+      <div class="empty-state">
+        <div class="empty-icon"></div>
+        <h2>Your Cart is Empty</h2>
+        <p>Add some fresh items to get started.</p>
+        <a href="/products" class="btn-primary">Browse Products</a>
+      </div>
+    <% } else { %>
+      <div class="cart-content">
+        <div class="cart-items">
+          <div class="inline-actions cart-toolbar">
+            <form action="/cart/clear" method="POST">
+              <button type="submit" class="btn-secondary btn-sm" onclick="return confirm('Clear your entire cart?')">Clear Cart</button>
+            </form>
+          </div>
+
+          <% cartItems.forEach(item => { %>
+            <div class="cart-item" id="cartItem-<%= item.id %>" data-unit-price="<%= Number(item.price) %>">
+              <div class="cart-item-image">
+                <a href="/products/<%= item.product_id %>">
+                  <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>" onerror="this.src='/images/placeholder.png'">
+                </a>
+              </div>
+
+              <div class="cart-item-details">
+                <h3><a href="/products/<%= item.product_id %>"><%= item.name %></a></h3>
+                <p class="cart-price">
+                  &#8377;<%= Number(item.price).toLocaleString('en-IN') %> each
+                  <% if (item.selected_weight) { %>
+                    <span class="cart-weight-chip"><%= item.selected_weight %></span>
+                  <% } %>
+                </p>
+
+                <div class="qty-form">
+                  <form action="/cart/update/<%= item.id %>" method="POST" class="qty-inline-form" id="qtyForm-<%= item.id %>" onsubmit="return submitQty(<%= item.id %>)">
+                    <button type="button" class="qty-btn" onclick="changeQty(<%= item.id %>, -1, <%= item.stock %>)">-</button>
+                    <input type="number" name="quantity" value="<%= item.quantity %>" min="1" max="<%= item.stock %>" class="qty-input" id="qtyInput-<%= item.id %>">
+                    <button type="button" class="qty-btn" onclick="changeQty(<%= item.id %>, 1, <%= item.stock %>)">+</button>
+                    <button type="submit" class="update-btn">Update</button>
+                  </form>
+                </div>
+
+                <form action="/cart/remove/<%= item.id %>" method="POST" class="inline-form" id="removeForm-<%= item.id %>">
+                  <button type="submit" class="remove-btn">Remove</button>
+                </form>
+              </div>
+
+              <div class="cart-subtotal" id="itemSubtotal-<%= item.id %>">&#8377;<%= Number(item.subtotal).toLocaleString('en-IN') %></div>
+            </div>
+          <% }) %>
+
+          <div class="cart-bottom-actions">
+            <a href="/products" class="btn-secondary">Continue Shopping</a>
+          </div>
+        </div>
+        <div class="cart-summary">
+          <h2>Order Summary</h2>
+          <div class="summary-row"><span>Subtotal</span><span id="cartSubtotal">&#8377;<%= Number(typeof originalSubtotal !== 'undefined' ? originalSubtotal : total).toLocaleString('en-IN') %></span></div>
+          <% if (typeof offerDiscount !== 'undefined' && Number(offerDiscount) > 0) { %>
+            <div class="summary-row" style="color:var(--success, green);"><span>Offer Discount</span><span>-&#8377;<%= Number(offerDiscount).toLocaleString('en-IN') %></span></div>
+          <% } %>
+          <% if (appliedCoupon) { %>
+            <div class="summary-row" style="color:var(--success, green);"><span>Coupon (<%= appliedCoupon.code %>)</span><span>-&#8377;<%= Number(couponDiscount || 0).toLocaleString('en-IN') %></span></div>
+          <% } %>
+          <div class="summary-row"><span>Delivery</span><span id="cartDeliveryFee">FREE</span></div>
+          <div class="summary-total">
+            <span>Total</span>
+            <span id="cartGrandTotal">&#8377;<%= Number(total).toLocaleString('en-IN') %></span>
+          </div>
+
+          <% if (!appliedCoupon) { %>
+            <form action="/cart/coupon/apply" method="POST" style="display:flex;gap:8px;margin:12px 0;">
+              <input type="text" name="coupon_code" placeholder="Enter coupon code" class="qty-input" style="width:100%;text-transform:uppercase;" required maxlength="50">
+              <button type="submit" class="btn-secondary btn-sm">Apply</button>
+            </form>
+          <% } else { %>
+            <form action="/cart/coupon/remove" method="POST" style="margin:12px 0;">
+              <button type="submit" class="btn-secondary btn-sm">Remove Coupon</button>
+            </form>
+          <% } %>
+
+          <% if (couponError) { %>
+            <p id="freeDeliveryHint" class="free-delivery-hint" style="color:#d9534f;"><%= couponError %></p>
+          <% } %>
+
+          <a href="/orders/checkout" class="checkout-btn">Proceed to Checkout</a>
+          <p class="secure-note">Secure and encrypted checkout</p>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<script>
+  async function submitQty(itemId) {
+    const qtyInput = document.getElementById(`qtyInput-${itemId}`);
+    const qtyForm = document.getElementById(`qtyForm-${itemId}`);
+    if (!qtyInput || !qtyForm) return false;
+    const quantity = parseInt(qtyInput.value, 10) || 1;
+    await updateQuantityAjax(itemId, quantity);
+    return false;
+  }
+
+  async function updateQuantityAjax(itemId, quantity) {
+    try {
+      const res = await fetch(`/cart/update/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          Accept: 'application/json'
+        },
+        body: new URLSearchParams({ quantity: String(quantity) })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.message || 'Failed to update quantity');
+        return;
+      }
+      if (data.removed) {
+        window.location.reload();
+        return;
+      }
+
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Could not update cart right now.');
+    }
+  }
+
+  async function removeItemAjax(itemId) {
+    try {
+      const res = await fetch(`/cart/remove/${itemId}`, {
+        method: 'POST',
+        headers: { Accept: 'application/json' }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.message || 'Failed to remove item');
+        return;
+      }
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Could not remove item right now.');
+    }
+  }
+
+  function changeQty(itemId, delta, maxStock) {
+    const qtyInput = document.getElementById(`qtyInput-${itemId}`);
+    const removeForm = document.getElementById(`removeForm-${itemId}`);
+
+    if (!qtyInput || !removeForm) return;
+
+    const current = parseInt(qtyInput.value, 10) || 1;
+    const next = current + delta;
+
+    if (next < 1) {
+      if (confirm('Quantity will become 0. Remove this item from cart?')) {
+        removeItemAjax(itemId);
+      }
+      return;
+    }
+
+    if (next > maxStock) {
+      alert(`Only ${maxStock} unit(s) available for this item.`);
+      return;
+    }
+
+    qtyInput.value = next;
+    updateQuantityAjax(itemId, next);
+  }
+
+  document.querySelectorAll('[id^="removeForm-"]').forEach((form) => {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const itemId = this.id.replace('removeForm-', '');
+      if (confirm('Remove this item from your cart?')) {
+        removeItemAjax(itemId);
+      }
+    });
+  });
+</script>
+
+<%- include('./partials/footer') %>
+

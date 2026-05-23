@@ -1,0 +1,59 @@
+<%- include('../admin/_header') %>
+
+<% if(success) { %><div class="alert alert-ok"><%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<div class="page-hd">
+  <div>
+    <h2>Staff Dashboard</h2>
+    <p>Essential order operations and updates</p>
+  </div>
+  <a href="/staff/orders" class="btn btn-black btn-sm">Open Orders</a>
+</div>
+
+<div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
+  <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val"><%= stats.orders %></div></div>
+  <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val"><%= stats.pending %></div></div>
+  <div class="stat-card"><div class="stat-label">Processing</div><div class="stat-val"><%= stats.processing %></div></div>
+  <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-val"><%= stats.delivered %></div></div>
+</div>
+
+<div class="card">
+  <div class="card-hd">
+    <h3>Recent Orders</h3>
+    <a href="/staff/orders" class="btn btn-ghost btn-sm">View All</a>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#Order</th>
+          <th>Customer</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% recentOrders.forEach(o => { %>
+          <tr>
+            <td style="font-weight:600;color:var(--black)">#<%= o.id %></td>
+            <td>
+              <div style="font-weight:600;color:var(--black)"><%= o.user_name %></div>
+              <div style="font-size:12px;color:var(--gray-500)"><%= o.user_email %></div>
+            </td>
+            <td>&#8377;<%= Number(o.total_amount).toLocaleString('en-IN') %></td>
+            <td><span class="badge bg-blue"><%= o.status %></span></td>
+            <td><%= new Date(o.created_at).toLocaleDateString('en-IN') %></td>
+            <td>
+              <a href="/staff/orders/<%= o.id %>" class="btn btn-ghost btn-sm">View</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../admin/_footer') %>

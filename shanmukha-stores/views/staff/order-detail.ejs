@@ -1,0 +1,101 @@
+<%- include('../admin/_header') %>
+
+<div class="page-hd">
+  <div>
+    <h2>Order #<%= order.id %></h2>
+    <p>Placed on <%= new Date(order.created_at).toLocaleString('en-IN') %></p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <a href="/staff/orders/<%= order.id %>/bill" class="btn btn-black" target="_blank" rel="noopener">Print Bill</a>
+    <a href="/staff/orders" class="btn btn-ghost">Back to Orders</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+  <div class="card">
+    <div class="card-hd"><h3>Order Items</h3></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+        <tbody>
+          <% items.forEach(item => { %>
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <img src="<%= item.image || '/images/default.png' %>" class="prod-img" onerror="this.src='/images/default.png'">
+                  <span style="font-weight:500;color:var(--black)">
+                    <%= item.name %>
+                    <% if (item.selected_weight) { %><span style="font-size:.85em;color:var(--gray-500);font-weight:400;">(<%= item.selected_weight %>)</span><% } %>
+                  </span>
+                </div>
+              </td>
+              <td><%= item.quantity %></td>
+              <td>&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
+              <td style="font-weight:600;">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:18px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+      <div style="text-align:right;">
+        <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Total Amount</div>
+        <div style="font-size:22px;font-weight:700;color:var(--black);">&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <div class="card-hd"><h3>Order Status</h3></div>
+      <div class="card-body">
+        <div style="margin-bottom:14px;"><span class="badge bg-blue" style="font-size:13px;padding:5px 14px;"><%= order.status %></span></div>
+        <form action="/staff/orders/status/<%= order.id %>" method="POST">
+          <div class="form-group">
+            <label>Update Status</label>
+            <select name="status">
+              <option value="Pending" <%= order.status==='Pending' ? 'selected':'' %>>Pending</option>
+              <option value="Processing" <%= order.status==='Processing' ? 'selected':'' %>>Processing</option>
+              <option value="Shipped" <%= order.status==='Shipped' ? 'selected':'' %>>Shipped</option>
+              <option value="Delivered" <%= order.status==='Delivered' ? 'selected':'' %>>Delivered</option>
+              <option value="Cancelled" <%= order.status==='Cancelled' ? 'selected':'' %>>Cancelled</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estimated Delivery Date & Time</label>
+            <input type="datetime-local" name="estimated_delivery_at" value="<%= order.estimated_delivery_at ? new Date(order.estimated_delivery_at).toISOString().slice(0,16) : '' %>">
+          </div>
+          <div class="form-group">
+            <label>Delivery Note</label>
+            <input type="text" name="delivery_note" value="<%= order.delivery_note || '' %>" placeholder="Eg: Arriving today by evening">
+          </div>
+          <button type="submit" class="btn btn-black" style="width:100%;">Update Status</button>
+        </form>
+        <% if (order.cancel_reason) { %>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;">
+            <strong>Cancellation Reason:</strong> <%= order.cancel_reason %>
+          </div>
+        <% } %>
+        <% if (returnRequest) { %>
+          <div style="margin-top:10px;font-size:13px;">
+            <div><strong>Return Status:</strong> <%= returnRequest.status %></div>
+            <div><strong>Return Reason:</strong> <%= returnRequest.reason || '-' %></div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h3>Customer</h3></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div><div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Name</div><div style="font-weight:500;"><%= order.user_name %></div></div>
+          <div><div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Email</div><div><%= order.user_email %></div></div>
+          <% if(order.user_phone) { %><div><div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Phone</div><div><%= order.user_phone %></div></div><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../admin/_footer') %>

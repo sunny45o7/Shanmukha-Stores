@@ -1,0 +1,156 @@
+<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok">✅ <%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err">❌ <%= error %></div><% } %>
+
+<div class="page-hd">
+    <div>
+        <h2>Hero Banners</h2>
+        <p>Manage your store's hero section banners</p>
+    </div>
+    <button class="btn btn-black" onclick="openModal('addBanner')">+ Add Banner</button>
+</div>
+
+<div class="card">
+    <div class="tbl-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Preview</th>
+                    <th>Title</th>
+                    <th>Subtitle</th>
+                    <th>Link</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% banners.forEach(b => { %>
+                <tr>
+                    <td>
+                        <img src="<%= b.image %>" style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);" onerror="this.style.background='var(--gray-100)';this.style.minHeight='54px'">
+                    </td>
+                    <td style="font-weight:500;color:var(--black);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= b.title %></td>
+                    <td style="color:var(--gray-500);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= b.subtitle || '—' %></td>
+                    <td style="color:var(--gray-500);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= b.link || '—' %></td>
+                    <td><span class="badge bg-gray">#<%= b.position %></span></td>
+                    <td>
+                        <% if(b.is_active) { %>
+                            <span class="badge bg-green">Active</span>
+                        <% } else { %>
+                            <span class="badge bg-gray">Hidden</span>
+                        <% } %>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="btn btn-blue btn-sm" onclick="openEditBanner(<%= b.id %>, '<%= b.title.replace(/'/g,`\\'`) %>', '<%= (b.subtitle||'').replace(/'/g,`\\'`) %>', '<%= b.image %>', '<%= b.link||'' %>', <%= b.position %>)">Edit</button>
+                            <form action="/admin/banners/toggle/<%= b.id %>" method="POST">
+                                <button type="submit" class="btn btn-ghost btn-sm"><%= b.is_active ? 'Hide' : 'Show' %></button>
+                            </form>
+                            <form action="/admin/banners/delete/<%= b.id %>" method="POST" onsubmit="return confirm('Delete this banner?')">
+                                <button type="submit" class="btn btn-red btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+                <% if(!banners.length) { %>
+                <tr><td colspan="7">
+                    <div class="empty">
+                        <div class="big">🖼</div>
+                        <h3>No banners yet</h3>
+                        <p>Add banners to display in your store's hero section</p>
+                    </div>
+                </td></tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ADD BANNER MODAL -->
+<div class="modal-bg" id="addBanner">
+    <div class="modal" style="max-width:560px;">
+        <div class="modal-hd">
+            <h3>Add Hero Banner</h3>
+            <button class="modal-close" onclick="closeModal('addBanner')">✕</button>
+        </div>
+        <form action="/admin/banners/add" method="POST">
+            <div class="form-group">
+                <label>Banner Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Fresh from Farm to Table">
+            </div>
+            <div class="form-group">
+                <label>Subtitle</label>
+                <input type="text" name="subtitle" placeholder="e.g. 100% Organic, Delivered Fresh">
+            </div>
+            <div class="form-group">
+                <label>Image URL *</label>
+                <input type="url" name="image" required placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>Link (optional)</label>
+                <input type="text" name="link" placeholder="/products">
+            </div>
+            <div class="form-group">
+                <label>Display Position (0 = first)</label>
+                <input type="number" name="position" value="0" min="0">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('addBanner')">Cancel</button>
+                <button type="submit" class="btn btn-black">Add Banner</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT BANNER MODAL -->
+<div class="modal-bg" id="editBanner">
+    <div class="modal" style="max-width:560px;">
+        <div class="modal-hd">
+            <h3>Edit Banner</h3>
+            <button class="modal-close" onclick="closeModal('editBanner')">✕</button>
+        </div>
+        <form id="editBannerForm" method="POST">
+            <div class="form-group">
+                <label>Banner Title *</label>
+                <input type="text" name="title" id="eBTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Subtitle</label>
+                <input type="text" name="subtitle" id="eBSubtitle">
+            </div>
+            <div class="form-group">
+                <label>Image URL *</label>
+                <input type="url" name="image" id="eBImage" required>
+            </div>
+            <div class="form-group">
+                <label>Link</label>
+                <input type="text" name="link" id="eBLink">
+            </div>
+            <div class="form-group">
+                <label>Display Position</label>
+                <input type="number" name="position" id="eBPos" min="0">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('editBanner')">Cancel</button>
+                <button type="submit" class="btn btn-black">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditBanner(id, title, subtitle, image, link, position) {
+    document.getElementById('editBannerForm').action = '/admin/banners/edit/' + id;
+    document.getElementById('eBTitle').value = title;
+    document.getElementById('eBSubtitle').value = subtitle;
+    document.getElementById('eBImage').value = image;
+    document.getElementById('eBLink').value = link;
+    document.getElementById('eBPos').value = position;
+    openModal('editBanner');
+}
+</script>
+
+<%- include('_footer') %>

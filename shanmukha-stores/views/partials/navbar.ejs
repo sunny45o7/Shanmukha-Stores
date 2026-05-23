@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= settings.seo_title || (typeof title !=='undefined' ? title : ((settings && settings.store_name &&
+            String(settings.store_name).trim().length> 0) ? settings.store_name : 'Shanmukha Stores')) %>
+    </title>
+    <meta name="description"
+        content="<%= settings.seo_description || 'Premium organic groceries & essentials delivered fresh in Vijayawada.' %>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <% const safeStoreName=(settings && settings.store_name && String(settings.store_name).trim().length> 0) ?
+        settings.store_name : 'Shanmukha Stores'; %>
+        <% const defaultProfileImage="data:image/svg+xml;utf8," + encodeURIComponent(`<svg
+            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect width="100" height="100" fill="#f1f3f5" />
+            <circle cx="50" cy="38" r="18" fill="#c7ccd1" />
+            <path d="M20 86c4-16 16-24 30-24s26 8 30 24" fill="#c7ccd1" /></svg>`); %>
+
+            <!-- Announcement Marquee -->
+            <% if (settings.marquee_active==='true' && settings.marquee_text) { %>
+                <div class="marquee-strip">
+                    <div class="marquee-content">
+                        <%= settings.marquee_text %>
+                    </div>
+                </div>
+                <style>
+                    .marquee-strip {
+                        background: var(--black);
+                        color: white;
+                        padding: 10px 0;
+                        overflow: hidden;
+                        position: relative;
+                        z-index: 1001;
+                        font-size: 13px;
+                        font-weight: 500;
+                        height: 38px;
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .marquee-content {
+                        white-space: nowrap;
+                        animation: marquee-scroll <%=settings.marquee_speed || '30' %>s linear infinite;
+                        padding-left: 100%;
+                        display: inline-block;
+                    }
+
+                    @keyframes marquee-scroll {
+                        0% {
+                            transform: translateX(0);
+                        }
+
+                        100% {
+                            transform: translateX(-100%);
+                        }
+                    }
+                </style>
+                <% } %>
+
+                    <!-- Page Loader -->
+                    <div class="page-loader-overlay" id="pageLoaderOverlay">
+                        <div class="loader-card">
+                            <div class="loader-brand">
+                                <%= safeStoreName %>
+                            </div>
+                            <div class="loader-sub">Preparing your store experience...</div>
+                            <div class="loader-spinner"></div>
+                        </div>
+                    </div>
+                    <div class="page-loader" id="pageLoader"></div>
+
+                    <!-- Toast Container -->
+                    <div class="toast-container" id="toastContainer"></div>
+
+                    <!-- Scroll To Top -->
+                    <button class="scroll-top" id="scrollTop"
+                        onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+                    <!-- NAVBAR -->
+                    <header class="main-header" id="mainHeader">
+                        <div class="nav-container">
+
+                            <!-- Logo -->
+                            <div class="logo">
+                                <a href="/"><span>🌿</span>
+                                    <%= safeStoreName %>
+                                </a>
+                            </div>
+
+                            <!-- Desktop Nav -->
+                            <nav class="nav-links" id="desktopNav">
+                                <a href="/"
+                                    class="<%= typeof title !== 'undefined' && title === 'Shanmukha Stores' ? 'active' : '' %>">Home</a>
+                                <a href="/products"
+                                    class="<%= typeof title !== 'undefined' && title && title.includes('Product') ? 'active' : '' %>">Shop</a>
+                                <% if (typeof user !=='undefined' && user) { %>
+                                    <a href="/wishlist">
+                                        ❤️ Wishlist
+                                        <% if (typeof wishlistCount !=='undefined' && wishlistCount> 0) { %>
+                                            <span class="nav-badge">
+                                                <%= wishlistCount %>
+                                            </span>
+                                            <% } %>
+                                    </a>
+                                    <a href="/cart">
+                                        🛍 Cart
+                                        <% if (typeof cartCount !=='undefined' && cartCount> 0) { %>
+                                            <span class="nav-badge">
+                                                <%= cartCount %>
+                                            </span>
+                                            <% } %>
+                                    </a>
+                                    <% } %>
+                            </nav>
+
+                            <!-- Right side -->
+                            <div class="nav-right">
+
+                                <% if (typeof user !=='undefined' && user) { %>
+                                    <!-- Profile Dropdown -->
+                                    <div class="profile-dropdown">
+                                        <button class="profile-btn">
+                                            <span class="profile-avatar">
+                                                <img src="<%= user.profile_image || defaultProfileImage %>"
+                                                    alt="Profile" class="profile-avatar-img"
+                                                    onerror="this.onerror=null;this.src='<%= defaultProfileImage %>';">
+                                            </span>
+                                            <span class="profile-name">
+                                                <%= user.name ? user.name.split(' ')[0] : ' Account' %>
+                                            </span>
+                                            <span class="dropdown-arrow">▾</span>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a href="/profile">👤 My Profile</a>
+                                            <a href="/orders">📦 My Orders</a>
+                                            <a href="/wishlist">❤️ Wishlist</a>
+                                            <a href="/addresses">📍 Addresses</a>
+                                            <% if (user.role==='admin' || user.role==='staff' ) { %>
+                                                <a
+                                                    href="<%= user.role === 'admin' ? '/admin/dashboard' : '/staff/dashboard' %>">
+                                                    <%= user.role==='admin' ? '⚙️ Admin' : '🧰 Staff Panel' %>
+                                                </a>
+                                                <% } %>
+                                                    <form action="/auth/logout" method="POST">
+                                                        <button type="submit" class="logout-btn">🚪 Logout</button>
+                                                    </form>
+                                        </div>
+                                    </div>
+                                    <% } else { %>
+                                        <div class="auth-links">
+                                            <a href="/auth/login" class="login-btn">Login</a>
+                                            <a href="/auth/register" class="signup-btn">Sign Up</a>
+                                        </div>
+                                        <% } %>
+
+                                            <!-- Hamburger -->
+                                            <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+                                                <span></span><span></span><span></span>
+                                            </button>
+                            </div>
+
+                        </div>
+                    </header>
+
+                    <!-- Mobile Nav -->
+                    <div class="mobile-nav" id="mobileNav">
+                        <a href="/">🏠 Home</a>
+                        <a href="/products">🛒 Shop All Products</a>
+                        <% if (typeof user !=='undefined' && user) { %>
+                            <a href="/cart">🛍 Cart <% if (typeof cartCount !=='undefined' && cartCount> 0) { %>(<%=
+                                        cartCount %>)<% } %></a>
+                            <a href="/wishlist">❤️ Wishlist <% if (typeof wishlistCount !=='undefined' && wishlistCount>
+                                    0) {
+                                    %>(<%= wishlistCount %>)<% } %></a>
+                            <a href="/orders">📦 My Orders</a>
+                            <a href="/profile">👤 My Profile</a>
+                            <% if (user.role==='admin' || user.role==='staff' ) { %><a
+                                    href="<%= user.role === 'admin' ? '/admin/dashboard' : '/staff/dashboard' %>">
+                                    <%= user.role==='admin' ? '⚙️ Admin Panel' : '🧰 Staff Panel' %>
+                                </a>
+                                <% } %>
+                                    <form action="/auth/logout" method="POST" class="mobile-logout-form">
+                                        <button type="submit" class="mobile-logout-btn">
+                                            🚪 Logout
+                                        </button>
+                                    </form>
+                                    <% } else { %>
+                                        <a href="/auth/login">Login</a>
+                                        <a href="/auth/register">Sign Up</a>
+                                        <% } %>
+                    </div>
+
+                    <script>
+                        // Navbar scroll effect
+                        const header = document.getElementById('mainHeader');
+                        const scrollTopBtn = document.getElementById('scrollTop');
+                        window.addEventListener('scroll', () => {
+                            header.classList.toggle('scrolled', window.scrollY > 40);
+                            scrollTopBtn.classList.toggle('visible', window.scrollY > 300);
+                        }, { passive: true });
+
+                        // Hamburger
+                        const hamburger = document.getElementById('hamburgerBtn');
+                        const mobileNav = document.getElementById('mobileNav');
+                        hamburger.addEventListener('click', () => {
+                            mobileNav.classList.toggle('open');
+                            const spans = hamburger.querySelectorAll('span');
+                            if (mobileNav.classList.contains('open')) {
+                                spans[0].style.transform = 'rotate(45deg) translate(5px,5px)';
+                                spans[1].style.opacity = '0';
+                                spans[2].style.transform = 'rotate(-45deg) translate(5px,-5px)';
+                            } else {
+                                spans[0].style.transform = '';
+                                spans[1].style.opacity = '';
+                                spans[2].style.transform = '';
+                            }
+                        });
+                        document.addEventListener('click', (e) => {
+                            if (!hamburger.contains(e.target) && !mobileNav.contains(e.target)) {
+                                mobileNav.classList.remove('open');
+                                hamburger.querySelectorAll('span').forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+                            }
+                        });
+
+                        // Page loader
+                        const loader = document.getElementById('pageLoader');
+                        const loaderOverlay = document.getElementById('pageLoaderOverlay');
+                        window.addEventListener('load', () => {
+                            loader.classList.add('done');
+                            if (loaderOverlay) {
+                                loaderOverlay.classList.add('done');
+                                setTimeout(() => loaderOverlay.remove(), 650);
+                            }
+                            setTimeout(() => loader.remove(), 650);
+                        });
+                        document.querySelectorAll('a[href]').forEach(link => {
+                            const href = link.getAttribute('href');
+                            const targetBlank = (link.getAttribute('target') || '').toLowerCase() === '_blank';
+                            if (!targetBlank && !href.startsWith('#') && !href.startsWith('javascript') && !href.startsWith('mailto')) {
+                                link.addEventListener('click', () => {
+                                    loader.style.transform = 'scaleX(0)';
+                                    loader.style.transition = 'none';
+                                    loader.style.opacity = '1';
+                                    if (loaderOverlay) loaderOverlay.classList.remove('done');
+                                    requestAnimationFrame(() => {
+                                        loader.style.transition = 'transform 0.5s ease';
+                                        loader.style.transform = 'scaleX(0.85)';
+                                    });
+                                });
+                            }
+                        });
+
+                        // Toast helper
+                        window.showToast = (msg, type = 'success', duration = 2500) => {
+                            const c = document.getElementById('toastContainer');
+                            const t = document.createElement('div');
+                            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+                            t.className = `toast ${type}`;
+                            t.innerHTML = `<span class="toast-icon">${icons[type] || '💬'}</span><p>${msg}</p>`;
+                            c.appendChild(t);
+                            setTimeout(() => {
+                                t.classList.add('removing');
+                                setTimeout(() => t.remove(), 350);
+                            }, duration);
+                        };
+
+                    </script>

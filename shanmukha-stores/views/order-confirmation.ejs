@@ -1,0 +1,426 @@
+<%- include('./partials/navbar') %>
+
+<section class="order-confirmation-section">
+  <div class="order-confirmation-head">
+    <div class="checkout-steps confirmation-steps">
+      <span class="step done">1. Cart</span>
+      <span class="step-divider">&gt;</span>
+      <span class="step done">2. Checkout</span>
+      <span class="step-divider">&gt;</span>
+      <span class="step active">3. Confirmation</span>
+    </div>
+    <div class="steps-track confirmation-track" aria-hidden="true"><span style="width:100%"></span></div>
+    <div class="order-confirmation-icon">OK</div>
+    <p class="order-confirmation-kicker">Order Confirmed</p>
+    <h1>Thank you for your purchase</h1>
+    <p class="order-confirmation-subtitle">
+      Your order has been placed successfully and our team will start processing it right away.
+    </p>
+  </div>
+
+  <div class="order-confirmation-grid">
+    <article class="order-confirmation-card">
+      <h2>Order Summary</h2>
+      <div class="order-confirmation-row"><span>Order ID</span><strong>#<%= order.id %></strong></div>
+      <div class="order-confirmation-row">
+        <span>Status</span>
+        <strong><span class="status-pill pending"><%= order.status %></span></strong>
+      </div>
+      <div class="order-confirmation-row">
+        <span>Items Subtotal</span>
+        <strong>&#8377;<%= Number(typeof itemsSubtotal !== 'undefined' ? itemsSubtotal : order.total_amount).toLocaleString('en-IN') %></strong>
+      </div>
+      <% if (typeof couponDiscount !== 'undefined' && Number(couponDiscount) > 0) { %>
+        <div class="order-confirmation-row">
+          <span>Coupon Discount<% if (couponCode) { %> (<%= couponCode %>)<% } %></span>
+          <strong style="color:#198754;">-&#8377;<%= Number(couponDiscount).toLocaleString('en-IN') %></strong>
+        </div>
+      <% } %>
+      <div class="order-confirmation-row">
+        <span>Total Amount</span>
+        <strong>&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></strong>
+      </div>
+      <div class="order-confirmation-row">
+        <span>Payment Method</span>
+        <strong class="text-uppercase"><%= order.payment_method || 'COD' %></strong>
+      </div>
+      <% if (order.addr_name) { %>
+        <div class="order-confirmation-row">
+          <span>Delivery To</span>
+          <strong><%= order.addr_name %>, <%= order.city %></strong>
+        </div>
+      <% } else if (order.address_snapshot) { %>
+        <div class="order-confirmation-row">
+          <span>Delivery To</span>
+          <strong><%= order.address_snapshot %></strong>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="order-confirmation-card">
+      <h2>What Happens Next</h2>
+      <ul class="order-confirmation-steps">
+        <li>We verify your items and prepare your package.</li>
+        <li>You will be notified when your order status changes.</li>
+        <li>Delivery partner will contact you before arrival.</li>
+      </ul>
+      <div class="order-confirmation-mail-note">
+        A confirmation email has been sent to your registered email address.
+      </div>
+    </article>
+  </div>
+
+  <% if (typeof items !== 'undefined' && items.length > 0) { %>
+    <article class="order-confirmation-card order-confirmation-items">
+      <h2>Items Ordered</h2>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th class="text-center">Qty</th>
+            <th class="text-right">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach(item => { %>
+            <tr>
+              <td>
+                <span class="order-confirmation-item-name"><%= item.name %></span>
+                <% if (item.selected_weight) { %>
+                  <span class="order-confirmation-item-meta">(<%= item.selected_weight %>)</span>
+                <% } %>
+              </td>
+              <td class="text-center"><%= item.quantity %></td>
+              <td class="text-right">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </article>
+  <% } %>
+
+  <% if (typeof suggestedProducts !== 'undefined' && suggestedProducts.length > 0) { %>
+    <article class="order-confirmation-card order-confirmation-suggestions" style="margin-top: 32px; padding: 24px;">
+      <h2 style="margin-bottom: 20px; font-size: 22px; text-align: center;">Recommended For You</h2>
+      <div class="products-grid">
+        <% suggestedProducts.forEach((p) => { %>
+          <div class="product-card">
+            <div class="product-image">
+              <a href="/products/<%= p.id %>">
+                <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>" onerror="this.src='/images/placeholder.png'">
+              </a>
+
+              <% if (p.stock === 0) { %>
+                <span class="product-badge sale">Sold Out</span>
+              <% } %>
+
+              <form action="/wishlist/toggle/<%= p.id %>" method="POST" class="wishlist-toggle-form wishlist-form-inline" data-product-id="<%= p.id %>">
+                <button type="submit" class="wishlist-btn" title="Wishlist">♡</button>
+              </form>
+            </div>
+
+            <div class="product-info">
+              <p class="product-category-tag"><%= p.category_name || 'Grocery' %></p>
+              <h3 class="product-name"><a href="/products/<%= p.id %>"><%= p.name %></a></h3>
+              
+              <div class="product-rating small">
+                <span class="stars" style="--rating: <%= p.average_rating || 0 %>;"></span>
+                <% if (p.review_count > 0) { %>
+                  <span class="rating-text">(<%= p.review_count %>)</span>
+                <% } %>
+              </div>
+
+              <p class="product-price">&#8377;<%= Number(p.effective_price || p.price).toLocaleString('en-IN') %>
+                <% if (p.price_type === 'kg') { %>
+                  <span class="price-unit-note">per kg</span>
+                <% } else { %>
+                  <span class="price-unit-note">per unit</span>
+                <% } %>
+              </p>
+              <% if (p.stock === 0) { %>
+                <div class="out-of-stock-label">Out of Stock</div>
+              <% } else { %>
+                <form action="/cart/add/<%= p.id %>" method="POST">
+                  <input type="hidden" name="quantity" value="1">
+                  <button type="submit" class="add-cart-btn">Add to Cart</button>
+                </form>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </article>
+  <% } %>
+
+  <div class="order-confirmation-actions">
+    <a href="/addresses?from=checkout" class="btn-secondary">Add New Address</a>
+    <a href="/orders" class="btn-primary">View My Orders</a>
+    <a href="/products" class="btn-secondary">Continue Shopping</a>
+  </div>
+</section>
+
+<div class="order-success-popup" id="orderSuccessPopup" aria-hidden="true">
+  <div class="order-success-card">
+    <button type="button" class="order-success-close" id="orderSuccessClose" aria-label="Close">x</button>
+    <div class="order-success-badge">Success</div>
+    <h3>Congratulations!</h3>
+    <p>Your order #<%= order.id %> has been placed successfully.</p>
+    <div class="order-success-meta">We have started processing your order. Arriving soon.</div>
+  </div>
+</div>
+
+<style>
+  .order-confirmation-section {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 36px 20px 54px;
+  }
+
+  .order-confirmation-head {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .confirmation-steps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .confirmation-steps .step {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b6b6b;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #fff;
+  }
+
+  .confirmation-steps .step.done {
+    color: #fff;
+    background: linear-gradient(90deg, #1c4a30 0%, #2d5a3f 100%);
+    border-color: transparent;
+  }
+
+  .confirmation-steps .step.active {
+    color: #1c4a30;
+    border-color: rgba(28, 74, 48, 0.34);
+    background: rgba(28, 74, 48, 0.1);
+    box-shadow: 0 0 0 5px rgba(28, 74, 48, 0.08);
+    animation: stepPulse 1.5s ease infinite;
+  }
+
+  .step-divider {
+    color: #999;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .confirmation-track {
+    width: min(420px, 100%);
+    margin: 0 auto 16px;
+    height: 8px;
+    border-radius: 999px;
+    background: #ececec;
+    overflow: hidden;
+  }
+
+  .confirmation-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1c4a30 0%, #d4af37 100%);
+    position: relative;
+  }
+
+  .confirmation-track span::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+    animation: completeSweep 1.8s ease-in-out infinite;
+  }
+
+  .order-confirmation-head .order-confirmation-icon {
+    width: 82px;
+    height: 82px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: #fff;
+    background: linear-gradient(135deg, #1c4a30 0%, #3f7a59 100%);
+    box-shadow: 0 18px 34px rgba(28, 74, 48, 0.26);
+  }
+
+  .order-confirmation-grid {
+    gap: 16px;
+  }
+
+  .order-confirmation-card {
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(180deg, #fff 0%, #fcfcfc 100%);
+    box-shadow: 0 12px 28px rgba(10, 10, 10, 0.06);
+  }
+
+  .order-confirmation-row {
+    align-items: center;
+  }
+
+  .order-confirmation-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .order-confirmation-actions .btn-primary,
+  .order-confirmation-actions .btn-secondary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .order-success-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: rgba(7, 7, 7, 0.38);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .28s ease, visibility .28s ease;
+  }
+
+  .order-success-popup.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .order-success-card {
+    width: min(420px, 100%);
+    border-radius: 18px;
+    padding: 24px 20px 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%);
+    border: 1px solid rgba(28, 74, 48, 0.2);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    position: relative;
+    transform: translateY(20px) scale(.96);
+    transition: transform .32s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .order-success-popup.show .order-success-card {
+    transform: translateY(0) scale(1);
+  }
+
+  .order-success-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .order-success-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 11px;
+    border-radius: 999px;
+    background: rgba(28, 74, 48, 0.1);
+    color: #1c4a30;
+    border: 1px solid rgba(28, 74, 48, 0.2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .order-success-card h3 {
+    margin-bottom: 8px;
+    font-size: 24px;
+  }
+
+  .order-success-card p {
+    margin: 0 0 10px;
+    color: #3a3a3a;
+  }
+
+  .order-success-meta {
+    font-size: 13px;
+    color: #5f5f5f;
+  }
+
+  @keyframes stepPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(28, 74, 48, 0.12); }
+    50% { box-shadow: 0 0 0 7px rgba(28, 74, 48, 0.02); }
+  }
+
+  @keyframes completeSweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  @media (max-width: 768px) {
+    .order-confirmation-actions .btn-primary,
+    .order-confirmation-actions .btn-secondary {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const popup = document.getElementById('orderSuccessPopup');
+    const closeBtn = document.getElementById('orderSuccessClose');
+    if (!popup) return;
+
+    const orderId = '<%= order.id %>';
+    const key = `orderCongratsShown_${orderId}`;
+    const shown = sessionStorage.getItem(key);
+
+    if (!shown) {
+      setTimeout(() => {
+        popup.classList.add('show');
+        popup.setAttribute('aria-hidden', 'false');
+      }, 250);
+      sessionStorage.setItem(key, '1');
+    }
+
+    function closePopup() {
+      popup.classList.remove('show');
+      popup.setAttribute('aria-hidden', 'true');
+    }
+
+    closeBtn?.addEventListener('click', closePopup);
+    popup.addEventListener('click', (e) => {
+      if (e.target === popup) closePopup();
+    });
+
+    setTimeout(closePopup, 5200);
+  })();
+</script>
+
+<%- include('./partials/footer') %>
+

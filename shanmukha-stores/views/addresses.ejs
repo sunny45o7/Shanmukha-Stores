@@ -1,0 +1,481 @@
+﻿<%- include('./partials/navbar') %>
+
+<div class="container py-40 addresses-shell">
+  <div class="page-header address-page-head">
+    <div>
+      <h1>My Addresses</h1>
+      <p class="text-muted">Manage your delivery addresses.</p>
+    </div>
+    <div class="address-count"><%= addresses ? addresses.length : 0 %> saved</div>
+    <div class="address-head-actions">
+      <% if (from === 'checkout') { %>
+        <a href="/orders/checkout" class="btn btn-outline">Back to Checkout</a>
+      <% } %>
+      <button type="button" class="btn btn-primary" onclick="openAddressModal()">Add New Address</button>
+    </div>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  <% if (success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (!addresses || addresses.length === 0) { %>
+    <div class="card address-empty">
+      <h3>No addresses added yet</h3>
+      <p class="text-muted">Add your first delivery address to continue checkout faster.</p>
+      <button type="button" class="btn btn-primary" onclick="openAddressModal()">Add Address</button>
+    </div>
+  <% } else { %>
+    <div class="address-grid">
+      <% addresses.forEach(function(addr) { %>
+        <article class="card address-card <%= addr.is_default ? 'is-default' : '' %>">
+          <div class="address-card-top">
+            <h3><%= addr.full_name %></h3>
+            <% if (addr.is_default) { %>
+              <span class="badge badge-success">Default</span>
+            <% } %>
+          </div>
+
+          <p class="address-line"><%= addr.address_line %></p>
+          <p class="text-muted address-loc"><%= addr.city %>, <%= addr.state %> - <%= addr.pincode %></p>
+          <% if (addr.phone) { %>
+            <p class="text-muted">Phone: <%= addr.phone %></p>
+          <% } %>
+
+          <div class="address-actions">
+            <button type="button" class="btn btn-outline btn-sm" onclick='editAddress(<%- JSON.stringify(addr) %>)'>Edit</button>
+
+            <% if (!addr.is_default) { %>
+              <form method="POST" action="/addresses/set-default/<%= addr.id %>">
+                <button type="submit" class="btn btn-ghost btn-sm">Set Default</button>
+              </form>
+            <% } %>
+
+            <form method="POST" action="/addresses/delete/<%= addr.id %>" onsubmit="return confirm('Delete this address?')">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<div class="modal-bg" id="addressModal">
+  <div class="modal-card">
+    <div class="modal-hd">
+      <h3 id="addressModalTitle">Add Address</h3>
+      <button type="button" class="modal-close" onclick="closeAddressModal()">x</button>
+    </div>
+
+    <form id="addressForm" method="POST" action="/addresses/add<%= from === 'checkout' ? '?from=checkout' : '' %>" class="modal-form">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" name="full_name" required>
+        </div>
+        <div class="form-group">
+          <label>Phone *</label>
+          <input type="tel" name="phone" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Address *</label>
+        <textarea name="address_line" rows="3" required></textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:-4px;">
+        <button type="button" class="btn btn-outline btn-sm" id="detectLocationBtn" onclick="detectLocation()">Auto Detect Location</button>
+        <small id="locationHint" class="text-muted" style="margin-left:8px;"></small>
+      </div>
+
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" name="city" required>
+        </div>
+        <div class="form-group">
+          <label>State *</label>
+          <input type="text" name="state" required>
+        </div>
+        <div class="form-group">
+          <label>Pincode *</label>
+          <input type="text" name="pincode" required>
+        </div>
+      </div>
+
+      <label class="checkbox-line">
+        <input type="checkbox" name="is_default" id="is_default">
+        <span>Set as default address</span>
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeAddressModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="addressSaveBtn">Save Address</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .addresses-shell {
+    max-width: 1200px;
+  }
+
+  .address-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding: 8px 0 6px;
+  }
+
+  .address-count {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    color: var(--emerald, #1c4a30);
+    background: rgba(28, 74, 48, 0.09);
+    border: 1px solid rgba(28, 74, 48, 0.18);
+    border-radius: 999px;
+    padding: 6px 12px;
+  }
+
+  .address-head-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .address-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .address-card {
+    padding: 18px;
+    border: 1px solid var(--border, #e6e6e6);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+    box-shadow: 0 8px 22px rgba(12, 18, 14, 0.05);
+    display: flex;
+    flex-direction: column;
+    min-height: 205px;
+    animation: cardFadeUp .45s ease both;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+
+  .address-card:hover {
+    box-shadow: 0 14px 34px rgba(12, 18, 14, 0.1);
+    border-color: rgba(28, 74, 48, 0.22);
+  }
+
+  .address-card.is-default {
+    border-color: var(--emerald, #1c4a30);
+    box-shadow: 0 10px 30px rgba(28, 74, 48, 0.12);
+  }
+
+  .address-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .address-card-top h3 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .address-line {
+    margin: 0 0 6px 0;
+    color: var(--black);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .address-loc {
+    margin-bottom: 4px;
+  }
+
+  .address-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 12px;
+  }
+
+  .address-actions form {
+    margin: 0;
+  }
+
+  .address-empty {
+    text-align: center;
+    padding: 46px 24px;
+    border-radius: 16px;
+    border: 1px dashed rgba(28, 74, 48, 0.28);
+    background: linear-gradient(180deg, #fff 0%, #f8fbf9 100%);
+  }
+
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(5px);
+  }
+
+  .modal-card {
+    width: min(760px, 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+    animation: modalPop .22s ease-out;
+  }
+
+  .modal-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 18px;
+    border-bottom: 1px solid #ececec;
+    background: linear-gradient(90deg, #ffffff 0%, #f6faf8 100%);
+  }
+
+  .modal-hd h3 {
+    margin: 0;
+  }
+
+  .modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #fff;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    background: #f4f4f4;
+  }
+
+  .modal-form {
+    padding: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+    border-radius: 0 0 16px 16px;
+  }
+
+  .form-row-2,
+  .form-row-3 {
+    display: grid;
+    gap: 12px;
+  }
+
+  .form-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-row-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .modal-form .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #525252;
+    margin-bottom: 6px;
+  }
+
+  .modal-form .form-group input,
+  .modal-form .form-group textarea {
+    width: 100%;
+    border: 1px solid #d7d7d7;
+    border-radius: 10px;
+    padding: 11px 12px;
+    font: inherit;
+    background: #fff;
+  }
+
+  .modal-form .form-group input:focus,
+  .modal-form .form-group textarea:focus {
+    outline: none;
+    border-color: rgba(28, 74, 48, 0.45);
+    box-shadow: 0 0 0 3px rgba(28, 74, 48, 0.12);
+  }
+
+  .checkbox-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+  }
+
+  .modal-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .btn-danger {
+    border: 1px solid #d9534f;
+    color: #d9534f;
+    background: #fff;
+  }
+
+  .btn-danger:hover {
+    background: #d9534f;
+    color: #fff;
+  }
+
+  @media (max-width: 768px) {
+    .address-page-head {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .address-count {
+      width: fit-content;
+    }
+
+    .address-head-actions {
+      justify-content: flex-start;
+    }
+
+    .form-row-2,
+    .form-row-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .modal-actions {
+      justify-content: stretch;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+  }
+
+  @keyframes cardFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes modalPop {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+</style>
+
+<script>
+  function openAddressModal() {
+    const modal = document.getElementById('addressModal');
+    const form = document.getElementById('addressForm');
+    const title = document.getElementById('addressModalTitle');
+    const saveBtn = document.getElementById('addressSaveBtn');
+
+    title.textContent = 'Add Address';
+    saveBtn.textContent = 'Save Address';
+    form.action = '/addresses/add<%= from === 'checkout' ? '?from=checkout' : '' %>';
+    form.reset();
+
+    modal.style.display = 'flex';
+  }
+
+  function closeAddressModal() {
+    document.getElementById('addressModal').style.display = 'none';
+  }
+
+  function editAddress(addr) {
+    const modal = document.getElementById('addressModal');
+    const form = document.getElementById('addressForm');
+    const title = document.getElementById('addressModalTitle');
+    const saveBtn = document.getElementById('addressSaveBtn');
+
+    title.textContent = 'Edit Address';
+    saveBtn.textContent = 'Update Address';
+    form.action = '/addresses/edit/' + addr.id;
+
+    form.full_name.value = addr.full_name || '';
+    form.phone.value = addr.phone || '';
+    form.address_line.value = addr.address_line || '';
+    form.city.value = addr.city || '';
+    form.state.value = addr.state || '';
+    form.pincode.value = addr.pincode || '';
+    form.is_default.checked = !!addr.is_default;
+
+    modal.style.display = 'flex';
+  }
+
+  async function detectLocation() {
+    const btn = document.getElementById('detectLocationBtn');
+    const hint = document.getElementById('locationHint');
+    if (!navigator.geolocation) {
+      if (hint) hint.textContent = 'Geolocation not supported';
+      return;
+    }
+    btn.disabled = true;
+    if (hint) hint.textContent = 'Detecting...';
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+        if (!res.ok) throw new Error('Location lookup failed');
+        const data = await res.json();
+        const a = data.address || {};
+        const form = document.getElementById('addressForm');
+        const road = [a.house_number, a.road, a.suburb, a.neighbourhood].filter(Boolean).join(', ');
+        form.address_line.value = road || form.address_line.value;
+        form.city.value = a.city || a.town || a.village || a.county || form.city.value;
+        form.state.value = a.state || form.state.value;
+        form.pincode.value = a.postcode || form.pincode.value;
+        if (hint) hint.textContent = 'Location filled. Verify before saving.';
+      } catch (err) {
+        if (hint) hint.textContent = 'Could not fetch address details';
+      } finally {
+        btn.disabled = false;
+      }
+    }, () => {
+      btn.disabled = false;
+      if (hint) hint.textContent = 'Permission denied or unavailable';
+    }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+  }
+
+  window.addEventListener('click', function (e) {
+    const modal = document.getElementById('addressModal');
+    if (e.target === modal) closeAddressModal();
+  });
+</script>
+
+<%- include('./partials/footer') %>

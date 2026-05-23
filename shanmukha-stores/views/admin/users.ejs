@@ -1,0 +1,318 @@
+<%- include('_header') %>
+
+    <% if(success) { %>
+        <div class="alert alert-ok">✅ <%= success %>
+        </div>
+        <% } %>
+            <% if(error) { %>
+                <div class="alert alert-err">❌ <%= error %>
+                </div>
+                <% } %>
+
+                    <div class="page-hd">
+                        <div>
+                            <h2>User Management</h2>
+                            <p>
+                                <%= users.length %> registered customers
+                            </p>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button onclick="document.getElementById('addStaffModal').style.display='flex'"
+                                class="btn-icon-gold" title="Add Staff Member">
+                                <span>+</span>
+                            </button>
+                            <form method="GET" action="/admin/users" class="search-row">
+                                <% if (selectedRole && selectedRole !== 'all') { %>
+                                    <input type="hidden" name="role" value="<%= selectedRole %>">
+                                <% } %>
+                                <div class="search-box">
+                                    <span>🔍</span>
+                                    <input type="text" name="search" value="<%= search %>"
+                                        placeholder="Search users...">
+                                </div>
+                                <button type="submit" class="btn btn-black btn-sm">Search</button>
+                                <% if(search) { %><a href="/admin/users" class="btn btn-ghost btn-sm">Clear</a>
+                                    <% } %>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin:0 0 18px 0; flex-wrap:wrap;">
+                        <a href="/admin/users?role=all&search=<%= encodeURIComponent(search || '') %>" class="btn btn-ghost btn-sm <%= (!selectedRole || selectedRole === 'all') ? 'active' : '' %>">All</a>
+                        <a href="/admin/users?role=user&search=<%= encodeURIComponent(search || '') %>" class="btn btn-ghost btn-sm <%= selectedRole === 'user' ? 'active' : '' %>">Users</a>
+                        <a href="/admin/users?role=staff&search=<%= encodeURIComponent(search || '') %>" class="btn btn-ghost btn-sm <%= selectedRole === 'staff' ? 'active' : '' %>">Staff</a>
+                    </div>
+
+                    <div class="card">
+                        <div class="tbl-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Phone</th>
+                                        <th>Orders</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Joined</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% users.forEach(u=> { %>
+                                        <tr>
+                                            <td>
+                                                <div style="display:flex;align-items:center;gap:10px;">
+                                                    <div
+                                                        style="width:34px;height:34px;border-radius:50%;background:var(--black);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">
+                                                        <%= u.name.charAt(0).toUpperCase() %>
+                                                    </div>
+                                                    <div>
+                                                        <div style="font-weight:500;color:var(--black)">
+                                                            <%= u.name %>
+                                                        </div>
+                                                        <div style="font-size:12px;color:var(--gray-500)">
+                                                            <%= u.email %>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style="color:var(--gray-500)">
+                                                <%= u.phone || '—' %>
+                                            </td>
+                                            <td><span class="badge bg-blue">
+                                                    <%= u.order_count %>
+                                                </span></td>
+                                            <td>
+                                                <% if (u.role === 'admin') { %>
+                                                    <span class="badge bg-gray">Admin Protected</span>
+                                                <% } else { %>
+                                                    <form action="/admin/users/role/<%= u.id %>" method="POST"
+                                                        style="margin:0;">
+                                                        <select name="role" onchange="this.form.submit()"
+                                                            style="padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; text-transform: uppercase; background: var(--gray-100); cursor: pointer; color: var(--gray-700); outline:none;">
+                                                            <option value="user" <%=u.role==='user' ? 'selected' : '' %>
+                                                                >User</option>
+                                                            <option value="staff" <%=u.role==='staff' ? 'selected' : '' %>
+                                                                >Staff</option>
+                                                        </select>
+                                                    </form>
+                                                <% } %>
+                                            </td>
+                                            <td>
+                                                <% if(u.is_blocked) { %>
+                                                    <span class="badge bg-red">Blocked</span>
+                                                    <% } else { %>
+                                                        <span class="badge bg-green">Active</span>
+                                                        <% } %>
+                                            </td>
+                                            <td style="color:var(--gray-500)">
+                                                <%= new Date(u.created_at).toLocaleDateString('en-IN') %>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;gap:10px; align-items:center; flex-wrap:wrap;">
+                                                    <% if(u.role ==='staff' || u.role ==='user') { %>
+                                                        <form action="/admin/users/toggle/<%= u.id %>" method="POST"
+                                                            style="margin:0;">
+                                                            <button type="submit" class="btn-table-action"
+                                                                title="<%= u.is_blocked ? 'Unblock' : 'Block' %>">
+                                                                <%= u.is_blocked ? '🔓' : '🚫' %>
+                                                            </button>
+                                                        </form>
+                                                        <form action="/admin/users/delete/<%= u.id %>" method="POST"
+                                                            style="margin:0;"
+                                                            onsubmit="return confirm('Permanently remove this account from the registry?')">
+                                                            <button type="submit" class="btn-table-action-delete"
+                                                                title="Delete Account">
+                                                                🗑️
+                                                            </button>
+                                                        </form>
+                                                        <% } else { %>
+                                                            <span
+                                                                style="font-size:11px;font-weight:700;color:var(--gray-300);text-transform:uppercase;letter-spacing:1px;">Admin Protected</span>
+                                                            <% } %>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                                            <% if(!users.length) { %>
+                                                <tr>
+                                                    <td colspan="7">
+                                                        <div class="empty">
+                                                            <div class="big">👥</div>
+                                                            <h3>No users found</h3>
+                                                            <p>Users will appear here after they register</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ELEGANT MODALS & STYLES -->
+                    <div id="addStaffModal" class="modal-overlay" style="display:none;">
+                        <div class="modal-card-minimal">
+                            <div class="modal-hd-minimal">
+                                <h3>Onboard Staff</h3>
+                                <button
+                                    onclick="document.getElementById('addStaffModal').style.display='none'">&times;</button>
+                            </div>
+                            <form action="/admin/staff/add" method="POST" class="modal-form-minimal">
+                                <input type="text" name="name" required placeholder="Full Name">
+                                <input type="email" name="email" required placeholder="Official Email">
+                                <input type="password" name="password" required placeholder="Temporary Password">
+                                <button type="submit" class="btn-black-minimal">Confirm Registration</button>
+                            </form>
+                        </div>
+                    </div>
+
+
+                    <style>
+                        .btn-icon-gold {
+                            width: 36px;
+                            height: 36px;
+                            border-radius: 50%;
+                            background: var(--gold);
+                            color: white;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 20px;
+                            border: none;
+                            cursor: pointer;
+                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+                        }
+
+                        .btn-icon-gold:hover {
+                            background: var(--black);
+                            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+                        }
+
+                        .btn-table-action {
+                            background: none;
+                            border: none;
+                            font-size: 16px;
+                            cursor: pointer;
+                            opacity: 0.5;
+                            transition: all 0.2s;
+                        }
+
+                        .btn-table-action:hover {
+                            opacity: 1;
+                        }
+
+                        .btn-table-action-delete {
+                            background: none;
+                            border: none;
+                            font-size: 15px;
+                            cursor: pointer;
+                            opacity: 0.3;
+                            transition: all 0.2s;
+                        }
+
+                        .btn-table-action-delete:hover {
+                            opacity: 1;
+                            color: var(--red);
+                        }
+
+                        .modal-overlay {
+                            position: fixed;
+                            inset: 0;
+                            background: rgba(0, 0, 0, 0.3);
+                            backdrop-filter: blur(10px);
+                            z-index: 1000;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                        .modal-card-minimal {
+                            background: white;
+                            width: 360px;
+                            padding: 35px;
+                            border-radius: 24px;
+                            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.1);
+                            animation: modalFadeUp 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                        }
+
+                        .modal-hd-minimal {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 25px;
+                        }
+
+                        .modal-hd-minimal h3 {
+                            font-family: 'Playfair Display', serif;
+                            font-size: 22px;
+                            margin: 0;
+                            color: var(--black);
+                        }
+
+                        .modal-hd-minimal button {
+                            background: none;
+                            border: none;
+                            font-size: 28px;
+                            color: var(--gray-300);
+                            cursor: pointer;
+                            transition: color 0.2s;
+                        }
+
+                        .modal-hd-minimal button:hover {
+                            color: var(--black);
+                        }
+
+                        .modal-form-minimal input {
+                            width: 100%;
+                            padding: 14px 18px;
+                            margin-bottom: 14px;
+                            border: 1px solid var(--gray-100);
+                            border-radius: 12px;
+                            font-size: 14px;
+                            background: var(--gray-50);
+                            outline: none;
+                            transition: all 0.2s;
+                        }
+
+                        .modal-form-minimal input:focus {
+                            border-color: var(--gold);
+                            background: white;
+                            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.05);
+                        }
+
+                        .btn-black-minimal {
+                            width: 100%;
+                            padding: 16px;
+                            background: var(--black);
+                            color: white;
+                            border-radius: 12px;
+                            font-weight: 700;
+                            font-size: 13px;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            margin-top: 10px;
+                            transition: all 0.3s;
+                        }
+
+                        .btn-black-minimal:hover {
+                            background: var(--emerald);
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 20px rgba(28, 74, 48, 0.2);
+                        }
+
+                        @keyframes modalFadeUp {
+                            from {
+                                opacity: 0;
+                                transform: translateY(30px) scale(0.95);
+                            }
+
+                            to {
+                                opacity: 1;
+                                transform: translateY(0) scale(1);
+                            }
+                        }
+                    </style>
+
+                    <%- include('_footer') %>

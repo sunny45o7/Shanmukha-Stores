@@ -1,0 +1,68 @@
+<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok"><%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<div class="page-hd">
+    <div>
+        <h2>Cancelled Orders</h2>
+        <p><%= orders.length %> cancelled order<%= orders.length !== 1 ? 's' : '' %> found</p>
+    </div>
+    <form method="GET" action="/admin/orders/cancelled" class="search-row">
+        <div class="search-box">
+            <span>Search</span>
+            <input type="text" name="search" value="<%= search %>" placeholder="Search by customer or order ID...">
+        </div>
+        <button type="submit" class="btn btn-black btn-sm">Search</button>
+        <% if(search) { %>
+            <a href="/admin/orders/cancelled" class="btn btn-ghost btn-sm">Clear</a>
+        <% } %>
+    </form>
+</div>
+
+<div class="card">
+    <div class="tbl-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#Order</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Cancelled On</th>
+                    <th>Reason</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% orders.forEach(o => { %>
+                <tr>
+                    <td style="font-weight:600;color:var(--black)">#<%= o.id %></td>
+                    <td>
+                        <div><span style="font-weight:500;color:var(--black)"><%= o.user_name %></span></div>
+                        <div style="font-size:12px;color:var(--gray-500)"><%= o.user_email %></div>
+                    </td>
+                    <td style="font-weight:600;">&#8377;<%= Number(o.total_amount).toLocaleString('en-IN') %></td>
+                    <td style="color:var(--gray-500);"><%= new Date(o.created_at).toLocaleString('en-IN') %></td>
+                    <td><%= o.cancel_reason || '-' %></td>
+                    <td>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <a href="/admin/orders/<%= o.id %>" class="btn btn-ghost btn-sm">View</a>
+                            <a href="/admin/orders/<%= o.id %>/bill" class="btn btn-black btn-sm" target="_blank" rel="noopener">Print Bill</a>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+                <% if(!orders.length) { %>
+                <tr><td colspan="6">
+                    <div class="empty">
+                        <h3>No cancelled orders found</h3>
+                        <p>Cancelled orders with user reasons will appear here.</p>
+                    </div>
+                </td></tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<%- include('_footer') %>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #111;
+      background: #eef1ef;
+    }
+
+    .topbar {
+      max-width: 860px;
+      margin: 16px auto 8px;
+      padding: 0 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid #111;
+      background: #111;
+      color: #fff;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: #111;
+    }
+
+    .sheet {
+      width: 794px;
+      min-height: 1123px;
+      margin: 0 auto 18px;
+      background: #fff;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14);
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .meta {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .card {
+      border: 1px solid #e8e8e8;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #ececec;
+      padding: 8px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #575757;
+      background: #fafafa;
+    }
+
+    .num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .summary {
+      width: 300px;
+      margin-left: auto;
+      margin-top: 12px;
+      border: 1px solid #ececec;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 12px;
+    }
+
+    .sum-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px dashed #ececec;
+    }
+
+    .sum-row:last-child {
+      border-bottom: none;
+    }
+
+    .sum-row.total {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 11px;
+      color: #777;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .topbar {
+        display: none;
+      }
+
+      .sheet {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        box-shadow: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/admin/orders/<%= order.id %>" class="btn btn-secondary">Back to Order</a>
+    <button class="btn" onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+  <main class="sheet">
+    <h1>Shanmukha Stores - Order Bill</h1>
+    <p class="muted">Generated from Admin Panel</p>
+
+    <div class="meta">
+      <div><strong>Order ID:</strong> #<%= order.id %></div>
+      <div><strong>Date:</strong> <%= new Date(order.created_at).toLocaleString('en-IN') %></div>
+      <div><strong>Customer:</strong> <%= order.user_name %></div>
+      <div><strong>Payment:</strong> <%= order.payment_method || 'COD' %></div>
+      <div><strong>Status:</strong> <%= order.status %></div>
+      <div><strong>Phone:</strong> <%= order.user_phone || '-' %></div>
+    </div>
+
+    <div class="card">
+      <strong>Delivery Address</strong><br>
+      <%= order.address || '-' %>
+      <% if (order.city) { %>, <%= order.city %><% } %>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px">No</th>
+          <th>Item</th>
+          <th style="width:70px">Qty</th>
+          <th class="num" style="width:120px">Unit</th>
+          <th class="num" style="width:130px">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach((item, idx) => { %>
+          <tr>
+            <td><%= idx + 1 %></td>
+            <td>
+              <%= item.name %>
+              <% if (item.selected_weight) { %>
+                <span class="muted">(<%= item.selected_weight %>)</span>
+              <% } %>
+            </td>
+            <td><%= item.quantity %></td>
+            <td class="num">&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
+            <td class="num">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="summary">
+      <div class="sum-row">
+        <span>Subtotal</span>
+        <strong>&#8377;<%= Number(subtotal).toLocaleString('en-IN') %></strong>
+      </div>
+      <% if (discount > 0) { %>
+        <div class="sum-row">
+          <span>Discount</span>
+          <strong>-&#8377;<%= Number(discount).toLocaleString('en-IN') %></strong>
+        </div>
+      <% } %>
+      <div class="sum-row">
+        <span>Delivery</span>
+        <strong>Free</strong>
+      </div>
+      <div class="sum-row total">
+        <span>Total</span>
+        <strong>&#8377;<%= Number(total).toLocaleString('en-IN') %></strong>
+      </div>
+    </div>
+
+    <p class="footer-note">System-generated bill for order processing and packaging.</p>
+  </main>
+</body>
+</html>

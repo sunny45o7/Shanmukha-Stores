@@ -1,0 +1,245 @@
+<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok">✅ <%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err">❌ <%= error %></div><% } %>
+
+<div class="page-hd">
+  <div>
+    <h2>Offers & Coupons</h2>
+    <p>Manage product-level offers and platform coupons</p>
+  </div>
+  <form method="GET" action="/admin/offers" class="search-row">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" name="search" value="<%= search %>" placeholder="Search product...">
+    </div>
+    <button type="submit" class="btn btn-black btn-sm">Search</button>
+    <% if(search) { %><a href="/admin/offers" class="btn btn-ghost btn-sm">Clear</a><% } %>
+  </form>
+</div>
+
+<div style="display:grid;gap:24px;">
+  <div class="card">
+    <div class="card-hd">
+      <h3>Product Offers</h3>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Base Price</th>
+            <th>Offer %</th>
+            <th>Active</th>
+            <th>Final Price</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!products || products.length === 0) { %>
+            <tr><td colspan="6" class="text-muted">No products found.</td></tr>
+          <% } %>
+
+          <% products.forEach(function(p) { 
+            const offerPct = Number(p.offer_percent || 0);
+            const active = !!p.offer_active && offerPct > 0;
+            const finalPrice = active ? (Number(p.price) * (1 - offerPct / 100)) : Number(p.price);
+          %>
+            <tr>
+              <td>
+                <strong><%= p.name %></strong>
+                <div class="tiny"><%= p.category_name || 'Uncategorised' %> · Stock: <%= p.stock %></div>
+              </td>
+              <td>₹<%= Number(p.price).toLocaleString('en-IN') %></td>
+              <td>
+                <form action="/admin/offers/product/<%= p.id %>" method="POST" style="display:flex;align-items:center;gap:8px;">
+                  <input type="number" name="offer_percent" value="<%= offerPct %>" min="0" max="100" step="0.01" class="inp" style="width:86px;">
+              </td>
+              <td>
+                  <label style="display:flex;align-items:center;gap:6px;">
+                    <input type="checkbox" name="offer_active" <%= p.offer_active ? 'checked' : '' %>>
+                    <span><%= p.offer_active ? 'Yes' : 'No' %></span>
+                  </label>
+              </td>
+              <td>
+                <% if (active) { %>
+                  <span style="text-decoration:line-through;color:#888;">₹<%= Number(p.price).toLocaleString('en-IN') %></span>
+                  <strong style="margin-left:6px;color:var(--emerald);">₹<%= finalPrice.toLocaleString('en-IN') %></strong>
+                <% } else { %>
+                  ₹<%= Number(p.price).toLocaleString('en-IN') %>
+                <% } %>
+              </td>
+              <td>
+                  <button type="submit" class="btn btn-black btn-sm">Save</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+    <div class="card">
+      <div class="card-hd"><h3>Create Coupon</h3></div>
+      <form action="/admin/coupons/add" method="POST" style="display:grid;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <input class="inp" type="text" name="code" placeholder="Code (e.g. SAVE20)" required>
+          <select class="inp" name="discount_type" required>
+            <option value="percent">Percent</option>
+            <option value="fixed">Fixed Amount</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <input class="inp" type="number" name="discount_value" placeholder="Discount value" min="0.01" step="0.01" required>
+          <input class="inp" type="number" name="min_order_amount" placeholder="Min amount (optional)" min="0" step="0.01">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <details class="coupon-picker">
+            <summary>Select Categories</summary>
+            <div class="coupon-picker-list">
+              <% if (categories && categories.length) { %>
+                <% categories.forEach(function(cat) { %>
+                  <label class="coupon-picker-item">
+                    <input type="checkbox" name="applicable_category_ids[]" value="<%= cat.id %>">
+                    <span><%= cat.name %></span>
+                  </label>
+                <% }) %>
+              <% } else { %>
+                <div class="tiny">No categories available.</div>
+              <% } %>
+            </div>
+          </details>
+          <details class="coupon-picker">
+            <summary>Select Products</summary>
+            <div class="coupon-picker-list">
+              <% if (products && products.length) { %>
+                <% products.forEach(function(prod) { %>
+                  <label class="coupon-picker-item">
+                    <input type="checkbox" name="applicable_product_ids[]" value="<%= prod.id %>">
+                    <span><%= prod.name %></span>
+                  </label>
+                <% }) %>
+              <% } else { %>
+                <div class="tiny">No products available.</div>
+              <% } %>
+            </div>
+          </details>
+        </div>
+        <div class="tiny">Optional restriction: open selectors and tick checkboxes for categories/products.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <input class="inp" type="datetime-local" name="starts_at">
+          <input class="inp" type="datetime-local" name="ends_at">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <input class="inp" type="number" name="usage_limit" placeholder="Usage limit (optional)" min="1">
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" name="is_active" checked>
+            Active
+          </label>
+        </div>
+        <textarea class="inp" name="description" rows="2" placeholder="Description (optional)"></textarea>
+        <button type="submit" class="btn btn-black">Create Coupon</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h3>Coupons</h3></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Discount</th>
+              <th>Scope</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!coupons || coupons.length === 0) { %>
+              <tr><td colspan="5" class="text-muted">No coupons created yet.</td></tr>
+            <% } %>
+            <% coupons.forEach(function(c) { %>
+              <% const restrictedProducts = Array.isArray(c.applicable_product_ids) ? c.applicable_product_ids.length : 0; %>
+              <% const restrictedCategories = Array.isArray(c.applicable_category_ids) ? c.applicable_category_ids.length : 0; %>
+              <tr>
+                <td>
+                  <strong><%= c.code %></strong>
+                  <div class="tiny">Used: <%= c.used_count || 0 %><%= c.usage_limit ? (' / ' + c.usage_limit) : '' %></div>
+                </td>
+                <td>
+                  <%= c.discount_type === 'percent' ? (Number(c.discount_value) + '%') : ('₹' + Number(c.discount_value).toLocaleString('en-IN')) %>
+                </td>
+                <td>
+                  <% if (!restrictedProducts && !restrictedCategories) { %>
+                    <span class="tiny">All products</span>
+                  <% } else { %>
+                    <span class="tiny">
+                      <% if (restrictedCategories) { %>Categories: <%= restrictedCategories %><% } %>
+                      <% if (restrictedCategories && restrictedProducts) { %> | <% } %>
+                      <% if (restrictedProducts) { %>Products: <%= restrictedProducts %><% } %>
+                    </span>
+                  <% } %>
+                </td>
+                <td><span class="badge <%= c.is_active ? 'bg-green' : 'bg-red' %>"><%= c.is_active ? 'Active' : 'Inactive' %></span></td>
+                <td style="display:flex;gap:8px;">
+                  <form action="/admin/coupons/toggle/<%= c.id %>" method="POST">
+                    <button type="submit" class="btn btn-ghost btn-sm"><%= c.is_active ? 'Disable' : 'Enable' %></button>
+                  </form>
+                  <form action="/admin/coupons/delete/<%= c.id %>" method="POST" onsubmit="return confirm('Delete this coupon?')">
+                    <button type="submit" class="btn btn-red btn-sm">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+
+<style>
+  .coupon-picker {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .coupon-picker > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    border-bottom: 1px solid transparent;
+  }
+  .coupon-picker[open] > summary {
+    border-bottom-color: var(--line-soft);
+    background: #f9fafc;
+  }
+  .coupon-picker-list {
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+  }
+  .coupon-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #334155;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+  }
+  .coupon-picker-item:hover {
+    background: #f8fafc;
+    border-color: var(--line-soft);
+  }
+</style>
+
+<%- include('_footer') %>

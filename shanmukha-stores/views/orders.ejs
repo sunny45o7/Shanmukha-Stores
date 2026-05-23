@@ -1,0 +1,278 @@
+﻿<%- include('./partials/navbar') %>
+
+  <section class="orders-section">
+    <div class="section-page-header">
+      <div class="section-label">Account</div>
+      <h1>My Orders</h1>
+      <p>Track and manage all your purchases</p>
+    </div>
+
+    <% if (typeof error !=='undefined' && error) { %>
+      <div class="flash-msg error">
+        <%= error %>
+      </div>
+      <% } %>
+        <% if (typeof success !=='undefined' && success) { %>
+          <div class="flash-msg success">
+            <%= success %>
+          </div>
+          <% } %>
+
+            <% if (!orders || orders.length===0) { %>
+              <div class="empty-state">
+                <div class="empty-icon">Orders</div>
+                <h2>No Orders Yet</h2>
+                <p>You have not placed any orders yet.</p>
+                <a href="/products" class="btn-primary">Browse Products</a>
+              </div>
+              <% } else { %>
+                <% orders.forEach(order=> {
+                  const statusClass = (order.status || '').toLowerCase();
+                  %>
+                  <div class="order-card">
+                    <div class="order-top">
+                      <div class="order-meta">
+                        <div class="order-id">Order #<%= order.id %>
+                        </div>
+                        <div class="order-date">Placed on <%= new Date(order.created_at).toLocaleDateString('en-IN', {
+                            day: 'numeric' , month: 'long' , year: 'numeric' }) %>
+                        </div>
+                      </div>
+                      <span class="status-pill <%= statusClass %>">
+                        <%= order.status %>
+                      </span>
+                    </div>
+
+                    <div class="order-info-row"><span>Items</span><strong>
+                        <%= order.item_count %> item(s)
+                      </strong></div>
+                    <div class="order-info-row"><span>Total</span><strong>&#8377;<%=
+                          Number(order.total_amount).toLocaleString('en-IN') %></strong></div>
+                    <div class="order-info-row">
+                      <span>Payment</span>
+                      <strong class="text-uppercase">
+                        <%= order.payment_method || 'COD' %>
+                      </strong>
+                    </div>
+                    <% if (order.deliveryLabel) { %>
+                      <div class="order-info-row"><span>Delivery</span><strong>
+                          <%= order.deliveryLabel %>
+                        </strong></div>
+                      <% } %>
+                        <% if (order.estimated_delivery_at) { %>
+                          <div class="order-info-row">
+                            <span>ETA</span>
+                            <strong>
+                              <%= new Date(order.estimated_delivery_at).toLocaleString('en-IN') %>
+                            </strong>
+                          </div>
+                          <% } %>
+                            <% if (order.delivery_note) { %>
+                              <div class="order-info-row"><span>Update</span><strong>
+                                  <%= order.delivery_note %>
+                                </strong></div>
+                              <% } %>
+                                <% if (order.return_status) { %>
+                                  <div class="order-info-row"><span>Return</span><strong>
+                                      <%= order.return_status %>
+                                    </strong></div>
+                                  <% } %>
+
+                                    <div class="order-actions">
+                                      <a href="/orders/<%= order.id %>" class="btn-primary btn-sm">View Details</a>
+                                      <% if (order.canCancel) { %>
+                                        <button type="button" class="btn-danger btn-sm js-open-cancel"
+                                          data-order-id="<%= order.id %>">Cancel Order</button>
+                                        <% } %>
+                                          <% if (order.canReturn && !order.return_status) { %>
+                                            <button type="button" class="btn-secondary btn-sm js-open-return"
+                                              data-order-id="<%= order.id %>">Request Return</button>
+                                            <% } %>
+                                    </div>
+                  </div>
+                  <% }) %>
+
+                    <% if (typeof totalPages !=='undefined' && totalPages> 1) { %>
+                      <div class="pagination">
+                        <% for (let i=1; i <=totalPages; i++) { %>
+                          <a href="/orders?page=<%= i %>" class="page-btn <%= i === currentPage ? 'active' : '' %>">
+                            <%= i %>
+                          </a>
+                          <% } %>
+                      </div>
+                      <% } %>
+                        <% } %>
+  </section>
+
+  <div class="reason-modal-backdrop" id="cancelReasonModal" aria-hidden="true">
+    <div class="reason-modal-card">
+      <div class="reason-modal-head">
+        <h3>Cancel Order</h3>
+        <button type="button" class="reason-close" data-close-modal="cancelReasonModal">x</button>
+      </div>
+      <form method="POST" id="cancelReasonForm">
+        <label for="cancelReasonInput">Reason *</label>
+        <textarea id="cancelReasonInput" name="reason" rows="4" minlength="3" required
+          placeholder="Please tell us why you want to cancel this order"></textarea>
+        <div class="reason-actions">
+          <button type="button" class="btn-secondary btn-sm" data-close-modal="cancelReasonModal">Close</button>
+          <button type="submit" class="btn-danger btn-sm">Confirm Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="reason-modal-backdrop" id="returnReasonModal" aria-hidden="true">
+    <div class="reason-modal-card">
+      <div class="reason-modal-head">
+        <h3>Return Request</h3>
+        <button type="button" class="reason-close" data-close-modal="returnReasonModal">x</button>
+      </div>
+      <form method="POST" id="returnReasonForm">
+        <label for="returnReasonInput">Reason *</label>
+        <textarea id="returnReasonInput" name="reason" rows="4" minlength="3" required
+          placeholder="Please tell us why you want to return this order"></textarea>
+        <div class="reason-actions">
+          <button type="button" class="btn-secondary btn-sm" data-close-modal="returnReasonModal">Close</button>
+          <button type="submit" class="btn-primary btn-sm">Confirm Return</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .reason-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 8, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1600;
+      padding: 14px;
+    }
+
+    .reason-modal-backdrop.open {
+      display: flex;
+    }
+
+    .reason-modal-card {
+      width: min(520px, 100%);
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 42px rgba(0, 0, 0, 0.2);
+      padding: 16px;
+    }
+
+    .reason-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .reason-modal-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .reason-close {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .reason-modal-card label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .reason-modal-card textarea {
+      width: 100%;
+      border: 1px solid #d7d7d7;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .reason-modal-card textarea:focus {
+      border-color: #1c4a30;
+      box-shadow: 0 0 0 3px rgba(28, 74, 48, 0.12);
+    }
+
+    .reason-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+  </style>
+
+  <script>
+    (function () {
+      const cancelModal = document.getElementById('cancelReasonModal');
+      const returnModal = document.getElementById('returnReasonModal');
+      const cancelForm = document.getElementById('cancelReasonForm');
+      const returnForm = document.getElementById('returnReasonForm');
+      const cancelInput = document.getElementById('cancelReasonInput');
+      const returnInput = document.getElementById('returnReasonInput');
+
+      function openModal(modal) {
+        if (!modal) return;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModal(modal) {
+        if (!modal) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      document.querySelectorAll('.js-open-cancel').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-order-id');
+          cancelForm.action = '/orders/cancel/' + id;
+          cancelInput.value = '';
+          openModal(cancelModal);
+        });
+      });
+
+      document.querySelectorAll('.js-open-return').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-order-id');
+          returnForm.action = '/orders/return/' + id;
+          returnInput.value = '';
+          openModal(returnModal);
+        });
+      });
+
+      document.querySelectorAll('[data-close-modal]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-close-modal');
+          closeModal(document.getElementById(id));
+        });
+      });
+
+      [cancelModal, returnModal].forEach((modal) => {
+        modal?.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal(modal);
+        });
+      });
+    })();
+  </script>
+
+  <%- include('./partials/footer') %>

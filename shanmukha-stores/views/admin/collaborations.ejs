@@ -1,0 +1,82 @@
+<%- include('_header') %>
+
+<div class="page-hd">
+  <div>
+    <h2>Collaborations</h2>
+    <p>Manage partner logos shown on homepage.</p>
+  </div>
+</div>
+
+<% if (success) { %>
+  <div class="alert alert-ok"><%= success %></div>
+<% } %>
+<% if (error) { %>
+  <div class="alert alert-err"><%= error %></div>
+<% } %>
+
+<div class="card" style="padding:18px; margin-bottom:16px;">
+  <form action="/admin/collaborations/add" method="POST" style="display:grid;grid-template-columns:2fr 3fr 2fr 1fr auto auto;gap:10px;align-items:end;">
+    <div>
+      <label style="font-size:12px;">Name</label>
+      <input name="name" required placeholder="Partner name">
+    </div>
+    <div>
+      <label style="font-size:12px;">Logo URL</label>
+      <input name="logo_url" type="url" required placeholder="https://...">
+    </div>
+    <div>
+      <label style="font-size:12px;">Website (optional)</label>
+      <input name="website" type="url" placeholder="https://...">
+    </div>
+    <div>
+      <label style="font-size:12px;">Order</label>
+      <input name="sort_order" type="number" value="0">
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:0 0 9px 0;">
+      <input type="checkbox" name="is_active" checked>
+      <span style="font-size:12px;">Active</span>
+    </label>
+    <button class="btn btn-black btn-sm" type="submit">Add</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Logo</th>
+          <th>Name</th>
+          <th>Website</th>
+          <th>Order</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!logos || logos.length === 0) { %>
+          <tr><td colspan="6" style="text-align:center;">No logos added.</td></tr>
+        <% } %>
+        <% (logos || []).forEach(function(l) { %>
+          <tr>
+            <td><img src="<%= l.logo_url %>" alt="<%= l.name %>" style="height:36px;max-width:120px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:4px;background:#fff;"></td>
+            <td><%= l.name %></td>
+            <td><%= l.website || '-' %></td>
+            <td><%= l.sort_order %></td>
+            <td><span class="badge <%= l.is_active ? 'bg-green' : 'bg-gray' %>"><%= l.is_active ? 'Active' : 'Hidden' %></span></td>
+            <td style="display:flex;gap:8px;">
+              <form action="/admin/collaborations/toggle/<%= l.id %>" method="POST">
+                <button class="btn btn-ghost btn-sm" type="submit"><%= l.is_active ? 'Disable' : 'Enable' %></button>
+              </form>
+              <form action="/admin/collaborations/delete/<%= l.id %>" method="POST" onsubmit="return confirm('Delete this logo?')">
+                <button class="btn btn-red btn-sm" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('_footer') %>

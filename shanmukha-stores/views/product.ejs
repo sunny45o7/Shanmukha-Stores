@@ -1,0 +1,1867 @@
+<%- include('./partials/navbar') %>
+
+    <div class="product-detail-section page-enter">
+        <div class="product-detail-container" data-animate>
+
+            <!-- GALLERY COLUMN -->
+            <div class="product-gallery">
+                <div class="thumbnail-list">
+                    <% if (images && images.length> 0) { %>
+                        <% images.forEach((img, idx)=> { %>
+                            <div class="thumb-item <%= idx === 0 ? 'active' : '' %>"
+                                onclick="switchMainImage('<%= img.image_url %>', this)">
+                                <img src="<%= img.image_url %>" alt="Product Image <%= idx + 1 %>"
+                                    onerror="this.src='/images/placeholder.png'">
+                            </div>
+                            <% }) %>
+                                <% } else { %>
+                                    <div class="thumb-item active">
+                                        <img src="<%= product.image || '/images/placeholder.png' %>" alt="Product Image"
+                                            onerror="this.src='/images/placeholder.png'">
+                                    </div>
+                                    <% } %>
+                </div>
+
+                <div class="main-image-wrap">
+                    <div class="inner-zoom" id="imageZoom">
+                        <img src="<%= images && images.length > 0 ? images[0].image_url : (product.image || '/images/placeholder.png') %>"
+                            alt="<%= product.name %>" id="mainProductImg" onerror="this.src='/images/placeholder.png'">
+                    </div>
+                </div>
+            </div>
+
+            <!-- INFO COLUMN -->
+            <div class="product-info-col">
+                <nav class="breadcrumb">
+                    <a href="/">Home</a> /
+                    <a href="/products">Shop</a> /
+                    <a href="/products?category=<%= product.category_id %>">
+                        <%= product.category_name || 'Grocery' %>
+                    </a>
+                </nav>
+
+                <h1 class="product-title luxury-text">
+                    <%= product.name %>
+                </h1>
+                <% const avgRating=Number(product.average_rating || 0); const reviewCount=Number(product.review_count ||
+                    0); %>
+                    <% if (reviewCount> 0) { %>
+                        <a href="#reviews-section" class="product-rating-badge">
+                            <span class="badge-stars">
+                                <% for(let i=1;i<=5;i++) { %>
+                                    <% if(i <=Math.floor(avgRating)) { %><svg class="star-icon filled"
+                                            viewBox="0 0 20 20">
+                                            <polygon
+                                                points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                        </svg>
+                                        <% } else if(i - avgRating < 1 && avgRating % 1 !==0) { %><svg
+                                                class="star-icon half" viewBox="0 0 20 20">
+                                                <defs>
+                                                    <linearGradient id="hg">
+                                                        <stop offset="50%" stop-color="#f5a623" />
+                                                        <stop offset="50%" stop-color="#ddd" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <polygon
+                                                    points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7"
+                                                    fill="url(#hg)" />
+                                            </svg>
+                                            <% } else { %><svg class="star-icon empty" viewBox="0 0 20 20">
+                                                    <polygon
+                                                        points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                                </svg>
+                                                <% } %>
+                                                    <% } %>
+                            </span>
+                            <span class="badge-avg">
+                                <%= avgRating.toFixed(1) %>
+                            </span>
+                            <span class="badge-count">(<%= reviewCount %> review<%= reviewCount !==1 ? 's' : '' %>
+                                        )</span>
+                        </a>
+                        <% } %>
+                            <div class="price-rating-row">
+                                <% const priceMeta=pricing || { basePrice: Number(product.price), offerPercent: 0,
+                                    offerPrice: Number(product.price), couponDiscountAmount: 0, finalPrice:
+                                    Number(product.price) }; %>
+                                    <div class="premium-price" id="priceBlock">
+                                        <% if (priceMeta.finalPrice < priceMeta.basePrice) { %>
+                                            <div class="old-price">₹<span id="oldPriceValue">
+                                                    <%= Number(priceMeta.basePrice).toLocaleString('en-IN') %>
+                                                </span></div>
+                                            <div class="new-price">₹<span id="finalPriceValue">
+                                                    <%= Number(priceMeta.finalPrice).toLocaleString('en-IN') %>
+                                                </span></div>
+                                            <% } else { %>
+                                                <div class="new-price">₹<span id="finalPriceValue">
+                                                        <%= Number(priceMeta.finalPrice).toLocaleString('en-IN') %>
+                                                    </span></div>
+                                                <% } %>
+                                                    <div class="price-tags">
+                                                        <% if (Number(priceMeta.offerPercent || 0)> 0 &&
+                                                            product.offer_active) { %>
+                                                            <span class="price-chip offer-chip">
+                                                                <%= Number(priceMeta.offerPercent).toFixed(2).replace(/\.00$/, ''
+                                                                    ) %>% OFF
+                                                            </span>
+                                                            <% } %>
+                                                                <% if (appliedCoupon) { %>
+                                                                    <span class="price-chip coupon-chip">
+                                                                        <%= appliedCoupon.code %> APPLIED
+                                                                    </span>
+                                                                    <% } %>
+                                                    </div>
+                                                    <div class="price-unit-note">
+                                                        <%= product.price_type === 'kg' ? 'per kg' : 'per unit' %>
+                                                    </div>
+                                    </div>
+                                    <div class="stock-status">
+                                        <% if (product.stock> 0) { %>
+                                            <span class="status-in">● In Stock</span>
+                                            <% } else { %>
+                                                <span class="status-out">○ Out of Stock</span>
+                                                <% } %>
+                                    </div>
+                            </div>
+
+                            <div class="product-short-desc">
+                                <%= product.description ? product.description.substring(0, 160) + '...'
+                                    : 'Premium quality product selected for our discerning customers.' %>
+                            </div>
+
+                            <div class="coupon-box">
+                                <div class="coupon-head">
+                                    <strong>Available Coupons</strong>
+                                    <span>Applicable coupons for this product</span>
+                                </div>
+                                <% if (availableCoupons && availableCoupons.length> 0) { %>
+                                    <div class="coupon-options">
+                                        <% availableCoupons.forEach(function(c) { %>
+                                            <a href="/products/<%= product.id %>?coupon=<%= encodeURIComponent(c.code) %>"
+                                                class="coupon-option <%= appliedCoupon && appliedCoupon.code === c.code ? 'active' : '' %>">
+                                                <span class="coupon-option-code">
+                                                    <%= c.code %>
+                                                </span>
+                                                <span class="coupon-option-meta">
+                                                    <%= c.summary %>
+                                                </span>
+                                            </a>
+                                            <% }) %>
+                                    </div>
+                                    <% } else { %>
+                                        <div class="coupon-msg">No coupons available for this product right now.</div>
+                                        <% } %>
+                                            <% if (couponError) { %>
+                                                <div class="coupon-msg error">
+                                                    <%= couponError %>
+                                                </div>
+                                                <% } else if (appliedCoupon) { %>
+                                                    <div class="coupon-msg success">
+                                                        <%= appliedCoupon.code %> applied. Extra discount added.
+                                                            <a href="/products/<%= product.id %>"
+                                                                class="coupon-clear-link">Remove</a>
+                                                    </div>
+                                                    <% } %>
+                            </div>
+
+                            <div class="product-meta-specs">
+                                <% if (product.brand) { %>
+                                    <div class="spec-row">
+                                        <span class="spec-key">Brand</span>
+                                        <span class="spec-val">
+                                            <%= product.brand %>
+                                        </span>
+                                    </div>
+                                    <% } %>
+                                        <div class="spec-row">
+                                            <span class="spec-key">Category</span>
+                                            <span class="spec-val">
+                                                <%= product.category_name %>
+                                            </span>
+                                        </div>
+                                        <div class="spec-row">
+                                            <span class="spec-key">Availability</span>
+                                            <span class="spec-val">
+                                                <% if (product.price_type==='kg' ) { %>
+                                                    <% if (product.stock < 30) { %>
+                                                        <span style="color: var(--emerald); font-weight: 700;">In Stock</span>
+                                                        <% } else { %>
+                                                            <span style="color: var(--emerald); font-weight: 500;">In
+                                                                Stock</span>
+                                                            <% } %>
+                                                                <% } else { %>
+                                                                    <% if (product.stock < 20) { %>
+                                                                        <span
+                                                                            style="color: var(--emerald); font-weight: 700;">Few
+                                                                            left</span>
+                                                                        <% } else { %>
+                                                                            <span
+                                                                                style="color: var(--emerald); font-weight: 500;">In
+                                                                                Stock</span>
+                                                                            <% } %>
+                                                                                <% } %>
+                                            </span>
+                                        </div>
+                            </div>
+
+                            <% if (product.stock> 0) { %>
+                                <form action="/cart/add/<%= product.id %>" method="POST" class="purchase-form">
+                                    <% if (appliedCoupon) { %>
+                                        <input type="hidden" name="coupon_code" value="<%= appliedCoupon.code %>">
+                                        <% } %>
+                                            <% if (product.price_type==='kg' && weightOptions && weightOptions.length>
+                                                0) { %>
+                                                <div class="weight-selector">
+                                                    <label class="weight-selector-label">Select Weight:</label>
+                                                    <div class="weight-options-row">
+                                                        <% weightOptions.forEach(w=> { %>
+                                                            <label class="weight-option">
+                                                                <input type="radio" name="selected_weight"
+                                                                    value="<%= w %>" <%=w===defaultWeight ? 'checked'
+                                                                    : '' %> style="display: none;"
+                                                                onchange="updatePriceDisplay('<%= w %>')">
+                                                                    <span class="weight-btn">
+                                                                        <%= w %>
+                                                                    </span>
+                                                            </label>
+                                                            <% }) %>
+                                                    </div>
+                                                </div>
+                                                <% } %>
+
+                                                    <div class="purchase-actions">
+                                                        <div class="luxury-qty">
+                                                            <button type="button" class="qty-control"
+                                                                onclick="adjustQty(-1)">−</button>
+                                                            <input type="number" name="quantity" id="qtyInput" value="1"
+                                                                min="1" max="<%= product.stock %>"
+                                                                oninput="updatePriceDisplay()">
+                                                            <button type="button" class="qty-control"
+                                                                onclick="adjustQty(1)">+</button>
+                                                        </div>
+
+                                                        <button type="submit" class="btn-luxury-atc">
+                                                            <span>Add to Collection</span>
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                                stroke="currentColor" stroke-width="2">
+                                                                <path
+                                                                    d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                                                                <path d="M3 6h18" />
+                                                                <path d="M16 10a4 4 0 0 1-8 0" />
+                                                            </svg>
+                                                        </button>
+
+                                                        <button type="button"
+                                                            class="btn-wishlist-circle <%= typeof inWishlist !== 'undefined' && inWishlist ? 'active' : '' %>"
+                                                            onclick="toggleWishlist('<%= product.id %>', this)">
+                                                            <svg width="20" height="20" viewBox="0 0 24 24"
+                                                                fill="<%= typeof inWishlist !== 'undefined' && inWishlist ? 'currentColor' : 'none' %>"
+                                                                stroke="currentColor" stroke-width="2">
+                                                                <path
+                                                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                </form>
+                                <% } else { %>
+                                    <div class="out-of-stock-hero">
+                                        <p>Currently unavailable for order. Add to wishlist to get notified when back in
+                                            stock.</p>
+                                        <button type="button" class="btn-luxury-outline"
+                                            onclick="toggleWishlist('<%= product.id %>', this)">
+                                            Add to Wishlist
+                                        </button>
+                                    </div>
+                                    <% } %>
+
+                                        <div class="trust-icons-luxury">
+                                            <div class="trust-item"><span class="icon">✨</span> Premium Quality</div>
+                                            <div class="trust-item"><span class="icon">🌍</span> Sustainable Sourcing
+                                            </div>
+                                        </div>
+            </div>
+        </div>
+
+        <!-- DESCRIPTION TAB -->
+        <div class="product-tabs" data-animate>
+            <div class="tab-header">
+                <button class="tab-btn active" onclick="switchTab('desc')">Details</button>
+                <button class="tab-btn" onclick="switchTab('specs')">Specifications</button>
+                <button class="tab-btn" onclick="switchTab('shipping')">Shipping</button>
+            </div>
+            <div class="tab-content">
+                <div id="tab-desc" class="tab-panel active">
+                    <p>
+                        <%= product.description %>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- REVIEWS & RATINGS SECTION -->
+        <!-- ============================================================ -->
+        <div class="reviews-section" id="reviews-section" data-animate>
+            <div class="reviews-header">
+                <h2 class="reviews-title">Customer Reviews &amp; Ratings</h2>
+            </div>
+            <% const avgR=Number(product.average_rating || 0); const totalR=Number(product.review_count || 0); %>
+                <div class="reviews-overview">
+                    <div class="reviews-score-box">
+                        <div class="score-big">
+                            <%= avgR> 0 ? avgR.toFixed(1) : '—' %>
+                        </div>
+                        <div class="score-stars">
+                            <% for(let i=1;i<=5;i++) { %>
+                                <% if(i <=Math.floor(avgR)) { %><svg class="star-icon filled lg" viewBox="0 0 20 20">
+                                        <polygon
+                                            points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                    </svg>
+                                    <% } else if(i - avgR < 1 && avgR % 1 !==0) { %><svg class="star-icon half lg"
+                                            viewBox="0 0 20 20">
+                                            <defs>
+                                                <linearGradient id="hg2">
+                                                    <stop offset="50%" stop-color="#f5a623" />
+                                                    <stop offset="50%" stop-color="#ddd" />
+                                                </linearGradient>
+                                            </defs>
+                                            <polygon
+                                                points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7"
+                                                fill="url(#hg2)" />
+                                        </svg>
+                                        <% } else { %><svg class="star-icon empty lg" viewBox="0 0 20 20">
+                                                <polygon
+                                                    points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                            </svg>
+                                            <% } %>
+                                                <% } %>
+                        </div>
+                        <div class="score-label">
+                            <%= totalR %> rating<%= totalR !==1 ? 's' : '' %>
+                        </div>
+                    </div>
+                    <div class="reviews-breakdown">
+                        <% for(let star=5; star>= 1; star--) { %>
+                            <% const cnt=reviews.filter(r=> Math.round(Number(r.rating)) === star).length; %>
+                                <% const pct=totalR> 0 ? Math.round((cnt / totalR) * 100) : 0; %>
+                                    <div class="breakdown-row">
+                                        <span class="br-label">
+                                            <%= star %> ★
+                                        </span>
+                                        <div class="br-bar-wrap">
+                                            <div class="br-bar-fill" style="width:<%= pct %>%"></div>
+                                        </div>
+                                        <span class="br-pct">
+                                            <%= pct %>%
+                                        </span>
+                                    </div>
+                                    <% } %>
+                    </div>
+                    <div class="reviews-write-box">
+                        <div class="write-title">Review this product</div>
+                        <div class="write-sub">Share your thoughts with other customers</div>
+                        <a href="#write-review-form" class="btn-write-review">Write a customer review</a>
+                    </div>
+                </div>
+
+                <% if (reviews && reviews.length> 0) { %>
+                    <div class="reviews-list">
+                        <% reviews.forEach(function(rv) { const rvR=Number(rv.rating || 0); %>
+                            <div class="review-card">
+                                <div class="review-avatar">
+                                    <%= (rv.user_name || 'A' ).charAt(0).toUpperCase() %>
+                                </div>
+                                <div class="review-body">
+                                    <div class="review-top-row">
+                                        <span class="review-author">
+                                            <%= rv.user_name || 'Anonymous' %>
+                                        </span>
+                                        <div class="review-stars">
+                                            <% for(let i=1;i<=5;i++) { %><svg
+                                                    class="star-icon <%= i <= Math.round(rvR) ? 'filled' : 'empty' %>"
+                                                    viewBox="0 0 20 20">
+                                                    <polygon
+                                                        points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                                </svg>
+                                                <% } %>
+                                        </div>
+                                        <span class="review-rating-num">
+                                            <%= rvR.toFixed(1) %>
+                                        </span>
+                                    </div>
+                                    <div class="review-date">
+                                        <%= new Date(rv.created_at).toLocaleDateString('en-IN', {day:'numeric',
+                                            month:'long', year:'numeric'}) %>
+                                    </div>
+                                    <% if (rv.review_text) { %>
+                                        <p class="review-text">
+                                            <%= rv.review_text %>
+                                        </p>
+                                        <% } %>
+                                </div>
+                            </div>
+                            <% }); %>
+                    </div>
+                    <% } else { %>
+                        <div class="no-reviews-msg">
+                            <div class="no-reviews-icon">★</div>
+                            <p>No reviews yet. Be the first to review this product!</p>
+                        </div>
+                        <% } %>
+
+                            <div class="write-review-form-wrap" id="write-review-form">
+                                <h3 class="wrf-title">Write a Customer Review</h3>
+                                <% if (typeof req !=='undefined' && req.query && req.query.success) { %>
+                                    <div class="review-alert success">✅ Your review has been submitted and is pending
+                                        approval.</div>
+                                    <% } %>
+                                        <form action="/reviews/<%= product.id %>" method="POST" class="review-form"
+                                            id="reviewForm">
+                                            <div class="rf-group">
+                                                <label class="rf-label">Your Rating <span class="req">*</span></label>
+                                                <div class="star-picker" id="starPicker">
+                                                    <% for(let s=1;s<=5;s++) { %>
+                                                        <button type="button" class="star-pick-btn" data-val="<%= s %>">
+                                                            <svg viewBox="0 0 20 20">
+                                                                <polygon
+                                                                    points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                                            </svg>
+                                                        </button>
+                                                        <% } %>
+                                                </div>
+                                                <input type="hidden" name="rating" id="ratingInput" value="">
+                                                <div class="star-label-txt" id="starLabelTxt">Click a star to rate</div>
+                                            </div>
+                                            <div class="rf-group">
+                                                <label class="rf-label" for="review_text">Your Review <span
+                                                        class="opt">(optional)</span></label>
+                                                <textarea name="review_text" id="review_text" class="rf-textarea"
+                                                    rows="5"
+                                                    placeholder="What did you like or dislike? How was the quality?"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn-submit-review" id="submitReviewBtn"
+                                                disabled>Submit Review</button>
+                                        </form>
+                            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SIMILAR PRODUCTS -->
+        <!-- ============================================================ -->
+        <% if (typeof relatedProducts !=='undefined' && relatedProducts.length> 0) { %>
+            <div class="similar-products-section" data-animate>
+                <div class="sp-header">
+                    <h2 class="sp-title">You May Also Like</h2>
+                    <a href="/products?category=<%= product.category_id %>" class="sp-view-all">View all in <%=
+                            product.category_name || 'this category' %> →</a>
+                </div>
+                <div class="sp-grid">
+                    <% relatedProducts.forEach(function(p) { %>
+                        <% const pAvg=Number(p.average_rating || 0); const pCnt=Number(p.review_count || 0); %>
+                            <% const pOffer=p.offer_active && Number(p.offer_percent || 0)> 0; %>
+                                <div class="sp-card">
+                                    <a href="/products/<%= p.id %>" class="sp-card-img">
+                                        <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
+                                            onerror="this.src='/images/placeholder.png'">
+                                        <% if (pOffer) { %><span class="sp-badge">
+                                                <%= Number(p.offer_percent).toFixed(0) %>% OFF
+                                            </span>
+                                            <% } %>
+                                    </a>
+                                    <div class="sp-card-body">
+                                        <h3 class="sp-name"><a href="/products/<%= p.id %>">
+                                                <%= p.name %>
+                                            </a></h3>
+                                        <% if (pCnt> 0) { %>
+                                            <div class="sp-stars">
+                                                <% for(let i=1;i<=5;i++) { %><svg
+                                                        class="star-icon <%= i <= Math.round(pAvg) ? 'filled' : 'empty' %> sm"
+                                                        viewBox="0 0 20 20">
+                                                        <polygon
+                                                            points="10,1 12.9,7 19.5,7.6 14.7,12 16.4,18.5 10,15 3.6,18.5 5.3,12 0.5,7.6 7.1,7" />
+                                                    </svg>
+                                                    <% } %>
+                                                        <span class="sp-rcount">(<%= pCnt %>)</span>
+                                            </div>
+                                            <% } %>
+                                                <div class="sp-price-row">
+                                                    <% if (pOffer) { %><span class="sp-old-price">₹<%=
+                                                                Number(p.price).toLocaleString('en-IN') %></span>
+                                                        <% } %>
+                                                            <span class="sp-price">₹<%= Number(p.effective_price ||
+                                                                    p.price).toLocaleString('en-IN') %></span>
+                                                            <span class="price-unit-note"><%= p.price_type === 'kg' ? 'per kg' : 'per unit' %></span>
+                                                </div>
+                                                <a href="/products/<%= p.id %>" class="sp-btn">View Product</a>
+                                    </div>
+                                </div>
+                                <% }); %>
+                </div>
+            </div>
+            <% } %>
+
+                <%- include('./partials/footer') %>
+
+                    <style>
+                        /* Product Detail Luxury Styles */
+                        .product-detail-section {
+                            padding: 40px 6%;
+                            background: var(--cream);
+                        }
+
+                        .product-detail-container {
+                            display: grid;
+                            grid-template-columns: 1.2fr 1fr;
+                            gap: 80px;
+                            max-width: 1300px;
+                            margin: 0 auto;
+                        }
+
+                        /* Gallery */
+                        .product-gallery {
+                            display: flex;
+                            gap: 20px;
+                        }
+
+                        .thumbnail-list {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+                        }
+
+                        .thumb-item {
+                            width: 70px;
+                            height: 70px;
+                            border-radius: 8px;
+                            overflow: hidden;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: var(--transition);
+                            opacity: 0.6;
+                        }
+
+                        .thumb-item:hover,
+                        .thumb-item.active {
+                            opacity: 1;
+                            border-color: var(--emerald);
+                        }
+
+                        .thumb-item img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        }
+
+                        .main-image-wrap {
+                            flex: 1;
+                            background: #fff;
+                            border-radius: 20px;
+                            overflow: hidden;
+                            position: relative;
+                            box-shadow: var(--shadow-md);
+                            border: 1px solid var(--border);
+                        }
+
+                        .inner-zoom {
+                            width: 100%;
+                            height: 600px;
+                            cursor: crosshair;
+                            overflow: hidden;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                        .inner-zoom img {
+                            max-width: 100%;
+                            max-height: 100%;
+                            transition: transform 0.3s ease;
+                        }
+
+                        /* Info */
+                        .breadcrumb {
+                            font-size: 11px;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            color: var(--gray-500);
+                            margin-bottom: 24px;
+                        }
+
+                        .breadcrumb a {
+                            color: inherit;
+                        }
+
+                        .breadcrumb a:hover {
+                            color: var(--emerald);
+                        }
+
+                        .product-title {
+                            font-size: 44px;
+                            margin-bottom: 12px;
+                            color: var(--rich-black);
+                            line-height: 1.1;
+                        }
+
+                        .price-rating-row {
+                            display: flex;
+                            align-items: flex-end;
+                            gap: 24px;
+                            margin-bottom: 32px;
+                        }
+
+                        .premium-price {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 4px;
+                        }
+
+                        .new-price {
+                            font-size: 36px;
+                            font-weight: 700;
+                            color: var(--emerald);
+                        }
+
+                        .old-price {
+                            font-size: 18px;
+                            color: var(--gray-500);
+                            text-decoration: line-through;
+                            font-weight: 500;
+                        }
+
+                        .price-tags {
+                            display: flex;
+                            gap: 8px;
+                            flex-wrap: wrap;
+                            margin-top: 10px;
+                        }
+
+                        .price-unit-note {
+                            font-size: 12px;
+                            color: var(--gray-500);
+                            margin-top: 6px;
+                        }
+
+                        .price-chip {
+                            font-size: 11px;
+                            padding: 3px 10px;
+                            border-radius: 999px;
+                            font-weight: 700;
+                            letter-spacing: 0.4px;
+                        }
+
+                        .offer-chip {
+                            background: rgba(28, 74, 48, 0.12);
+                            color: var(--emerald);
+                        }
+
+                        .coupon-chip {
+                            background: rgba(212, 175, 55, 0.2);
+                            color: #7a5a00;
+                        }
+
+                        .stock-status {
+                            font-size: 13px;
+                            font-weight: 600;
+                            padding: 4px 12px;
+                            border-radius: 20px;
+                            background: rgba(0, 0, 0, 0.03);
+                        }
+
+                        .status-in {
+                            color: var(--emerald);
+                        }
+
+                        .product-short-desc {
+                            font-size: 15px;
+                            color: var(--gray-700);
+                            line-height: 1.8;
+                            margin-bottom: 40px;
+                            border-left: 3px solid var(--gold);
+                            padding-left: 20px;
+                        }
+
+                        .coupon-box {
+                            margin: -8px 0 28px 0;
+                            background: #fff;
+                            border: 1px solid var(--border);
+                            border-radius: 12px;
+                            padding: 14px;
+                        }
+
+                        .coupon-head {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 3px;
+                            margin-bottom: 10px;
+                        }
+
+                        .coupon-head strong {
+                            font-size: 13px;
+                            letter-spacing: 0.3px;
+                        }
+
+                        .coupon-head span {
+                            font-size: 11px;
+                            color: var(--gray-500);
+                        }
+
+                        .coupon-options {
+                            display: grid;
+                            gap: 8px;
+                        }
+
+                        .coupon-option {
+                            display: grid;
+                            gap: 4px;
+                            border: 1px solid var(--border);
+                            border-radius: 10px;
+                            padding: 10px;
+                            background: #fff;
+                            transition: var(--transition);
+                        }
+
+                        .coupon-option:hover {
+                            border-color: var(--emerald);
+                        }
+
+                        .coupon-option.active {
+                            border-color: var(--emerald);
+                            background: #f3faf6;
+                        }
+
+                        .coupon-option-code {
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: var(--black);
+                            letter-spacing: 0.5px;
+                        }
+
+                        .coupon-option-meta {
+                            font-size: 11px;
+                            color: var(--gray-600);
+                        }
+
+                        .coupon-msg {
+                            margin-top: 8px;
+                            font-size: 12px;
+                        }
+
+                        .coupon-msg.error {
+                            color: var(--red);
+                        }
+
+                        .coupon-msg.success {
+                            color: var(--emerald);
+                        }
+
+                        .coupon-clear-link {
+                            color: inherit;
+                            text-decoration: underline;
+                            margin-left: 8px;
+                            font-weight: 600;
+                        }
+
+                        .product-meta-specs {
+                            margin-bottom: 40px;
+                        }
+
+                        .spec-row {
+                            display: flex;
+                            padding: 12px 0;
+                            border-bottom: 1px solid var(--border);
+                            font-size: 14px;
+                        }
+
+                        .spec-key {
+                            color: var(--gray-500);
+                            min-width: 140px;
+                        }
+
+                        .spec-val {
+                            color: var(--black);
+                            font-weight: 500;
+                        }
+
+                        .product-info-col {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 0;
+                        }
+
+                        .purchase-form {
+                            display: grid;
+                            gap: 14px;
+                            margin-top: 2px;
+                            width: 100%;
+                        }
+
+                        .weight-selector {
+                            width: 100%;
+                        }
+
+                        .weight-selector-label {
+                            display: block;
+                            margin-bottom: 10px;
+                            font-weight: 600;
+                            color: var(--gray-700);
+                            font-size: 14px;
+                        }
+
+                        .weight-options-row {
+                            display: flex;
+                            gap: 10px;
+                            flex-wrap: wrap;
+                        }
+
+                        .purchase-actions {
+                            width: 100%;
+                            display: grid;
+                            grid-template-columns: auto minmax(200px, 1fr) auto;
+                            gap: 12px;
+                            align-items: center;
+                        }
+
+                        .luxury-qty {
+                            display: flex;
+                            align-items: center;
+                            background: #fff;
+                            border: 1px solid var(--border);
+                            border-radius: 30px;
+                            padding: 4px;
+                            height: 52px;
+                        }
+
+                        .qty-control {
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 20px;
+                            transition: var(--transition);
+                        }
+
+                        .qty-control:hover {
+                            background: var(--bone);
+                        }
+
+                        #qtyInput {
+                            width: 40px;
+                            text-align: center;
+                            border: none;
+                            font-weight: 600;
+                            font-size: 16px;
+                            background: none;
+                        }
+
+                        .btn-luxury-atc {
+                            height: 52px;
+                            width: 100%;
+                            background: var(--black);
+                            color: #fff;
+                            border-radius: 30px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 12px;
+                            font-weight: 600;
+                            letter-spacing: 0.5px;
+                        }
+
+                        .btn-luxury-atc:hover {
+                            background: var(--emerald);
+                            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+                        }
+
+                        .btn-wishlist-circle {
+                            width: 52px;
+                            height: 52px;
+                            border-radius: 50%;
+                            border: 1px solid var(--border);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                        .btn-wishlist-circle:hover,
+                        .btn-wishlist-circle.active {
+                            border-color: var(--emerald);
+                            color: var(--emerald);
+                            background: white;
+                        }
+
+                        /* Tabs */
+                        .product-tabs {
+                            max-width: 1300px;
+                            margin: 80px auto 0;
+                            background: #fff;
+                            border-radius: 20px;
+                            padding: 40px;
+                            border: 1px solid var(--border);
+                        }
+
+                        .tab-header {
+                            display: flex;
+                            gap: 40px;
+                            border-bottom: 1px solid var(--border);
+                            margin-bottom: 30px;
+                        }
+
+                        .tab-btn {
+                            padding: 15px 0;
+                            font-size: 15px;
+                            font-weight: 600;
+                            color: var(--gray-500);
+                            cursor: pointer;
+                            position: relative;
+                            transition: var(--transition);
+                        }
+
+                        .tab-btn.active {
+                            color: var(--black);
+                        }
+
+                        .tab-btn.active::after {
+                            content: '';
+                            position: absolute;
+                            bottom: -1px;
+                            left: 0;
+                            width: 100%;
+                            height: 2px;
+                            background: var(--emerald);
+                        }
+
+                        /* ============================
+                           STAR ICONS
+                        ============================ */
+                        .star-icon {
+                            width: 16px;
+                            height: 16px;
+                            display: inline-block;
+                            flex-shrink: 0;
+                            vertical-align: middle;
+                        }
+
+                        .star-icon.sm {
+                            width: 13px;
+                            height: 13px;
+                        }
+
+                        .star-icon.lg {
+                            width: 24px;
+                            height: 24px;
+                        }
+
+                        .star-icon.filled polygon {
+                            fill: #f5a623;
+                            stroke: #e09400;
+                            stroke-width: 0.5;
+                        }
+
+                        .star-icon.half polygon {
+                            stroke: #e09400;
+                            stroke-width: 0.5;
+                        }
+
+                        .star-icon.empty polygon {
+                            fill: #ddd;
+                            stroke: #ccc;
+                            stroke-width: 0.5;
+                        }
+
+                        /* ============================
+                           RATING BADGE
+                        ============================ */
+                        .product-rating-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            margin-bottom: 16px;
+                            text-decoration: none;
+                            color: inherit;
+                        }
+
+                        .badge-stars {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 2px;
+                        }
+
+                        .badge-avg {
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #333;
+                        }
+
+                        .badge-count {
+                            font-size: 13px;
+                            color: var(--gray-500);
+                            text-decoration: underline;
+                        }
+
+                        /* ============================
+                           REVIEWS SECTION
+                        ============================ */
+                        .reviews-section {
+                            max-width: 1300px;
+                            margin: 80px auto 0;
+                            background: #fff;
+                            border: 1px solid var(--border);
+                            border-radius: 20px;
+                            padding: 48px;
+                        }
+
+                        .reviews-header {
+                            margin-bottom: 36px;
+                        }
+
+                        .reviews-title {
+                            font-family: 'Playfair Display', serif;
+                            font-size: 28px;
+                            color: var(--rich-black);
+                            margin: 0;
+                        }
+
+                        .reviews-overview {
+                            display: grid;
+                            grid-template-columns: 180px 1fr 220px;
+                            gap: 40px;
+                            align-items: start;
+                            padding-bottom: 40px;
+                            border-bottom: 1px solid var(--border);
+                            margin-bottom: 40px;
+                        }
+
+                        .reviews-score-box {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            gap: 10px;
+                            padding: 24px;
+                            background: linear-gradient(135deg, #fdf8ee 0%, #fff 100%);
+                            border: 1px solid #f5e9c5;
+                            border-radius: 16px;
+                        }
+
+                        .score-big {
+                            font-size: 52px;
+                            font-weight: 800;
+                            color: var(--rich-black);
+                            line-height: 1;
+                        }
+
+                        .score-stars {
+                            display: inline-flex;
+                            gap: 3px;
+                        }
+
+                        .score-label {
+                            font-size: 12px;
+                            color: var(--gray-500);
+                            text-align: center;
+                        }
+
+                        .reviews-breakdown {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 10px;
+                            justify-content: center;
+                        }
+
+                        .breakdown-row {
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            font-size: 13px;
+                        }
+
+                        .br-label {
+                            width: 44px;
+                            color: var(--gray-600);
+                            text-align: right;
+                            font-size: 12px;
+                        }
+
+                        .br-bar-wrap {
+                            flex: 1;
+                            height: 10px;
+                            background: #eee;
+                            border-radius: 999px;
+                            overflow: hidden;
+                        }
+
+                        .br-bar-fill {
+                            height: 100%;
+                            background: linear-gradient(90deg, #f5a623, #e09400);
+                            border-radius: 999px;
+                        }
+
+                        .br-pct {
+                            width: 34px;
+                            font-size: 12px;
+                            color: var(--gray-500);
+                        }
+
+                        .reviews-write-box {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+                            padding: 24px;
+                            border: 1px solid var(--border);
+                            border-radius: 16px;
+                            background: #fafafa;
+                        }
+
+                        .write-title {
+                            font-size: 15px;
+                            font-weight: 700;
+                        }
+
+                        .write-sub {
+                            font-size: 13px;
+                            color: var(--gray-500);
+                            line-height: 1.5;
+                        }
+
+                        .btn-write-review {
+                            display: inline-block;
+                            text-align: center;
+                            padding: 10px 18px;
+                            background: var(--black);
+                            color: #fff;
+                            border-radius: 8px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            text-decoration: none;
+                            transition: var(--transition);
+                        }
+
+                        .btn-write-review:hover {
+                            background: var(--emerald);
+                        }
+
+                        /* Review cards */
+                        .reviews-list {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 28px;
+                            margin-bottom: 50px;
+                        }
+
+                        .review-card {
+                            display: flex;
+                            gap: 18px;
+                            padding-bottom: 28px;
+                            border-bottom: 1px solid var(--border);
+                        }
+
+                        .review-card:last-child {
+                            border-bottom: none;
+                            padding-bottom: 0;
+                        }
+
+                        .review-avatar {
+                            width: 44px;
+                            height: 44px;
+                            border-radius: 50%;
+                            background: linear-gradient(135deg, var(--emerald), #0d5c36);
+                            color: #fff;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 18px;
+                            font-weight: 700;
+                            flex-shrink: 0;
+                        }
+
+                        .review-body {
+                            flex: 1;
+                        }
+
+                        .review-top-row {
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            flex-wrap: wrap;
+                            margin-bottom: 4px;
+                        }
+
+                        .review-author {
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: var(--rich-black);
+                        }
+
+                        .review-stars {
+                            display: inline-flex;
+                            gap: 2px;
+                            align-items: center;
+                        }
+
+                        .review-rating-num {
+                            font-size: 12px;
+                            background: #f5a623;
+                            color: #fff;
+                            padding: 2px 7px;
+                            border-radius: 4px;
+                            font-weight: 700;
+                        }
+
+                        .review-date {
+                            font-size: 12px;
+                            color: var(--gray-500);
+                            margin-bottom: 10px;
+                        }
+
+                        .review-text {
+                            font-size: 14px;
+                            color: var(--gray-700);
+                            line-height: 1.7;
+                            margin: 0;
+                        }
+
+                        /* No reviews */
+                        .no-reviews-msg {
+                            text-align: center;
+                            padding: 40px 20px;
+                            color: var(--gray-500);
+                            margin-bottom: 40px;
+                        }
+
+                        .no-reviews-icon {
+                            font-size: 40px;
+                            margin-bottom: 12px;
+                            color: #f5a623;
+                        }
+
+                        .no-reviews-msg p {
+                            font-size: 15px;
+                        }
+
+                        /* Write Review Form */
+                        .write-review-form-wrap {
+                            background: linear-gradient(135deg, #f8fdf9 0%, #fff 100%);
+                            border: 1px solid #c8e6c9;
+                            border-radius: 16px;
+                            padding: 36px;
+                        }
+
+                        .wrf-title {
+                            font-size: 20px;
+                            font-weight: 700;
+                            margin-bottom: 24px;
+                            color: var(--rich-black);
+                        }
+
+                        .review-alert {
+                            padding: 12px 18px;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-weight: 500;
+                            margin-bottom: 20px;
+                        }
+
+                        .review-alert.success {
+                            background: #e8f5e9;
+                            color: #2e7d32;
+                            border: 1px solid #a5d6a7;
+                        }
+
+                        .review-alert.error {
+                            background: #fdecea;
+                            color: #c62828;
+                            border: 1px solid #ef9a9a;
+                        }
+
+                        .review-form {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 22px;
+                        }
+
+                        .rf-group {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                        }
+
+                        .rf-label {
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: var(--rich-black);
+                        }
+
+                        .rf-label .req {
+                            color: #e53e3e;
+                        }
+
+                        .rf-label .opt {
+                            font-weight: 400;
+                            color: var(--gray-500);
+                            font-size: 12px;
+                        }
+
+                        .star-picker {
+                            display: flex;
+                            gap: 6px;
+                            align-items: center;
+                        }
+
+                        .star-pick-btn {
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            padding: 2px;
+                            transition: transform 0.15s ease;
+                        }
+
+                        .star-pick-btn:hover {
+                            transform: none;
+                        }
+
+                        .star-pick-btn svg {
+                            width: 36px;
+                            height: 36px;
+                            display: block;
+                        }
+
+                        .star-pick-btn svg polygon {
+                            fill: #ddd;
+                            stroke: #ccc;
+                            stroke-width: 0.5;
+                            transition: fill 0.15s ease;
+                        }
+
+                        .star-pick-btn.hovered svg polygon,
+                        .star-pick-btn.selected svg polygon {
+                            fill: #f5a623;
+                            stroke: #e09400;
+                        }
+
+                        .star-label-txt {
+                            font-size: 13px;
+                            color: var(--gray-500);
+                            min-height: 20px;
+                        }
+
+                        .rf-textarea {
+                            width: 100%;
+                            border: 1px solid var(--border);
+                            border-radius: 10px;
+                            padding: 14px;
+                            font-size: 14px;
+                            line-height: 1.7;
+                            resize: vertical;
+                            font-family: inherit;
+                            transition: border-color 0.2s;
+                            background: #fff;
+                            box-sizing: border-box;
+                        }
+
+                        .rf-textarea:focus {
+                            outline: none;
+                            border-color: var(--emerald);
+                            box-shadow: 0 0 0 3px rgba(28, 74, 48, 0.08);
+                        }
+
+                        .btn-submit-review {
+                            align-self: flex-start;
+                            padding: 14px 36px;
+                            background: var(--black);
+                            color: #fff;
+                            border-radius: 30px;
+                            font-size: 15px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: var(--transition);
+                            border: none;
+                        }
+
+                        .btn-submit-review:not(:disabled):hover {
+                            background: var(--emerald);
+                            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+                        }
+
+                        .btn-submit-review:disabled {
+                            opacity: 0.45;
+                            cursor: not-allowed;
+                        }
+
+                        /* ============================
+                           SIMILAR PRODUCTS
+                        ============================ */
+                        .similar-products-section {
+                            max-width: 1300px;
+                            margin: 80px auto 60px;
+                        }
+
+                        .sp-header {
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            margin-bottom: 36px;
+                        }
+
+                        .sp-title {
+                            font-family: 'Playfair Display', serif;
+                            font-size: 30px;
+                            color: var(--rich-black);
+                            margin: 0;
+                        }
+
+                        .sp-view-all {
+                            font-size: 13px;
+                            color: var(--emerald);
+                            font-weight: 600;
+                            text-decoration: none;
+                        }
+
+                        .sp-view-all:hover {
+                            text-decoration: underline;
+                        }
+
+                        .sp-grid {
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 24px;
+                        }
+
+                        .sp-card {
+                            background: #fff;
+                            border: 1px solid var(--border);
+                            border-radius: 16px;
+                            overflow: hidden;
+                            transition: var(--transition);
+                            display: flex;
+                            flex-direction: column;
+                        }
+
+                        .sp-card:hover {
+                            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+                        }
+
+                        .sp-card-img {
+                            display: block;
+                            height: 220px;
+                            overflow: hidden;
+                            position: relative;
+                            background: #f9f9f9;
+                        }
+
+                        .sp-card-img img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            transition: transform 0.5s ease;
+                        }
+
+                        .sp-card:hover .sp-card-img img {
+                            transform: scale(1.06);
+                        }
+
+                        .sp-badge {
+                            position: absolute;
+                            top: 10px;
+                            left: 10px;
+                            background: #e53e3e;
+                            color: #fff;
+                            font-size: 11px;
+                            font-weight: 700;
+                            padding: 3px 8px;
+                            border-radius: 4px;
+                        }
+
+                        .sp-card-body {
+                            padding: 16px;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                            flex: 1;
+                        }
+
+                        .sp-name {
+                            font-size: 14px;
+                            font-weight: 600;
+                            line-height: 1.4;
+                            margin: 0;
+                            display: -webkit-box;
+                            -webkit-line-clamp: 2;
+                            -webkit-box-orient: vertical;
+                            overflow: hidden;
+                        }
+
+                        .sp-name a {
+                            color: var(--rich-black);
+                            text-decoration: none;
+                        }
+
+                        .sp-name a:hover {
+                            color: var(--emerald);
+                        }
+
+                        .sp-stars {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 2px;
+                        }
+
+                        .sp-rcount {
+                            font-size: 11px;
+                            color: var(--gray-500);
+                            margin-left: 4px;
+                        }
+
+                        .sp-price-row {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            flex-wrap: wrap;
+                        }
+
+                        .sp-price {
+                            font-size: 17px;
+                            font-weight: 700;
+                            color: var(--emerald);
+                        }
+
+                        .sp-old-price {
+                            font-size: 12px;
+                            color: var(--gray-500);
+                            text-decoration: line-through;
+                        }
+
+                        .sp-btn {
+                            display: block;
+                            text-align: center;
+                            padding: 9px 14px;
+                            background: var(--black);
+                            color: #fff;
+                            border-radius: 8px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            text-decoration: none;
+                            margin-top: auto;
+                            transition: var(--transition);
+                        }
+
+                        .sp-btn:hover {
+                            background: var(--emerald);
+                        }
+
+                        /* Weight Selector Styles */
+                        .weight-btn {
+                            display: inline-block;
+                            padding: 8px 16px;
+                            border: 1px solid var(--border);
+                            border-radius: 20px;
+                            cursor: pointer;
+                            font-size: 13px;
+                            font-weight: 600;
+                            transition: all 0.2s;
+                            background: white;
+                        }
+
+                        .weight-option input:checked+.weight-btn {
+                            background: var(--emerald);
+                            color: white;
+                            border-color: var(--emerald);
+                        }
+
+                        .weight-btn:hover {
+                            border-color: var(--emerald);
+                        }
+
+                        @media (max-width: 1024px) {
+                            .product-detail-container {
+                                grid-template-columns: 1fr;
+                                gap: 40px;
+                            }
+
+                            .sp-grid {
+                                grid-template-columns: repeat(2, 1fr);
+                            }
+
+                            .product-title {
+                                font-size: 38px;
+                            }
+
+                            .reviews-overview {
+                                grid-template-columns: 160px 1fr;
+                            }
+
+                            .reviews-write-box {
+                                grid-column: span 2;
+                            }
+                        }
+
+                        @media (max-width: 768px) {
+                            .product-gallery {
+                                flex-direction: column-reverse;
+                            }
+
+                            .thumbnail-list {
+                                flex-direction: row;
+                            }
+
+                            .purchase-actions {
+                                grid-template-columns: 1fr;
+                                gap: 10px;
+                            }
+
+                            .luxury-qty {
+                                justify-content: center;
+                            }
+
+                            .btn-wishlist-circle {
+                                width: 100%;
+                                border-radius: 30px;
+                            }
+
+                            .price-rating-row {
+                                flex-direction: column;
+                                align-items: flex-start;
+                                gap: 10px;
+                            }
+
+                            .reviews-section {
+                                padding: 28px 20px;
+                            }
+
+                            .reviews-overview {
+                                grid-template-columns: 1fr;
+                                gap: 20px;
+                            }
+
+                            .reviews-write-box {
+                                grid-column: auto;
+                            }
+
+                            .sp-grid {
+                                grid-template-columns: repeat(2, 1fr);
+                                gap: 14px;
+                            }
+
+                            .sp-header {
+                                flex-direction: column;
+                                align-items: flex-start;
+                                gap: 10px;
+                            }
+
+                            .write-review-form-wrap {
+                                padding: 24px 18px;
+                            }
+
+                            .btn-submit-review {
+                                width: 100%;
+                            }
+                        }
+
+                        @media (max-width: 480px) {
+                            .sp-grid {
+                                grid-template-columns: 1fr;
+                            }
+                        }
+                    </style>
+
+                    <div id="productConfig"
+                        data-base-price="<%= Number((pricing && pricing.basePrice) || product.price) %>"
+                        data-offer-percent="<%= Number((pricing && pricing.offerPercent) || 0) %>"
+                        data-coupon-type="<%= appliedCoupon ? appliedCoupon.discount_type : '' %>"
+                        data-coupon-value="<%= appliedCoupon ? Number(appliedCoupon.discount_value) : 0 %>"
+                        data-coupon-max="<%= appliedCoupon && appliedCoupon.max_discount ? Number(appliedCoupon.max_discount) : 0 %>"
+                        data-price-type="<%= product.price_type %>"
+                        data-weights='<%= JSON.stringify(weightOptions || []) %>'>
+                    </div>
+
+                    <script>
+                        function switchMainImage(url, el) {
+                            document.getElementById('mainProductImg').src = url;
+                            document.querySelectorAll('.thumb-item').forEach(item => item.classList.remove('active'));
+                            el.classList.add('active');
+                        }
+
+                        function adjustQty(delta) {
+                            const input = document.getElementById('qtyInput');
+                            const max = parseInt(input.max) || 999;
+                            const newVal = Math.max(1, Math.min(max, parseInt(input.value || 1) + delta));
+                            input.value = newVal;
+
+                            // Trigger price update when quantity changes
+                            const weightInput = document.querySelector('input[name="selected_weight"]:checked');
+                            updatePriceDisplay(weightInput ? weightInput.value : null);
+                        }
+
+                        // Simple Zoom Effect
+                        const zoomContainer = document.getElementById('imageZoom');
+                        const mainImg = document.getElementById('mainProductImg');
+
+                        zoomContainer.addEventListener('mousemove', (e) => {
+                            const rect = zoomContainer.getBoundingClientRect();
+                            const x = (e.clientX - rect.left) / rect.width * 100;
+                            const y = (e.clientY - rect.top) / rect.height * 100;
+                            mainImg.style.transformOrigin = `${x}% ${y}%`;
+                            mainImg.style.transform = 'scale(1.8)';
+                        });
+
+                        zoomContainer.addEventListener('mouseleave', () => {
+                            mainImg.style.transform = 'scale(1)';
+                        });
+
+                        const configEl = document.getElementById('productConfig');
+                        const basePrice = Number(configEl.dataset.basePrice);
+                        const offerPercent = Number(configEl.dataset.offerPercent);
+                        const couponType = configEl.dataset.couponType;
+                        const couponValue = Number(configEl.dataset.couponValue);
+                        const couponMaxDiscount = Number(configEl.dataset.couponMax);
+                        const priceType = configEl.dataset.priceType;
+                        const weightOptions = JSON.parse(configEl.dataset.weights || '[]');
+                        const priceDisplay = document.getElementById('priceBlock');
+
+                        function formatAmount(value) {
+                            return Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 }).replace(/\.00$/, '');
+                        }
+
+                        function getWeightMultiplier(weight) {
+                            const raw = String(weight || '').trim().toLowerCase().replace(/\s+/g, '');
+                            const match = raw.match(/^(\d+(?:\.\d+)?)(kg|g|gm)$/);
+                            if (!match) return 1;
+                            const qty = Number(match[1]);
+                            if (!Number.isFinite(qty) || qty <= 0) return 1;
+                            const unit = match[2];
+                            return unit === 'kg' ? qty : (qty / 1000);
+                        }
+
+                        function updatePriceDisplay(weight) {
+                            const qtyInput = document.getElementById('qtyInput');
+                            const qty = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+
+                            let multiplier = 1;
+                            if (priceType === 'kg') {
+                                if (!weight) {
+                                    const checkedInput = document.querySelector('input[name="selected_weight"]:checked');
+                                    weight = checkedInput ? checkedInput.value : (weightOptions.length ? weightOptions[0] : '1kg');
+                                }
+                                multiplier = getWeightMultiplier(weight);
+                            }
+
+                            const currentBaseTotal = basePrice * multiplier * qty;
+                            const offeredTotal = offerPercent > 0 ? currentBaseTotal * (1 - offerPercent / 100) : currentBaseTotal;
+
+                            let couponDiscount = 0;
+                            if (couponType === 'percent') {
+                                couponDiscount = offeredTotal * (couponValue / 100);
+                                if (couponMaxDiscount > 0) couponDiscount = Math.min(couponDiscount, couponMaxDiscount);
+                            } else if (couponType === 'fixed') {
+                                couponDiscount = couponValue;
+                            }
+                            couponDiscount = Math.min(couponDiscount, offeredTotal);
+
+                            const finalTotal = Math.max(offeredTotal - couponDiscount, 0);
+
+                            if (!priceDisplay) return;
+                            const isDiscounted = currentBaseTotal > finalTotal;
+                            if (isDiscounted) {
+                                priceDisplay.innerHTML = `
+                                    <div class="old-price">&#8377;${formatAmount(currentBaseTotal)}</div>
+                                    <div class="new-price">&#8377;${formatAmount(finalTotal)}</div>
+                                    <div class="price-tags">
+                                        ${offerPercent > 0 ? `<span class="price-chip offer-chip">${offerPercent.toFixed(2).replace(/\\.00$/, '')}% OFF</span>` : ''}
+                                        ${couponType ? `<span class="price-chip coupon-chip">COUPON APPLIED</span>` : ''}
+                                    </div>
+                                    <div class="price-unit-note">${priceType === 'kg' ? 'per kg' : 'per unit'}</div>
+                                `;
+                            } else {
+                                priceDisplay.innerHTML = `
+                                    <div class="new-price">&#8377;${formatAmount(finalTotal)}</div>
+                                    <div class="price-unit-note">${priceType === 'kg' ? 'per kg' : 'per unit'}</div>
+                                `;
+                            }
+                        }
+
+                        // Always recalculate from currently selected weight on page load
+                        // This fixes the bug where coupon price was shown for 1kg even when a different weight is selected
+                        (function initPriceDisplay() {
+                            if (priceType === 'kg') {
+                                const checkedWeight = document.querySelector('input[name="selected_weight"]:checked');
+                                const fallbackWeight = weightOptions.length ? weightOptions[0] : '1kg';
+                                updatePriceDisplay(checkedWeight ? checkedWeight.value : fallbackWeight);
+                            } else {
+                                updatePriceDisplay();
+                            }
+                        })();
+
+                        // ============================================================
+                        // STAR PICKER LOGIC
+                        // ============================================================
+                        (function () {
+                            const starLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+                            const picker = document.getElementById('starPicker');
+                            const ratingInput = document.getElementById('ratingInput');
+                            const labelTxt = document.getElementById('starLabelTxt');
+                            const submitBtn = document.getElementById('submitReviewBtn');
+                            if (!picker) return;
+
+                            const btns = picker.querySelectorAll('.star-pick-btn');
+                            let selectedVal = 0;
+
+                            function highlightUpTo(n, cls) {
+                                btns.forEach((b, idx) => {
+                                    b.classList.remove('hovered', 'selected');
+                                    if (idx < n) b.classList.add(cls);
+                                });
+                            }
+
+                            btns.forEach((btn, idx) => {
+                                const val = idx + 1;
+                                btn.addEventListener('mouseenter', () => {
+                                    if (selectedVal === 0) highlightUpTo(val, 'hovered');
+                                    labelTxt.textContent = starLabels[val] || '';
+                                });
+                                btn.addEventListener('mouseleave', () => {
+                                    highlightUpTo(selectedVal, 'selected');
+                                    labelTxt.textContent = selectedVal > 0 ? `You selected: ${starLabels[selectedVal]}` : 'Click a star to rate';
+                                });
+                                btn.addEventListener('click', () => {
+                                    selectedVal = val;
+                                    ratingInput.value = val;
+                                    submitBtn.disabled = false;
+                                    highlightUpTo(val, 'selected');
+                                    labelTxt.textContent = `You selected: ${starLabels[val]}`;
+                                });
+                            });
+
+                            // If URL has success message, scroll to reviews
+                            if (window.location.search.includes('success=Review')) {
+                                const revSection = document.getElementById('reviews-section');
+                                if (revSection) setTimeout(() => revSection.scrollIntoView({ behavior: 'smooth' }), 400);
+                            }
+                        })();
+
+                        async function toggleWishlist(prodId, btn) {
+                            try {
+                                const res = await fetch('/wishlist/toggle/' + prodId, {
+                                    method: 'POST',
+                                    headers: { 'Accept': 'application/json' }
+                                });
+                                const data = await res.json();
+                                if (!res.ok || !data.ok) {
+                                    if (data && data.redirect) {
+                                        window.location.href = data.redirect;
+                                        return;
+                                    }
+                                    return;
+                                }
+                                const icon = btn ? btn.querySelector('svg') : null;
+                                if (data.status === 'added') {
+                                    btn.classList.add('active');
+                                    if (icon) icon.setAttribute('fill', 'currentColor');
+                                } else {
+                                    btn.classList.remove('active');
+                                    if (icon) icon.setAttribute('fill', 'none');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                            }
+                        }
+                    </script>

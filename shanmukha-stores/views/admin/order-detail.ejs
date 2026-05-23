@@ -1,0 +1,215 @@
+<%- include('_header') %>
+
+<div class="page-hd">
+    <div>
+        <h2>Order #<%= order.id %></h2>
+        <p>Placed on <%= new Date(order.created_at).toLocaleString('en-IN') %></p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <a href="/admin/orders/<%= order.id %>/bill" class="btn btn-black" target="_blank" rel="noopener">Print Bill</a>
+        <a href="/admin/orders" class="btn btn-ghost">Back to Orders</a>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+    <div class="card">
+        <div class="card-hd">
+            <h3>Order Items</h3>
+        </div>
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% items.forEach(item => { %>
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <img src="<%= item.image || '/images/default.png' %>" class="prod-img" onerror="this.src='/images/default.png'">
+                                    <span style="font-weight:500;color:var(--black)">
+                                        <%= item.name %>
+                                        <% if (item.selected_weight) { %>
+                                            <span style="font-size:0.85em;color:var(--gray-500);font-weight:400;">(<%= item.selected_weight %>)</span>
+                                        <% } %>
+                                    </span>
+                                </div>
+                            </td>
+                            <td><%= item.quantity %></td>
+                            <td>&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
+                            <td style="font-weight:600;">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <div style="padding:18px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+            <div style="text-align:right;">
+                <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Total Amount</div>
+                <div style="font-size:22px;font-weight:700;color:var(--black);">&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <div class="card">
+            <div class="card-hd">
+                <h3>Order Status</h3>
+            </div>
+            <div class="card-body">
+                <div style="margin-bottom:14px;">
+                    <% if (order.status === 'Delivered') { %>
+                        <span class="badge bg-green" style="font-size:13px;padding:5px 14px;"><%= order.status %></span>
+                    <% } else if (order.status === 'Pending') { %>
+                        <span class="badge bg-orange" style="font-size:13px;padding:5px 14px;"><%= order.status %></span>
+                    <% } else if (order.status === 'Cancelled') { %>
+                        <span class="badge bg-red" style="font-size:13px;padding:5px 14px;"><%= order.status %></span>
+                    <% } else { %>
+                        <span class="badge bg-blue" style="font-size:13px;padding:5px 14px;"><%= order.status %></span>
+                    <% } %>
+                </div>
+                <form action="/admin/orders/status/<%= order.id %>" method="POST">
+                    <div class="form-group">
+                        <label>Update Status</label>
+                        <select name="status">
+                            <option value="Pending" <%= order.status==='Pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="Processing" <%= order.status==='Processing' ? 'selected' : '' %>>Processing</option>
+                            <option value="Shipped" <%= order.status==='Shipped' ? 'selected' : '' %>>Shipped</option>
+                            <option value="Delivered" <%= order.status==='Delivered' ? 'selected' : '' %>>Delivered</option>
+                            <option value="Cancelled" <%= order.status==='Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estimated Delivery Date & Time</label>
+                        <input type="datetime-local" name="estimated_delivery_at" value="<%= order.estimated_delivery_at ? new Date(order.estimated_delivery_at).toISOString().slice(0,16) : '' %>">
+                    </div>
+                    <div class="form-group">
+                        <label>Delivery Note</label>
+                        <input type="text" name="delivery_note" value="<%= order.delivery_note || '' %>" placeholder="Eg: Arriving today by evening">
+                    </div>
+                    <button type="submit" class="btn btn-black" style="width:100%;">Update Status</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-hd">
+                <h3>Payment Information</h3>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div>
+                        <div style="font-size:11px;color:var(--gray-500);margin-bottom:4px;">Method</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <% if (order.payment_method === 'whatsapp') { %>
+                                <span class="badge bg-green" style="display:flex;align-items:center;gap:5px;background:#25d366;color:#fff;border:none;">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                    WhatsApp
+                                </span>
+                            <% } else { %>
+                                <span class="badge bg-blue" style="text-transform:uppercase;"><%= order.payment_method %></span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--gray-500);margin-bottom:4px;">Status</div>
+                        <div>
+                            <% if (order.payment_status === 'completed') { %>
+                                <span style="color:#2d5a3f;font-weight:600;">✅ Paid</span>
+                            <% } else { %>
+                                <span style="color:#e67e22;font-weight:600;">⏳ Pending</span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% if (order.transaction_id) { %>
+                        <div>
+                            <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Transaction ID</div>
+                            <div style="font-family:monospace;font-size:12px;background:#f8f9fa;padding:4px 8px;border-radius:4px;"><%= order.transaction_id %></div>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-hd">
+                <h3>Customer</h3>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div>
+                        <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Name</div>
+                        <div style="font-weight:500;"><%= order.user_name %></div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Email</div>
+                        <div><%= order.user_email %></div>
+                    </div>
+                    <% if (order.user_phone) { %>
+                        <div>
+                            <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Phone</div>
+                            <div><%= order.user_phone %></div>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-hd">
+                <h3>Delivery Address</h3>
+            </div>
+            <div class="card-body">
+                <div style="font-size:14px;color:var(--gray-700);line-height:1.7;">
+                    <%= order.address || '-' %><br>
+                    <%= order.city || '' %>
+                </div>
+                <% if (order.estimated_delivery_at) { %>
+                    <div style="margin-top:10px;font-size:13px;color:var(--gray-600);">
+                        ETA: <strong><%= new Date(order.estimated_delivery_at).toLocaleString('en-IN') %></strong>
+                    </div>
+                <% } %>
+                <% if (order.delivery_note) { %>
+                    <div style="margin-top:6px;font-size:13px;color:var(--gray-600);">
+                        Note: <%= order.delivery_note %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-hd">
+                <h3>Customer Requests</h3>
+            </div>
+            <div class="card-body">
+                <% if (order.cancel_reason) { %>
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Cancellation Reason</div>
+                        <div style="font-size:13px;"><%= order.cancel_reason %></div>
+                    </div>
+                <% } %>
+                <% if (returnRequest) { %>
+                    <div>
+                        <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;">Return Request</div>
+                        <div style="font-size:13px;">Status: <strong><%= returnRequest.status %></strong></div>
+                        <div style="font-size:13px;">Reason: <%= returnRequest.reason || '-' %></div>
+                        <div style="font-size:12px;color:var(--gray-500);margin-top:4px;"><%= new Date(returnRequest.created_at).toLocaleString('en-IN') %></div>
+                    </div>
+                <% } %>
+                <% if (!order.cancel_reason && !returnRequest) { %>
+                    <div style="font-size:13px;color:var(--gray-500);">No cancellation or return request from user.</div>
+                <% } %>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<%- include('_footer') %>

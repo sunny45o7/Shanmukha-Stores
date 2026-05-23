@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | Shanmukha Stores</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('../partials/navbar') %>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Welcome Back</h1>
+        <p>Sign in to your account</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+        <% if (error.includes('verify your email')) { %>
+          <form method="POST" action="/auth/resend-verification" style="text-align:center; margin-bottom: 16px;">
+            <input type="hidden" name="email" id="resendEmail">
+            <button type="submit" class="btn btn-link" onclick="document.getElementById('resendEmail').value = document.getElementById('emailInput').value;">
+              📧 Resend verification email
+            </button>
+          </form>
+        <% } %>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
+
+      <form method="POST" action="/auth/login" novalidate>
+        <div class="form-group">
+          <label for="emailInput">Email Address</label>
+          <input type="email" id="emailInput" name="email" class="form-control" required
+                 placeholder="you@example.com" autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="password">
+            Password
+            <a href="/auth/forgot-password" class="float-right text-sm">Forgot password?</a>
+          </label>
+          <div class="input-group">
+            <input type="password" id="password" name="password" class="form-control" required
+                   placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="toggle-password" onclick="togglePassword('password')">👁</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Don't have an account? <a href="/auth/register">Create one</a></p>
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer') %>
+  <script>
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  </script>
+</body>
+</html>

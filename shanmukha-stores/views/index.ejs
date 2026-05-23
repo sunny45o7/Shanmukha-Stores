@@ -1,0 +1,503 @@
+<%- include('./partials/navbar') %>
+
+
+  <!-- HERO LUXURY -->
+  <section class="hero-luxury">
+    <div class="hero-content" data-animate>
+      <% if (typeof settings !=='undefined' && settings.store_tagline) { %>
+        <div class="hero-tag stagger-1">
+          <%= settings.store_tagline %>
+        </div>
+        <% } else { %>
+          <div class="hero-tag stagger-1">Est. 2026 — The Collection</div>
+          <% } %>
+            <h1 class="stagger-2">The Art of <em>Fine</em> Living & Dining</h1>
+            <p class="stagger-3">Discover a curated sanctuary of premium organic groceries, handpicked for those who
+              seek
+              the
+              extraordinary in the everyday.</p>
+            <div class="hero-actions stagger-3">
+              <a href="/products" class="btn-luxury">Explore Gallery</a>
+              <a href="#featured" class="btn-luxury-outline">Curated Selection</a>
+            </div>
+    </div>
+
+    <div class="hero-visual" data-animate>
+      <% if (typeof banners !=='undefined' && banners.length> 0) { %>
+        <div class="main-banner-visual">
+          <img src="<%= banners[0].image %>" alt="Luxury Banner" class="floating-img">
+        </div>
+        <% } %>
+    </div>
+  </section>
+
+  <!-- CURATED COLLECTION -->
+  <section class="featured-section" id="featured">
+    <div class="home-section-header" data-animate>
+      <span class="section-tag">The Curated Gallery</span>
+      <h2 class="section-title-luxury">Exceptional Provisions</h2>
+    </div>
+
+    <% if (typeof categories !=='undefined' && categories.length> 0) { %>
+      <div class="luxury-category-pills" data-animate>
+        <a href="/products" class="pill active">All Essentials</a>
+        <% categories.slice(0, 6).forEach(function(c) { %>
+          <a href="/products?category=<%= c.id %>" class="pill">
+            <%= c.name %>
+          </a>
+          <% }); %>
+      </div>
+      <% } %>
+
+        <div class="products-luxury-grid">
+          <% if (products && products.length> 0) { %>
+            <% products.forEach(function(p, idx) { %>
+              <div class="product-card-luxury" data-animate="stagger-<%= (idx % 3) + 1 %>">
+                <div class="img-wrap">
+                  <a href="/products/<%= p.id %>">
+                    <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
+                      onerror="this.src='/images/placeholder.png'">
+                  </a>
+                  <% if (p.stock===0) { %>
+                    <span class="float-badge dark">Reserved</span>
+                    <% } %>
+
+                      <div class="card-actions-float">
+                        <form action="/cart/add/<%= p.id %>" method="POST" style="flex: 1;">
+                          <input type="hidden" name="quantity" value="1">
+                          <button type="submit" class="btn-luxury-card-atc" <%= p.stock === 0 ? 'disabled' : '' %>><%= p.stock === 0 ? 'Out of Stock' : 'Add to Collection' %></button>
+                        </form>
+                        <form action="/wishlist/toggle/<%= p.id %>" method="POST" class="wishlist-toggle-form" data-product-id="<%= p.id %>">
+                          <button type="submit" class="btn-circle wishlist-btn-home" aria-label="Toggle wishlist">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                </div>
+                <div class="product-info-luxury">
+                  <% const basePrice = Number(p.price || 0); %>
+                  <% const effectivePrice = Number(p.effective_price || p.price || 0); %>
+                  <% const offerPercent = p.offer_active ? Number(p.offer_percent || 0) : 0; %>
+                  <% const hasOffer = offerPercent > 0 && effectivePrice < basePrice; %>
+                  <span class="category">
+                    <%= p.category_name || 'Bespoke' %>
+                  </span>
+                  <h3><a href="/products/<%= p.id %>">
+                      <%= p.name %>
+                    </a></h3>
+
+                  <div class="price home-price-wrap">
+                    <span class="home-price-current">&#8377;<%= effectivePrice.toLocaleString('en-IN') %></span>
+                    <% if (hasOffer) { %>
+                      <span class="home-price-original">&#8377;<%= basePrice.toLocaleString('en-IN') %></span>
+                      <span class="home-offer-pill"><%= offerPercent.toFixed(2).replace(/\.00$/, '') %>% OFF</span>
+                    <% } %>
+                    <% if (p.price_type === 'kg') { %>
+                      <span class="home-price-unit">per kg</span>
+                    <% } else { %>
+                      <span class="home-price-unit">per unit</span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+              <% }); %>
+                <% } %>
+        </div>
+
+        <div class="collection-footer" data-animate>
+          <a href="/products" class="btn-luxury-outline">View Entire Collection</a>
+        </div>
+  </section>
+
+  <!-- LUXURY QUOTE -->
+  <section class="luxury-quote-section" data-animate>
+    <div class="quote-content">
+      <span class="serif-quote">“</span>
+      <h2>Quality is never an accident; it is always the result of high intention, sincere effort, intelligent direction
+        and skillful execution.</h2>
+      <p>— THE SHANMUKHA PHILOSOPHY</p>
+    </div>
+  </section>
+
+  <!-- PROMO AD GRID -->
+  <% if (typeof banners !=='undefined' && banners.length> 1) {
+    const ads = banners.filter(b => b.position > 0);
+    if (ads.length > 0) {
+    %>
+    <section class="premium-ads-section" data-animate>
+      <div class="ads-luxury-grid">
+        <% ads.forEach(ad=> { %>
+          <a href="<%= ad.link || '#' %>" class="ad-card-luxury">
+            <img src="<%= ad.image %>" alt="<%= ad.title %>" onerror="this.style.display='none'">
+            <div class="ad-overlay">
+              <div class="ad-info">
+                <h3>
+                  <%= ad.title %>
+                </h3>
+                <p>
+                  <%= ad.subtitle %>
+                </p>
+                <span class="ad-btn">Discover →</span>
+              </div>
+            </div>
+          </a>
+          <% }) %>
+      </div>
+    </section>
+    <% } } %>
+
+      <% if (typeof collaborations !== 'undefined' && collaborations.length > 0) { %>
+      <section class="collab-section" data-animate>
+        <div class="home-section-header">
+          <span class="section-tag">Our Collaborations</span>
+          <h2 class="section-title-luxury">Trusted Partners</h2>
+        </div>
+        <div class="collab-grid">
+          <% collaborations.forEach(function(c) { %>
+            <a href="<%= c.website || '#' %>" class="collab-item" <%= c.website ? 'target="_blank" rel="noopener noreferrer"' : '' %>>
+              <img src="<%= c.logo_url %>" alt="<%= c.name %>" onerror="this.style.display='none'">
+            </a>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+      <%- include('./partials/footer') %>
+
+        <script>
+          document.querySelectorAll('.wishlist-toggle-form').forEach((form) => {
+            form.addEventListener('submit', async function (e) {
+              e.preventDefault();
+              const productId = this.dataset.productId;
+              const btn = this.querySelector('button');
+              const icon = this.querySelector('svg');
+              try {
+                const res = await fetch(`/wishlist/toggle/${productId}`, {
+                  method: 'POST',
+                  headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.ok) {
+                  if (data && data.redirect) window.location.href = data.redirect;
+                  return;
+                }
+                const active = data.status === 'added';
+                btn.classList.toggle('active', active);
+                if (icon) icon.setAttribute('fill', active ? 'currentColor' : 'none');
+              } catch (err) {
+                console.error(err);
+              }
+            });
+          });
+
+        </script>
+
+        <style>
+          /* Additional Inline Luxury Styles for Index */
+          .hero-visual {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+          }
+
+          .main-banner-visual {
+            position: relative;
+            z-index: 5;
+          }
+
+          .floating-img {
+            max-width: 90%;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            animation: float 6s ease-in-out infinite;
+            border: 1px solid var(--border);
+          }
+
+          @keyframes float {
+
+            0%,
+            100% {
+              transform: translateY(0);
+            }
+
+            50% {
+              transform: translateY(-20px);
+            }
+          }
+
+          .luxury-category-pills {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+          }
+
+          .pill {
+            padding: 10px 24px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-700);
+            transition: var(--transition);
+          }
+
+          .pill:hover,
+          .pill.active {
+            background: var(--black);
+            color: #fff;
+            border-color: var(--black);
+          }
+
+          .float-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+
+          .float-badge.dark {
+            background: var(--black);
+            color: #fff;
+          }
+
+          .btn-luxury-card-atc {
+            width: 100%;
+            height: 48px;
+            background: rgba(10, 10, 10, 0.95);
+            color: #fff;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+          }
+
+          .btn-luxury-card-atc:hover {
+            background: var(--emerald);
+          }
+
+          .btn-luxury-card-atc:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            background: #6c757d;
+          }
+
+          .card-actions-float {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .card-actions-float form {
+            margin: 0;
+          }
+
+          .collection-footer {
+            text-align: center;
+            margin-top: 80px;
+          }
+
+          .home-price-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+
+          .home-price-current {
+            color: var(--emerald);
+            font-weight: 700;
+          }
+
+          .home-price-original {
+            color: var(--gray-500);
+            text-decoration: line-through;
+            font-size: 13px;
+          }
+
+          .home-offer-pill {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #fff;
+            background: var(--emerald);
+            border-radius: 999px;
+            padding: 3px 8px;
+          }
+
+          .home-price-unit {
+            font-size: 11px;
+            color: var(--gray-500);
+            text-transform: lowercase;
+          }
+
+          .luxury-quote-section {
+            padding: 120px 8%;
+            background: var(--bone);
+            text-align: center;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+          }
+
+          .serif-quote {
+            font-family: 'Playfair Display', serif;
+            font-size: 120px;
+            line-height: 0;
+            display: block;
+            margin-bottom: 40px;
+            color: var(--champagne);
+          }
+
+          .luxury-quote-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(24px, 3vw, 36px);
+            max-width: 900px;
+            margin: 0 auto 30px;
+            font-weight: 500;
+            line-height: 1.5;
+            color: var(--emerald);
+          }
+
+          .luxury-quote-section p {
+            font-size: 12px;
+            letter-spacing: 3px;
+            font-weight: 700;
+            color: var(--gray-500);
+          }
+
+          .premium-ads-section {
+            padding: 80px 8%;
+            background: #fff;
+          }
+
+          .collab-section {
+            padding: 70px 8%;
+            border-top: 1px solid var(--border);
+            background: #fff;
+          }
+
+          .collab-grid {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+          }
+
+          .collab-item {
+            height: 80px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background: #fff;
+            transition: transform .2s ease, box-shadow .2s ease;
+          }
+
+          .collab-item img {
+            max-width: 100%;
+            max-height: 48px;
+            object-fit: contain;
+            filter: grayscale(100%);
+            opacity: .85;
+            transition: filter .2s ease, opacity .2s ease;
+          }
+
+          .collab-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+          }
+
+          .collab-item:hover img {
+            filter: grayscale(0%);
+            opacity: 1;
+          }
+
+          .ads-luxury-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+          }
+
+          .ad-card-luxury {
+            position: relative;
+            height: 350px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: block;
+          }
+
+          .ad-card-luxury img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s ease;
+          }
+
+          .ad-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 70%);
+            padding: 40px;
+            display: flex;
+            align-items: flex-end;
+          }
+
+          .ad-info h3 {
+            color: #fff;
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            margin-bottom: 8px;
+          }
+
+          .ad-info p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-bottom: 20px;
+          }
+
+          .ad-btn {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 4px;
+          }
+
+          .ad-card-luxury:hover img {
+            transform: scale(1.05);
+          }
+
+          @media (max-width: 768px) {
+            .hero-luxury {
+              padding-top: 140px;
+              flex-direction: column;
+              text-align: center;
+            }
+
+            .hero-actions {
+              justify-content: center;
+            }
+
+            .ads-luxury-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+        </style>
+
