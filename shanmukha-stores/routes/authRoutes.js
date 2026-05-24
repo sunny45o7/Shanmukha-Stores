@@ -97,12 +97,6 @@ router.post("/login", async (req, res) => {
       return res.redirect("/auth/login?error=Incorrect password");
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET || "fallback_jwt_secret",
-      { expiresIn: "7d" }
-    );
-
     req.session.user = {
       id: user.id,
       name: user.full_name,
@@ -126,7 +120,6 @@ router.post("/login", async (req, res) => {
       );
     }
 
-    res.cookie("token", token, { httpOnly: true, secure: false });
     if (user.role === "staff") {
       return res.redirect("/staff/dashboard");
     }

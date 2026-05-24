@@ -459,6 +459,9 @@ app.use((req, res) => {
 // ============================================================
 app.use((err, req, res, next) => {
   console.error("Server Error:", err.stack);
+  if (res.headersSent) {
+    return next(err);
+  }
   res.status(500).render("errors/500", {
     title: "Server Error",
     user: res.locals.user || null,
@@ -482,5 +485,19 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// ============================================================
+// GLOBAL PROCESS ERROR HANDLERS
+// ============================================================
+process.on("uncaughtException", (err) => {
+  console.error("CRITICAL: Uncaught Exception! Shutting down...");
+  console.error(err.stack || err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("CRITICAL: Unhandled Promise Rejection!");
+  console.error(err.stack || err);
+});
 
 startServer();

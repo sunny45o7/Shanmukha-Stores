@@ -20,8 +20,11 @@ if (!fs.existsSync(qrCodeUploadDir)) {
 const qrCodeImageStorage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, qrCodeUploadDir),
     filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname || '').toLowerCase();
-        const safeExt = ext && ext.length <= 10 ? ext : '.jpg';
+        let safeExt = '.jpg';
+        if (file.mimetype === 'image/png') safeExt = '.png';
+        else if (file.mimetype === 'image/jpeg') safeExt = '.jpg';
+        else if (file.mimetype === 'image/webp') safeExt = '.webp';
+        
         const name = `qr-code-${Date.now()}${safeExt}`;
         cb(null, name);
     }
