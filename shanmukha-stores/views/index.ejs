@@ -102,6 +102,15 @@
                       <span class="home-price-unit">per unit</span>
                     <% } %>
                   </div>
+
+                  <% if (p.price_type === 'kg') { %>
+                    <div class="product-sizes-pill-list">
+                      <% const availWeights = Array.isArray(p.available_weights) ? p.available_weights : (p.available_weights ? JSON.parse(p.available_weights) : []); %>
+                      <% availWeights.forEach(size => { %>
+                        <span class="size-pill"><%= size %></span>
+                      <% }) %>
+                    </div>
+                  <% } %>
                 </div>
               </div>
               <% }); %>

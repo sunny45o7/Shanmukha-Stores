@@ -3092,3 +3092,35 @@ body {
   color: #a16207 !important;
   border: 1px solid rgba(161, 98, 7, 0.1);
 }
+
+/* Product Size Pills */
+.product-sizes-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.size-pill {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--black);
+  background: white;
+}
+.size-pill:not(.unavailable) {
+  border-color: var(--border);
+}
+.size-pill:not(.unavailable):hover {
+  border-color: var(--emerald);
+}
+.size-pill.unavailable {
+  color: #9ca3af;
+  background: #f9fafb;
+  border-color: #f3f4f6;
+  opacity: 0.5;
+  text-decoration: line-through;
+}

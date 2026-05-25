@@ -1,4 +1,4 @@
-﻿<%- include('./partials/navbar') %>
+<%- include('./partials/navbar') %>
 
 <section class="wishlist-section">
   <div class="section-page-header">
@@ -34,7 +34,21 @@
           </div>
           <div class="product-info">
             <h3 class="product-name"><a href="/products/<%= pid %>"><%= item.name %></a></h3>
-            <p class="product-price">&#8377;<%= Number(item.price).toLocaleString('en-IN') %></p>
+            <p class="product-price">&#8377;<%= Number(item.price).toLocaleString('en-IN') %>
+              <% if (item.price_type === 'kg') { %>
+                <span class="price-unit-note">per kg</span>
+              <% } else { %>
+                <span class="price-unit-note">per unit</span>
+              <% } %>
+            </p>
+            <% if (item.price_type === 'kg') { %>
+              <div class="product-sizes-pill-list">
+                <% const availWeights = Array.isArray(item.available_weights) ? item.available_weights : (item.available_weights ? JSON.parse(item.available_weights) : []); %>
+                <% availWeights.forEach(size => { %>
+                  <span class="size-pill"><%= size %></span>
+                <% }) %>
+              </div>
+            <% } %>
             <% if (item.stock === 0) { %>
               <div class="out-of-stock-label">Out of Stock</div>
             <% } else { %>
