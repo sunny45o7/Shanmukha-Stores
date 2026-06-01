@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const { sendPasswordResetEmail, sendVerificationEmail } = require("../utils/mailer");
+const { authLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get("/register", (req, res) => {
 /* ===============================
    REGISTER
 =============================== */
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   try {
     const full_name = req.body.full_name || req.body.name || req.body.username || "";
     const { email, password } = req.body;
@@ -39,6 +40,15 @@ router.post("/register", async (req, res) => {
 
     if (!full_name || !email || !password) {
       return res.redirect("/auth/register?error=Please fill all required fields");
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.redirect("/auth/register?error=Please enter a valid email address");
+    }
+
+    if (password.length < 8) {
+      return res.redirect("/auth/register?error=Password must be at least 8 characters long");
     }
 
     const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
@@ -73,7 +83,7 @@ router.post("/register", async (req, res) => {
 /* ===============================
    LOGIN
 =============================== */
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -173,7 +183,7 @@ router.get("/forgot-password", (req, res) => {
   });
 });
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -242,13 +252,13 @@ router.get("/reset-password", async (req, res) => {
   }
 });
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", authLimiter, async (req, res) => {
   try {
     const { token, password, confirm_password } = req.body;
 
     if (!token) return res.redirect("/auth/forgot-password?error=Missing reset token");
-    if (!password || password.length < 6) {
-      return res.redirect(`/auth/reset-password?token=${encodeURIComponent(token)}&error=Password must be at least 6 characters`);
+    if (!password || password.length < 8) {
+      return res.redirect(`/auth/reset-password?token=${encodeURIComponent(token)}&error=Password must be at least 8 characters long`);
     }
     if (password !== confirm_password) {
       return res.redirect(`/auth/reset-password?token=${encodeURIComponent(token)}&error=Passwords do not match`);
@@ -301,7 +311,7 @@ router.get("/verify-email", async (req, res) => {
   }
 });
 
-router.post("/resend-verification", async (req, res) => {
+router.post("/resend-verification", authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.redirect("/auth/login?error=Email is required");
