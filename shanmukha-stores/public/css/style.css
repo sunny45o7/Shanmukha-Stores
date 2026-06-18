@@ -3151,6 +3151,7 @@ body {
   .success-actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .products-grid {
