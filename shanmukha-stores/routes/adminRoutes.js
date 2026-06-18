@@ -1190,7 +1190,7 @@ router.post('/users/toggle/:id', isAdmin, async (req, res) => {
 router.post('/users/role/:id', isAdmin, async (req, res) => {
     try {
         const { role } = req.body;
-        if (!['user', 'staff'].includes(role)) {
+        if (!['user', 'staff', 'admin'].includes(role)) {
             return res.redirect('/admin/users?error=Invalid role specified');
         }
         const target = await pool.query("SELECT id, role FROM users WHERE id = $1", [req.params.id]);
@@ -1212,19 +1212,20 @@ router.post('/users/role/:id', isAdmin, async (req, res) => {
 // ==========================================
 router.post('/staff/add', isAdmin, async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, role } = req.body;
         if (!name || !email || !password) return res.redirect('/admin/users?error=Missing fields');
 
+        const newRole = role === 'admin' ? 'admin' : 'staff';
         const bcrypt = require('bcrypt');
         const hashedPassword = await bcrypt.hash(password, 12);
 
         await pool.query(
-            "INSERT INTO users (full_name, email, password, role) VALUES ($1, $2, $3, 'staff')",
-            [name, email, hashedPassword]
+            "INSERT INTO users (full_name, email, password, role) VALUES ($1, $2, $3, $4)",
+            [name, email, hashedPassword, newRole]
         );
 
-        await logActivity(req.session.user.id, "Onboarded Staff", { email });
-        res.redirect('/admin/users?success=Staff added successfully');
+        await logActivity(req.session.user.id, `Onboarded ${newRole}`, { email });
+        res.redirect(`/admin/users?success=${newRole === 'admin' ? 'Admin' : 'Staff'} added successfully`);
     } catch (err) { res.redirect('/admin/users?error=' + encodeURIComponent(err.message)); }
 });
 

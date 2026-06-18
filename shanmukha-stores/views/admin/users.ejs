@@ -18,7 +18,7 @@
                         </div>
                         <div style="display:flex; gap:10px; align-items:center;">
                             <button onclick="document.getElementById('addStaffModal').style.display='flex'"
-                                class="btn-icon-gold" title="Add Staff Member">
+                                class="btn-icon-gold" title="Add Admin/Staff Member">
                                 <span>+</span>
                             </button>
                             <form method="GET" action="/admin/users" class="search-row">
@@ -94,6 +94,8 @@
                                                                 >User</option>
                                                             <option value="staff" <%=u.role==='staff' ? 'selected' : '' %>
                                                                 >Staff</option>
+                                                            <option value="admin" <%=u.role==='admin' ? 'selected' : '' %>
+                                                                >Admin</option>
                                                         </select>
                                                         <button type="submit" class="btn btn-black" style="padding:4px 10px; border-radius:20px; font-size:10px; min-height:0;">Save</button>
                                                     </form>
@@ -155,7 +157,7 @@
                     <div id="addStaffModal" class="modal-overlay" style="display:none;">
                         <div class="modal-card-minimal">
                             <div class="modal-hd-minimal">
-                                <h3>Onboard Staff</h3>
+                                <h3>Onboard Admin/Staff</h3>
                                 <button
                                     onclick="document.getElementById('addStaffModal').style.display='none'">&times;</button>
                             </div>
@@ -163,6 +165,10 @@
                                 <input type="text" name="name" required placeholder="Full Name">
                                 <input type="email" name="email" required placeholder="Official Email">
                                 <input type="password" name="password" required placeholder="Temporary Password">
+                                <select name="role" required style="width: 100%; padding: 14px 18px; margin-bottom: 14px; border: 1px solid var(--gray-100); border-radius: 12px; font-size: 14px; background: var(--gray-50); outline: none; transition: all 0.2s;">
+                                    <option value="staff">Staff</option>
+                                    <option value="admin">Admin</option>
+                                </select>
                                 <button type="submit" class="btn-black-minimal">Confirm Registration</button>
                             </form>
                         </div>
