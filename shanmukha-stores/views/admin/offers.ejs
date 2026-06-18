@@ -53,12 +53,14 @@
               </td>
               <td style="text-align: right;">₹<%= Number(p.price).toLocaleString('en-IN') %></td>
               <td>
-                <form action="/admin/offers/product/<%= p.id %>" method="POST" style="display:flex;align-items:center;gap:8px;">
-                  <input type="number" name="offer_percent" value="<%= offerPct || 1 %>" min="1" max="100" step="0.01" class="inp" style="width:86px;" oninput="if(this.value > 100) this.value = 100;" onblur="if(this.value !== '' && this.value < 1) this.value = 1;">
+                <form action="/admin/offers/product/<%= p.id %>" method="POST" id="offer-form-<%= p.id %>" style="display:none;"></form>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="number" form="offer-form-<%= p.id %>" name="offer_percent" value="<%= offerPct || 1 %>" min="1" max="100" step="0.01" class="inp" style="width:86px;" oninput="if(this.value > 100) this.value = 100;" onblur="if(this.value !== '' && this.value < 1) this.value = 1;">
+                </div>
               </td>
               <td>
                   <label class="toggle-switch" title="<%= p.offer_active ? 'Active' : 'Inactive' %>">
-                    <input type="checkbox" name="offer_active" <%= p.offer_active ? 'checked' : '' %>>
+                    <input type="checkbox" form="offer-form-<%= p.id %>" name="offer_active" <%= p.offer_active ? 'checked' : '' %>>
                     <span class="toggle-slider"></span>
                   </label>
               </td>
@@ -71,8 +73,7 @@
                 <% } %>
               </td>
               <td>
-                  <button type="submit" class="btn btn-black btn-sm">Save</button>
-                </form>
+                  <button type="submit" form="offer-form-<%= p.id %>" class="btn btn-black btn-sm">Save</button>
               </td>
             </tr>
           <% }) %>
