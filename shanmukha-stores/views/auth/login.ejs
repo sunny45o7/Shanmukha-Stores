@@ -9,55 +9,71 @@
 <body>
   <%- include('../partials/navbar') %>
 
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-header">
+  <section class="auth-section">
+    <div class="auth-container">
+      <div class="auth-left">
         <h1>Welcome Back</h1>
-        <p>Sign in to your account</p>
+        <p>Sign in to access your luxury shopping experience, view your orders, and manage your profile.</p>
+        <div class="auth-benefit">
+          <span class="icon">✨</span>
+          <span>Exclusive access to premium products</span>
+        </div>
+        <div class="auth-benefit">
+          <span class="icon">📦</span>
+          <span>Fast and secure delivery</span>
+        </div>
+        <div class="auth-benefit">
+          <span class="icon">💎</span>
+          <span>Uncompromised quality and service</span>
+        </div>
       </div>
 
-      <% if (error) { %>
-        <div class="alert alert-danger"><%= error %></div>
-        <% if (error.includes('verify your email')) { %>
-          <form method="POST" action="/auth/resend-verification" style="text-align:center; margin-bottom: 16px;">
-            <input type="hidden" name="email" id="resendEmail">
-            <button type="submit" class="btn btn-link" onclick="document.getElementById('resendEmail').value = document.getElementById('emailInput').value;">
-              📧 Resend verification email
-            </button>
-          </form>
+      <div class="auth-card">
+        <h2>Sign In</h2>
+
+        <% if (error) { %>
+          <div class="auth-alert error"><%= error %></div>
+          <% if (error.includes('verify your email')) { %>
+            <form method="POST" action="/auth/resend-verification" style="text-align:center; margin-bottom: 16px;">
+              <input type="hidden" name="email" id="resendEmail">
+              <button type="submit" style="border:none;background:none;font-weight:600;cursor:pointer;color:var(--black);" onclick="document.getElementById('resendEmail').value = document.getElementById('loginInput').value;">
+                📧 Resend verification email
+              </button>
+            </form>
+          <% } %>
         <% } %>
-      <% } %>
-      <% if (success) { %>
-        <div class="alert alert-success"><%= success %></div>
-      <% } %>
+        <% if (success) { %>
+          <div class="auth-alert success"><%= success %></div>
+        <% } %>
 
-      <form method="POST" action="/auth/login" novalidate>
-        <div class="form-group">
-          <label for="emailInput">Email Address</label>
-          <input type="email" id="emailInput" name="email" class="form-control" required
-                 placeholder="you@example.com" autocomplete="email">
-        </div>
-
-        <div class="form-group">
-          <label for="password">
-            Password
-            <a href="/auth/forgot-password" class="float-right text-sm">Forgot password?</a>
-          </label>
-          <div class="input-group">
-            <input type="password" id="password" name="password" class="form-control" required
-                   placeholder="••••••••" autocomplete="current-password">
-            <button type="button" class="toggle-password" onclick="togglePassword('password')">👁</button>
+        <form method="POST" action="/auth/login" novalidate>
+          <div class="form-group">
+            <label for="loginInput" class="form-label">Email or Mobile Number *</label>
+            <input type="text" id="loginInput" name="login_id" class="form-input" required
+                   placeholder="Email or Mobile Number">
           </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label" style="display:flex;justify-content:space-between;">
+              <span>Password</span>
+              <a href="/auth/forgot-password" style="text-transform:none;letter-spacing:normal;font-weight:400;color:var(--gray-500);">Forgot password?</a>
+            </label>
+            <div class="password-wrap">
+              <input type="password" id="password" name="password" class="form-input" required
+                     placeholder="••••••••" autocomplete="current-password">
+              <span class="toggle-pass" onclick="togglePassword('password')">👁</span>
+            </div>
+          </div>
+
+          <button type="submit" class="auth-btn">Sign In</button>
+        </form>
+
+        <div style="margin-top:24px;text-align:center;font-size:14px;color:var(--gray-500);">
+          Don't have an account? <a href="/auth/register" style="color:var(--black);font-weight:600;">Create one</a>
         </div>
-
-        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
-      </form>
-
-      <div class="auth-footer">
-        <p>Don't have an account? <a href="/auth/register">Create one</a></p>
       </div>
     </div>
-  </div>
+  </section>
 
   <%- include('../partials/footer') %>
   <script>

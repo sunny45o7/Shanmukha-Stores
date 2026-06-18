@@ -1,4 +1,4 @@
-﻿<%- include('_header') %>
+<%- include('_header') %>
 
   <div class="page-hd">
     <div style="display:flex; align-items:center; gap:12px;">
@@ -33,9 +33,10 @@
           <div class="luxury-card" style="margin-bottom:24px; padding:20px; border-radius:16px;">
             <form method="GET" action="/admin/products"
               style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-              <div class="search-box glass" style="flex:2; min-width:250px; border-radius:10px; padding:10px 16px;">
-                <input type="text" name="search" value="<%= search %>" placeholder="Search by name..."
+              <div class="search-box glass" style="flex:2; min-width:250px; border-radius:10px; padding:10px 16px; position:relative;">
+                <input type="text" name="search" id="searchInput" autocomplete="off" value="<%= search %>" placeholder="Search by name..."
                   style="width:100%; border:none; outline:none; font-family:inherit; background:transparent;">
+                <div id="autocompleteResults" class="autocomplete-dropdown"></div>
               </div>
 
               <select name="category" class="glass"
@@ -58,7 +59,7 @@
               </select>
 
               <button type="submit" class="btn btn-black" style="padding:10px 24px; border-radius:10px;">Filter</button>
-              <a href="/admin/products" class="btn btn-ghost" style="padding:10px 20px; border-radius:10px;">Clear</a>
+              <a href="/admin/products" class="btn btn-ghost" style="padding:10px 20px; border-radius:10px;">Reset Filters</a>
             </form>
           </div>
 
@@ -100,9 +101,9 @@
                           onchange="toggleAll(this)"></th>
                       <th>Product Name</th>
                       <th>Category</th>
-                      <th>Price</th>
 	                      <th>Stock</th>
 	                      <th>Visibility</th>
+                      <th style="text-align:right;">Price</th>
 	                      <th style="text-align:right; padding-right:24px;">Actions</th>
                     </tr>
                   </thead>
@@ -122,8 +123,12 @@
                             <td>
                               <div style="display:flex; align-items:center; gap:15px; padding:12px 0;">
                                 <% if (p.image) { %>
-                                  <img src="<%= p.image %>" class="prod-img"
-                                    style="width:50px; height:50px; border-radius:10px; border:1px solid var(--border);">
+                                  <% if (p.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+                                    <video src="<%= p.image %>" class="prod-img" style="width:50px; height:50px; border-radius:10px; border:1px solid var(--border); object-fit:cover;" autoplay muted loop playsinline></video>
+                                  <% } else { %>
+                                    <img src="<%= p.image %>" class="prod-img"
+                                      style="width:50px; height:50px; border-radius:10px; border:1px solid var(--border);">
+                                  <% } %>
                                   <% } else { %>
                                     <div
                                       style="width:50px; height:50px; background:var(--gray-50); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--gray-300);">
@@ -148,9 +153,6 @@
                                 <%= p.category_name || 'No Category' %>
                               </span>
                             </td>
-                            <td style="font-weight:600; color:var(--gray-700);">&#8377;<%=
-                                Number(p.price).toLocaleString('en-IN') %>
-                            </td>
 	                            <td>
 	                              <% if (p.stock===0) { %>
                                 <span class="badge bg-red" style="padding:4px 12px;">Out of Stock</span>
@@ -169,6 +171,9 @@
 	                                <%= p.is_enabled === false ? 'Disabled' : 'Enabled' %>
 	                              </span>
 	                            </td>
+                            <td style="font-weight:600; color:var(--gray-700); text-align:right;">&#8377;<%=
+                                Number(p.price).toLocaleString('en-IN') %>
+                            </td>
 	                            <td style="text-align:right; padding-right:24px;">
 	                              <div style="display:flex; gap:8px; justify-content:flex-end;">
 	                                <form action="/admin/products/toggle-enabled/<%= p.id %>" method="POST" style="margin:0;">
@@ -282,29 +287,32 @@
 		                          <div class="ap-grid-offer" style="display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center;">
                             <div class="form-group" style="margin-bottom:0;">
                               <label>Offer % (optional)</label>
-                              <input type="number" name="offer_percent" min="0" max="100" step="0.01" value="0">
+                              <input type="number" name="offer_percent" min="1" max="100" step="0.01" value="1" oninput="if(this.value > 100) this.value = 100;" onblur="if(this.value !== '' && this.value < 1) this.value = 1;">
                             </div>
-                            <label style="display:flex; align-items:center; gap:8px; margin-top:22px;">
-                              <input type="checkbox" name="offer_active">
-                              <span>Enable Offer</span>
-                            </label>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:22px;">
+                              <label class="toggle-switch">
+                                <input type="checkbox" name="offer_active">
+                                <span class="toggle-slider"></span>
+                              </label>
+                              <span class="form-label" style="margin:0;">Enable Offer</span>
+                            </div>
                           </div>
 	                          <div class="form-group">
 	                            <label>Product Image URL</label>
 	                            <input type="url" name="image" placeholder="https://example.com/image.jpg">
 	                          </div>
 		                          <div class="form-group">
-		                            <label>Upload Images From System</label>
-		                            <input type="file" name="product_images" accept="image/*" multiple>
+		                            <label>Upload Images/Videos From System</label>
+		                            <input type="file" name="product_images" accept="image/*,video/*" multiple>
 		                            <p style="font-size:12px;color:var(--gray-500);margin-top:8px;">
-		                              Select one or more images from your computer.
+		                              Select one or more files from your computer.
 		                            </p>
 		                          </div>
 		                          <div class="form-group">
-		                            <label>Upload Images Folder (Optional)</label>
-		                            <input type="file" name="product_images" accept="image/*" multiple webkitdirectory directory>
+		                            <label>Upload Folder (Optional)</label>
+		                            <input type="file" name="product_images" accept="image/*,video/*" multiple webkitdirectory directory>
 		                            <p style="font-size:12px;color:var(--gray-500);margin-top:8px;">
-		                              Optional: choose a folder from your system to upload all images at once.
+		                              Optional: choose a folder from your system to upload all files at once.
 		                            </p>
 		                          </div>
 		                          <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:4px;">
@@ -412,4 +420,49 @@
 	                  </script>
 
                   <%- include('_footer') %>
+
+<style>
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; max-height: 300px; overflow-y: auto; margin-top: 4px; }
+.autocomplete-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.autocomplete-item:hover { background: #f8fafc; }
+.autocomplete-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 12px; }
+.autocomplete-item div { display: flex; flex-direction: column; }
+.autocomplete-item span { font-size: 14px; font-weight: 500; color: #000; }
+.autocomplete-item small { font-size: 12px; color: #666; }
+</style>
+<script>
+  (function(){
+    const sInput = document.getElementById('searchInput');
+    const resDiv = document.getElementById('autocompleteResults');
+    if(!sInput || !resDiv) return;
+    let timer;
+    sInput.addEventListener('input', function(e) {
+      const v = e.target.value.trim();
+      clearTimeout(timer);
+      if(v.length > 0) {
+        timer = setTimeout(async () => {
+          try {
+            const r = await fetch('/admin/api/search/suggestions?type=products&q=' + encodeURIComponent(v));
+            const data = await r.json();
+            if(data && data.length > 0) {
+              resDiv.innerHTML = data.map(item => `
+                <div class="autocomplete-item" onclick="window.location.href='${item.url}'">
+                  ${item.image ? `<img src="${item.image}" onerror="this.src='/images/placeholder.png'">` : ''}
+                  <div>
+                    <span>${item.label}</span>
+                    ${item.sub ? `<small>${item.sub}</small>` : ''}
+                  </div>
+                </div>
+              `).join('');
+              resDiv.style.display = 'block';
+            } else { resDiv.style.display = 'none'; }
+          } catch(e){}
+        }, 200);
+      } else { resDiv.style.display = 'none'; }
+    });
+    document.addEventListener('click', e => {
+      if(e.target !== sInput && !resDiv.contains(e.target)) resDiv.style.display = 'none';
+    });
+  })();
+</script>
 

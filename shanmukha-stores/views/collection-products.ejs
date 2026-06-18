@@ -65,10 +65,9 @@
                         %>>Price: Low to High</option>
                     <option value="price-desc" <%=(typeof sort !=='undefined' && sort==='price-desc' ) ? 'selected' : ''
                         %>>Price: High to Low</option>
-                    <option value="rating" <%=(typeof sort !=='undefined' && sort==='rating' ) ? 'selected' : '' %>
-                        >Top
-                        Rated</option>
+                    <option value="rating" <%=(typeof sort !=='undefined' && sort==='rating' ) ? 'selected' : '' %>>Top Rated</option>
                 </select>
+                <a href="/collections/<%= collection.id %>" class="btn-secondary btn-sm filter-apply-btn" style="margin-left:10px;">Reset Filters</a>
             </div>
         </form>
 
@@ -92,10 +91,18 @@
                                 <span class="product-badge sale">Sold Out</span>
                                 <% } %>
 
+                                        <% const isWished = typeof wishlistProductIds !== 'undefined' && wishlistProductIds.includes(Number(p.id)); %>
+                                        <form action="/wishlist/toggle/<%= p.id %>" method="POST" class="wishlist-toggle-form wishlist-form-inline" data-product-id="<%= p.id %>">
+                                            <button type="submit" class="wishlist-btn <%= isWished ? 'active' : '' %>" title="Wishlist"><%= isWished ? '♥' : '♡' %></button>
+                                        </form>
                                         <form action="/wishlist/toggle/<%= p.id %>" method="POST"
-                                            class="wishlist-toggle-form wishlist-form-inline"
+                                            class="wishlist-toggle-form wishlist-float-mobile"
                                             data-product-id="<%= p.id %>">
-                                            <button type="submit" class="wishlist-btn" title="Wishlist">♡</button>
+                                            <button type="submit" class="btn-wishlist-circle-mobile <%= isWished ? 'active' : '' %>" aria-label="Toggle wishlist">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="<%= isWished ? 'currentColor' : 'none' %>" stroke="currentColor" stroke-width="2">
+                                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                </svg>
+                                            </button>
                                         </form>
                         </div>
 
@@ -168,7 +175,18 @@
                             if (data && data.redirect) window.location.href = data.redirect;
                             return;
                         }
-                        btn.textContent = data.status === 'added' ? '♥' : '♡';
+                        const svg = btn.querySelector('svg');
+                        if (svg) {
+                            if (data.status === 'added') {
+                                btn.classList.add('active');
+                                svg.setAttribute('fill', 'currentColor');
+                            } else {
+                                btn.classList.remove('active');
+                                svg.setAttribute('fill', 'none');
+                            }
+                        } else {
+                            btn.textContent = data.status === 'added' ? '♥' : '♡';
+                        }
                     } catch (err) {
                         console.error(err);
                     }

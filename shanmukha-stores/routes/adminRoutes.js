@@ -3,6 +3,8 @@ const router = express.Router();
 const pool = require('../config/db');
 const fs = require('fs');
 const path = require('path');
+
+
 const multer = require('multer');
 const {
     DEFAULT_WEIGHT_OPTIONS,
@@ -10,7 +12,7 @@ const {
     sanitizeWeightList,
     getProductWeightOptions,
 } = require('../utils/weightUtils');
-const { processImageToWebP } = require('../utils/imageUtils');
+const { processImageToWebP, processMediaFile } = require('../utils/imageUtils');
 
 const qrCodeUploadDir = path.join(__dirname, '..', 'public', 'uploads');
 if (!fs.existsSync(qrCodeUploadDir)) {
@@ -42,10 +44,11 @@ const productUploadDir = path.join(__dirname, '..', 'public', 'uploads', 'produc
 
 const productImageUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { files: 25, fileSize: 8 * 1024 * 1024 },
+    limits: { files: 25, fileSize: 50 * 1024 * 1024 }, // 50MB
     fileFilter: (_req, file, cb) => {
-        if (String(file.mimetype || '').startsWith('image/')) return cb(null, true);
-        cb(new Error('Only image files are allowed'));
+        const mime = String(file.mimetype || '');
+        if (mime.startsWith('image/') || mime.startsWith('video/')) return cb(null, true);
+        cb(new Error('Only image and video files are allowed'));
     }
 });
 
@@ -139,10 +142,48 @@ const addProductImages = async (client, productId, imageUrls, preferredPrimaryIm
 
 const isAdmin = (req, res, next) => {
     if (!req.session.user || req.session.user.role !== 'admin') {
-        return res.redirect('/auth/login?error=Administrative privileges required');
+        return res.redirect('/auth/login?error=Admin access required');
     }
     next();
 };
+
+// ============================================================
+// API: ADMIN SEARCH SUGGESTIONS
+// ============================================================
+router.get('/api/search/suggestions', isAdmin, async (req, res) => {
+    try {
+        const { q, type } = req.query;
+        if (!q || q.trim().length < 1) return res.json([]);
+        const query = `%${q.trim()}%`;
+        let result = [];
+        
+        if (type === 'all' || !type) {
+            const [p, u, o] = await Promise.all([
+                pool.query("SELECT id, name, image FROM products WHERE name ILIKE $1 ORDER BY name ASC LIMIT 3", [query]),
+                pool.query("SELECT id, full_name as name, email FROM users WHERE full_name ILIKE $1 OR email ILIKE $1 ORDER BY full_name ASC LIMIT 3", [query]),
+                pool.query("SELECT o.id, o.total_amount, o.status as payment_status, u.full_name as name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id::text ILIKE $1 OR u.full_name ILIKE $1 OR u.phone ILIKE $1 LIMIT 3", [query])
+            ]);
+            result = [
+                ...p.rows.map(item => ({ id: item.id, label: item.name, sub: 'Product', image: item.image, url: `/admin/products?search=${encodeURIComponent(item.name)}` })),
+                ...u.rows.map(item => ({ id: item.id, label: item.name, sub: `User • ${item.email}`, url: `/admin/users?search=${encodeURIComponent(item.name)}` })),
+                ...o.rows.map(item => ({ id: item.id, label: `Order #${item.id} - ${item.name}`, sub: `Order • ₹${item.total_amount} (${item.payment_status})`, url: `/admin/orders?search=${encodeURIComponent(item.id)}` }))
+            ];
+        } else if (type === 'products') {
+            const r = await pool.query("SELECT id, name, image FROM products WHERE name ILIKE $1 ORDER BY name ASC LIMIT 6", [query]);
+            result = r.rows.map(item => ({ id: item.id, label: item.name, sub: '', image: item.image, url: `/admin/products?search=${encodeURIComponent(item.name)}` }));
+        } else if (type === 'users') {
+            const r = await pool.query("SELECT id, full_name as name, email FROM users WHERE full_name ILIKE $1 OR email ILIKE $1 ORDER BY full_name ASC LIMIT 6", [query]);
+            result = r.rows.map(item => ({ id: item.id, label: item.name, sub: item.email, url: `/admin/users?search=${encodeURIComponent(item.name)}` }));
+        } else if (type === 'orders') {
+            const r = await pool.query("SELECT o.id, o.total_amount, o.status as payment_status, u.full_name as name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id::text ILIKE $1 OR u.full_name ILIKE $1 OR u.phone ILIKE $1 LIMIT 6", [query]);
+            result = r.rows.map(item => ({ id: item.id, label: `Order #${item.id} - ${item.name}`, sub: `₹${item.total_amount} (${item.payment_status})`, url: `/admin/orders?search=${encodeURIComponent(item.id)}` }));
+        }
+        res.json(result);
+    } catch (err) {
+        console.error("Admin Search API Error:", err.message);
+        res.status(500).json([]);
+    }
+});
 
 const isStaff = (req, res, next) => {
     if (!req.session.user || req.session.user.role !== 'admin') {
@@ -513,7 +554,7 @@ router.post('/products/add', isAdmin, addProductUploadMiddleware, async (req, re
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
                 const baseName = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-                const url = await processImageToWebP(file.buffer, productUploadDir, baseName);
+                const url = await processMediaFile(file, productUploadDir, baseName);
                 uploadedImageUrls.push(url);
             }
         }
@@ -524,11 +565,12 @@ router.post('/products/add', isAdmin, addProductUploadMiddleware, async (req, re
         galleryImages.push(...uploadedImageUrls);
         const mainImage = imageUrl || uploadedImageUrls[0] || null;
 
-        const parsedOffer = Math.max(0, Math.min(100, parseFloat(offer_percent || 0)));
+        const parsedOffer = Math.max(1, Math.min(100, parseFloat(offer_percent || 1)));
+        const parsedStock = Math.max(0, parseInt(stock) || 0);
         await client.query('BEGIN');
         const result = await client.query(
             "INSERT INTO products (name, description, price, stock, category_id, image, price_type, offer_percent, offer_active, available_weights) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
-            [name, description, parseFloat(price), parseInt(stock), category_id || null, mainImage, normalizedPriceType, parsedOffer, offer_active ? true : false, JSON.stringify(availableWeights)]
+            [name, description, parseFloat(price), parsedStock, category_id || null, mainImage, normalizedPriceType, parsedOffer, offer_active ? true : false, JSON.stringify(availableWeights)]
         );
         await addProductImages(client, result.rows[0].id, galleryImages, mainImage);
         await client.query('COMMIT');
@@ -604,7 +646,7 @@ router.post('/products/edit/:id', isStaff, editProductUploadMiddleware, async (r
         }
         const existingProduct = existingProductResult.rows[0];
 
-        let parsedOffer = Math.max(0, Math.min(100, parseFloat(offer_percent || 0)));
+        let parsedOffer = Math.max(1, Math.min(100, parseFloat(offer_percent || 1)));
         let parsedOfferActive = offer_active ? true : false;
         if (req.session.user.role !== 'admin') {
             parsedOffer = Number(existingProduct.offer_percent || 0);
@@ -616,7 +658,7 @@ router.post('/products/edit/:id', isStaff, editProductUploadMiddleware, async (r
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
                 const baseName = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-                const url = await processImageToWebP(file.buffer, productUploadDir, baseName);
+                const url = await processMediaFile(file, productUploadDir, baseName);
                 uploadedImageUrls.push(url);
             }
         }
@@ -626,9 +668,10 @@ router.post('/products/edit/:id', isStaff, editProductUploadMiddleware, async (r
         if (imageUrl) galleryImages.push(imageUrl);
         galleryImages.push(...uploadedImageUrls);
 
+        const parsedStock = Math.max(0, parseInt(stock) || 0);
         await client.query(
             "UPDATE products SET name=$1, description=$2, price=$3, stock=$4, category_id=$5, image=$6, price_type=$7, offer_percent=$8, offer_active=$9, available_weights=$10 WHERE id=$11",
-            [name, description, parseFloat(price), parseInt(stock), category_id || null, mainImage, normalizedPriceType, parsedOffer, parsedOfferActive, JSON.stringify(availableWeights), req.params.id]
+            [name, description, parseFloat(price), parsedStock, category_id || null, mainImage, normalizedPriceType, parsedOffer, parsedOfferActive, JSON.stringify(availableWeights), req.params.id]
         );
 
         await addProductImages(client, req.params.id, galleryImages, mainImage);
@@ -736,7 +779,7 @@ router.get('/offers', isAdmin, async (req, res) => {
 
 router.post('/offers/product/:id', isAdmin, async (req, res) => {
     try {
-        const offerPercent = Math.max(0, Math.min(100, parseFloat(req.body.offer_percent || 0)));
+        const offerPercent = Math.max(1, Math.min(100, parseFloat(req.body.offer_percent || 1)));
         const offerActive = req.body.offer_active === 'on' || req.body.offer_active === 'true';
 
         await pool.query(
@@ -954,8 +997,7 @@ router.post('/categories/delete/:id', isAdmin, async (req, res) => {
 router.get('/orders', isStaff, async (req, res) => {
     try {
         const { status, search } = req.query;
-        let q = `SELECT orders.*, users.full_name AS user_name, users.email AS user_email
-                 FROM orders JOIN users ON users.id = orders.user_id`;
+        let q = `SELECT orders.*, users.full_name AS user_name, users.email AS user_email, users.phone AS user_phone\n                 FROM orders JOIN users ON users.id = orders.user_id`;
         const params = [];
         const where = [];
         if (status && status !== 'all') { params.push(status); where.push(`orders.status=$${params.length}`); }
@@ -983,6 +1025,12 @@ router.post('/orders/status/:id', isStaff, async (req, res) => {
         if (eta && Number.isNaN(eta.getTime())) {
             return res.redirect('/admin/orders?error=Invalid delivery date/time');
         }
+
+        const existingOrder = await pool.query("SELECT status FROM orders WHERE id=$1", [req.params.id]);
+        if (existingOrder.rows.length && existingOrder.rows[0].status === 'Cancelled') {
+            return res.redirect('/admin/orders?error=Cannot update a cancelled order');
+        }
+
         await pool.query(
             `UPDATE orders
              SET status=$1,
@@ -1311,18 +1359,30 @@ router.get('/banners', isAdmin, async (req, res) => {
     } catch (err) { res.status(500).send('Error: ' + err.message); }
 });
 
-router.post('/banners/add', isAdmin, async (req, res) => {
+const bannerUploadDir = path.join(__dirname, '..', 'public', 'uploads', 'banners');
+
+router.post('/banners/add', isAdmin, productImageUpload.single('image_file'), async (req, res) => {
     try {
-        const { title, subtitle, image, link, position } = req.body;
+        const { title, subtitle, link, position } = req.body;
+        let image = req.body.image;
+        if (req.file) {
+            const baseName = `banner-${Date.now()}`;
+            image = await processMediaFile(req.file, bannerUploadDir, baseName);
+        }
         await pool.query("INSERT INTO banners (title, subtitle, image, link, position, is_active) VALUES ($1,$2,$3,$4,$5,true)",
             [title, subtitle || null, image, link || null, position || 0]);
         res.redirect('/admin/banners?success=Banner added');
     } catch (err) { res.redirect('/admin/banners?error=' + encodeURIComponent(err.message)); }
 });
 
-router.post('/banners/edit/:id', isAdmin, async (req, res) => {
+router.post('/banners/edit/:id', isAdmin, productImageUpload.single('image_file'), async (req, res) => {
     try {
-        const { title, subtitle, image, link, position } = req.body;
+        const { title, subtitle, link, position } = req.body;
+        let image = req.body.image;
+        if (req.file) {
+            const baseName = `banner-${Date.now()}`;
+            image = await processMediaFile(req.file, bannerUploadDir, baseName);
+        }
         await pool.query("UPDATE banners SET title=$1, subtitle=$2, image=$3, link=$4, position=$5 WHERE id=$6",
             [title, subtitle || null, image, link || null, position || 0, req.params.id]);
         res.redirect('/admin/banners?success=Banner updated');
@@ -1495,7 +1555,11 @@ router.get('/returns', isAdmin, async (req, res) => {
 
 router.post('/returns/status/:id', isAdmin, async (req, res) => {
     try {
-        const { status } = req.body; // e.g. Approved, Rejected, Refunded
+        const { status } = req.body;
+        const existingReturn = await pool.query("SELECT status FROM returns WHERE id = $1", [req.params.id]);
+        if (existingReturn.rows.length && (existingReturn.rows[0].status === 'Refunded' || existingReturn.rows[0].status === 'Rejected')) {
+            return res.redirect('/admin/returns?error=Cannot update a terminal return status');
+        }
         await pool.query("UPDATE returns SET status = $1 WHERE id = $2", [status, req.params.id]);
         res.redirect('/admin/returns?success=' + encodeURIComponent('Return status updated to ' + status));
     } catch (err) { res.redirect('/admin/returns?error=' + encodeURIComponent(err.message)); }
@@ -1630,9 +1694,17 @@ router.get('/popup-ads', isAdmin, async (req, res) => {
     }
 });
 
-router.post('/popup-ads/add', isAdmin, async (req, res) => {
+const popupUploadDir = path.join(__dirname, '..', 'public', 'uploads', 'popups');
+
+router.post('/popup-ads/add', isAdmin, productImageUpload.single('image_file'), async (req, res) => {
     try {
-        const { title, image_url, target_url, is_active } = req.body;
+        const { title, target_url, is_active } = req.body;
+        let image_url = req.body.image_url;
+
+        if (req.file) {
+            const baseName = `popup-${Date.now()}`;
+            image_url = await processMediaFile(req.file, popupUploadDir, baseName);
+        }
 
         if (is_active === 'on') {
             await pool.query("UPDATE popup_ads SET is_active = false");
@@ -1646,9 +1718,16 @@ router.post('/popup-ads/add', isAdmin, async (req, res) => {
     } catch (err) { res.redirect('/admin/popup-ads?error=' + encodeURIComponent(err.message)); }
 });
 
-router.post('/popup-ads/edit/:id', isAdmin, async (req, res) => {
+router.post('/popup-ads/edit/:id', isAdmin, productImageUpload.single('image_file'), async (req, res) => {
     try {
-        const { title, image_url, target_url } = req.body;
+        const { title, target_url } = req.body;
+        let image_url = req.body.image_url;
+
+        if (req.file) {
+            const baseName = `popup-${Date.now()}`;
+            image_url = await processMediaFile(req.file, popupUploadDir, baseName);
+        }
+
         await pool.query(
             "UPDATE popup_ads SET title=$1, image_url=$2, target_url=$3 WHERE id=$4",
             [title, image_url, target_url || null, req.params.id]
@@ -1689,97 +1768,6 @@ router.post('/popup-ads/delete/:id', isAdmin, async (req, res) => {
     } catch (err) { res.redirect('/admin/popup-ads?error=' + encodeURIComponent(err.message)); }
 });
 
-router.get('/payments', isAdmin, async (req, res) => {
-    try {
-        if (!req.session.payments_authenticated) {
-            return res.render('admin/payments-auth', {
-                title: 'Payments Authentication',
-                user: req.session.user,
-                error: req.query.error || null,
-                success: req.query.success || null
-            });
-        }
 
-        const orders = await pool.query(
-            `SELECT orders.*, users.full_name AS user_name, users.email AS user_email
-             FROM orders JOIN users ON users.id = orders.user_id
-             ORDER BY orders.created_at DESC`
-        );
-        res.render('admin/payments', {
-            title: 'Payments',
-            user: req.session.user,
-            orders: orders.rows,
-            error: req.query.error || null,
-            success: req.query.success || null
-        });
-    } catch (err) {
-        res.status(500).send('Error: ' + err.message);
-    }
-});
-
-router.post('/payments/update-status/:id', isAdmin, async (req, res) => {
-    try {
-        const { payment_status } = req.body;
-        await pool.query(
-            "UPDATE orders SET payment_status = $1 WHERE id = $2",
-            [payment_status, req.params.id]
-        );
-        res.redirect('/admin/payments?success=Payment status updated');
-    } catch (err) {
-        res.redirect('/admin/payments?error=' + encodeURIComponent(err.message));
-    }
-});
-
-router.post('/payments/upload-qr', isAdmin, qrCodeImageUpload.single('qr_code_image'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.redirect('/admin/payments?error=No QR code image uploaded');
-        }
-        const imageUrl = `/uploads/${req.file.filename}`;
-        await pool.query(
-            "INSERT INTO store_settings (setting_key, setting_value) VALUES ('qr_code_image', $1) ON CONFLICT (setting_key) DO UPDATE SET setting_value = $1",
-            [imageUrl]
-        );
-        await logActivity(req.session.user.id, "Uploaded QR Code", { imageUrl });
-        res.redirect('/admin/payments?success=QR code uploaded successfully');
-    } catch (err) {
-        res.redirect('/admin/payments?error=' + encodeURIComponent(err.message));
-    }
-});
-
-router.post('/payments/remove-qr', isAdmin, async (req, res) => {
-    try {
-        await pool.query(
-            "UPDATE store_settings SET setting_value = '' WHERE setting_key = 'qr_code_image'"
-        );
-        await logActivity(req.session.user.id, "Removed QR Code", {});
-        res.redirect('/admin/payments?success=QR code removed');
-    } catch (err) {
-        res.redirect('/admin/payments?error=' + encodeURIComponent(err.message));
-    }
-});
-
-router.post('/payments/verify-password', isAdmin, async (req, res) => {
-    try {
-        const { password } = req.body;
-
-        // Date-based password check: DD-MM-YYYY
-        const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const year = now.getFullYear();
-        const datePassword = `${day}-${month}-${year}`;
-
-        if (password !== datePassword) {
-            return res.status(401).json({ error: 'Incorrect password. Hint: Today\'s date in DD-MM-YYYY format.' });
-        }
-
-        req.session.payments_authenticated = true;
-        res.status(200).json({ success: true });
-    } catch (err) {
-        console.error('Verify Password Error:', err);
-        res.status(500).json({ error: 'An error occurred server-side.' });
-    }
-});
 
 module.exports = router;

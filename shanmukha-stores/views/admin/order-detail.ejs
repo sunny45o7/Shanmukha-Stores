@@ -11,7 +11,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+<div class="order-detail-grid">
 
     <div class="card">
         <div class="card-hd">
@@ -22,9 +22,9 @@
                 <thead>
                     <tr>
                         <th>Product</th>
-                        <th>Qty</th>
-                        <th>Price</th>
-                        <th>Total</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Price</th>
+                        <th style="text-align: right;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,9 +41,9 @@
                                     </span>
                                 </div>
                             </td>
-                            <td><%= item.quantity %></td>
-                            <td>&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
-                            <td style="font-weight:600;">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
+                            <td style="text-align: center;"><%= item.quantity %></td>
+                            <td style="text-align: right;">&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
+                            <td style="font-weight:600; text-align: right;">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
                         </tr>
                     <% }) %>
                 </tbody>
@@ -75,6 +75,7 @@
                         <span class="badge bg-blue" style="font-size:13px;padding:5px 14px;"><%= order.status %></span>
                     <% } %>
                 </div>
+                <% if (order.status !== 'Cancelled') { %>
                 <form action="/admin/orders/status/<%= order.id %>" method="POST">
                     <div class="form-group">
                         <label>Update Status</label>
@@ -96,6 +97,7 @@
                     </div>
                     <button type="submit" class="btn btn-black" style="width:100%;">Update Status</button>
                 </form>
+                <% } %>
             </div>
         </div>
 

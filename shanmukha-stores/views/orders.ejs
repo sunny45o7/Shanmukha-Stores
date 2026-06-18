@@ -1,4 +1,4 @@
-﻿<%- include('./partials/navbar') %>
+<%- include('./partials/navbar') %>
 
   <section class="orders-section">
     <div class="section-page-header">
@@ -43,43 +43,46 @@
                       </span>
                     </div>
 
-                    <div class="order-info-row"><span>Items</span><strong>
-                        <%= order.item_count %> item(s)
-                      </strong></div>
-                    <div class="order-info-row"><span>Total</span><strong>&#8377;<%=
-                          Number(order.total_amount).toLocaleString('en-IN') %></strong></div>
-                    <div class="order-info-row">
-                      <span>Payment</span>
-                      <strong class="text-uppercase">
-                        <%= order.payment_method || 'COD' %>
-                      </strong>
-                    </div>
-                    <% if (order.deliveryLabel) { %>
-                      <div class="order-info-row"><span>Delivery</span><strong>
-                          <%= order.deliveryLabel %>
+                    <div class="order-info-grid">
+                      <div class="order-info-row"><span>Items</span><strong>
+                          <%= order.item_count %> item(s)
                         </strong></div>
-                      <% } %>
-                        <% if (order.estimated_delivery_at) { %>
-                          <div class="order-info-row">
-                            <span>ETA</span>
-                            <strong>
-                              <%= new Date(order.estimated_delivery_at).toLocaleString('en-IN') %>
-                            </strong>
-                          </div>
-                          <% } %>
-                            <% if (order.delivery_note) { %>
-                              <div class="order-info-row"><span>Update</span><strong>
-                                  <%= order.delivery_note %>
-                                </strong></div>
-                              <% } %>
-                                <% if (order.return_status) { %>
-                                  <div class="order-info-row"><span>Return</span><strong>
-                                      <%= order.return_status %>
-                                    </strong></div>
-                                  <% } %>
+                      <div class="order-info-row"><span>Total</span><strong>&#8377;<%=
+                            Number(order.total_amount).toLocaleString('en-IN') %></strong></div>
+                      <div class="order-info-row">
+                        <span>Payment</span>
+                        <strong class="text-uppercase">
+                          <%= order.payment_method || 'COD' %>
+                        </strong>
+                      </div>
+                      <% if (order.deliveryLabel) { %>
+                        <div class="order-info-row"><span>Delivery</span><strong>
+                            <%= order.deliveryLabel %>
+                          </strong></div>
+                        <% } %>
+                          <% if (order.estimated_delivery_at) { %>
+                            <div class="order-info-row">
+                              <span>ETA</span>
+                              <strong>
+                                <%= new Date(order.estimated_delivery_at).toLocaleString('en-IN') %>
+                              </strong>
+                            </div>
+                            <% } %>
+                              <% if (order.delivery_note) { %>
+                                <div class="order-info-row"><span>Update</span><strong>
+                                    <%= order.delivery_note %>
+                                  </strong></div>
+                                <% } %>
+                                  <% if (order.return_status) { %>
+                                    <div class="order-info-row"><span>Return</span><strong>
+                                        <%= order.return_status %>
+                                      </strong></div>
+                                    <% } %>
+                    </div>
 
                                     <div class="order-actions">
                                       <a href="/orders/<%= order.id %>" class="btn-primary btn-sm">View Details</a>
+                                      <a href="/orders/invoice/<%= order.id %>" class="btn-secondary btn-sm" target="_blank">Download Invoice</a>
                                       <% if (order.canCancel) { %>
                                         <button type="button" class="btn-danger btn-sm js-open-cancel"
                                           data-order-id="<%= order.id %>">Cancel Order</button>
@@ -158,6 +161,9 @@
 
     .reason-modal-card {
       width: min(520px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      overflow-x: hidden;
       background: #fff;
       border-radius: 14px;
       border: 1px solid rgba(0, 0, 0, 0.08);
@@ -267,11 +273,7 @@
         });
       });
 
-      [cancelModal, returnModal].forEach((modal) => {
-        modal?.addEventListener('click', (e) => {
-          if (e.target === modal) closeModal(modal);
-        });
-      });
+
     })();
   </script>
 

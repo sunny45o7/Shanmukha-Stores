@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 const pool = require("../config/db");
+const { mailerCircuitBreaker } = require("./circuitBreaker");
 
 // ============================================================
 // CREATE TRANSPORTER & HELPERS
@@ -52,7 +53,10 @@ const sendVerificationEmail = async (email, name, token) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  await mailerCircuitBreaker.executeWithResilience(
+    () => transporter.sendMail(mailOptions),
+    { timeout: 5000, retries: 2, retryDelayMs: 2000 }
+  );
   console.log(`✅ Verification email sent to ${email}`);
 };
 
@@ -91,7 +95,10 @@ const sendPasswordResetEmail = async (email, name, token) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  await mailerCircuitBreaker.executeWithResilience(
+    () => transporter.sendMail(mailOptions),
+    { timeout: 5000, retries: 2, retryDelayMs: 2000 }
+  );
   console.log(`✅ Password reset email sent to ${email}`);
 };
 
@@ -145,7 +152,10 @@ const sendOrderConfirmationEmail = async (email, name, order, items) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  await mailerCircuitBreaker.executeWithResilience(
+    () => transporter.sendMail(mailOptions),
+    { timeout: 5000, retries: 2, retryDelayMs: 2000 }
+  );
   console.log(`✅ Order confirmation email sent to ${email}`);
 };
 

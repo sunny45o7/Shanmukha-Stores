@@ -1,10 +1,15 @@
-﻿<%- include('./partials/navbar') %>
+<%- include('./partials/navbar') %>
 
 <section class="orders-section">
-  <div class="section-page-header">
-    <div class="section-label">Account</div>
-    <h1>Order #<%= order.id %></h1>
-    <p>Placed on <%= new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) %></p>
+  <div class="section-page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div class="section-label">Account</div>
+      <h1 style="margin-bottom: 0;">Order #<%= order.id %></h1>
+      <p style="margin-bottom: 0;">Placed on <%= new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) %></p>
+    </div>
+    <div>
+      <a href="/orders/invoice/<%= order.id %>" class="btn-primary" target="_blank">Download Invoice</a>
+    </div>
   </div>
 
   <% if (typeof error !== 'undefined' && error) { %>
@@ -34,28 +39,30 @@
   <div class="order-meta-grid">
     <div class="order-card">
       <h3 class="order-section-title">Order Info</h3>
-      <div class="order-info-row"><span>Order ID</span><strong>#<%= order.id %></strong></div>
-      <div class="order-info-row">
-        <span>Status</span>
-        <strong><span class="status-pill <%= order.status.toLowerCase() %>"><%= order.status %></span></strong>
+      <div class="order-info-grid">
+        <div class="order-info-row"><span>Order ID</span><strong>#<%= order.id %></strong></div>
+        <div class="order-info-row">
+          <span>Status</span>
+          <strong><span class="status-pill <%= order.status.toLowerCase() %>"><%= order.status %></span></strong>
+        </div>
+        <div class="order-info-row"><span>Total</span><strong>&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></strong></div>
+        <div class="order-info-row">
+          <span>Payment</span>
+          <strong class="text-uppercase"><%= order.payment_method || 'COD' %></strong>
+        </div>
+        <% if (deliveryLabel) { %>
+          <div class="order-info-row"><span>Delivery</span><strong><%= deliveryLabel %></strong></div>
+        <% } %>
+        <% if (order.estimated_delivery_at) { %>
+          <div class="order-info-row"><span>ETA</span><strong><%= new Date(order.estimated_delivery_at).toLocaleString('en-IN') %></strong></div>
+        <% } %>
+        <% if (order.delivery_note) { %>
+          <div class="order-info-row"><span>Update</span><strong><%= order.delivery_note %></strong></div>
+        <% } %>
+        <% if (order.cancel_reason) { %>
+          <div class="order-info-row"><span>Cancel Reason</span><strong><%= order.cancel_reason %></strong></div>
+        <% } %>
       </div>
-      <div class="order-info-row"><span>Total</span><strong>&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></strong></div>
-      <div class="order-info-row">
-        <span>Payment</span>
-        <strong class="text-uppercase"><%= order.payment_method || 'COD' %></strong>
-      </div>
-      <% if (deliveryLabel) { %>
-        <div class="order-info-row"><span>Delivery</span><strong><%= deliveryLabel %></strong></div>
-      <% } %>
-      <% if (order.estimated_delivery_at) { %>
-        <div class="order-info-row"><span>ETA</span><strong><%= new Date(order.estimated_delivery_at).toLocaleString('en-IN') %></strong></div>
-      <% } %>
-      <% if (order.delivery_note) { %>
-        <div class="order-info-row"><span>Update</span><strong><%= order.delivery_note %></strong></div>
-      <% } %>
-      <% if (order.cancel_reason) { %>
-        <div class="order-info-row"><span>Cancel Reason</span><strong><%= order.cancel_reason %></strong></div>
-      <% } %>
     </div>
 
     <div class="order-card">
@@ -116,6 +123,7 @@
 
   <div class="order-actions order-detail-actions">
     <a href="/orders" class="btn-secondary">Back to Orders</a>
+    <a href="/orders/invoice/<%= order.id %>" class="btn-primary" target="_blank">Download Invoice</a>
 
     <% if (typeof returnRequest !== 'undefined' && returnRequest) { %>
       <div class="page-card form-hint">Return Status: <strong><%= returnRequest.status %></strong></div>
@@ -184,6 +192,9 @@
   }
   .reason-modal-card {
     width: min(520px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     background: #fff;
     border-radius: 14px;
     border: 1px solid rgba(0, 0, 0, 0.08);
@@ -267,12 +278,43 @@
       });
     });
 
-    [cancelModal, returnModal].forEach((modal) => {
-      modal?.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal(modal);
-      });
-    });
+
   })();
 </script>
 
 <%- include('./partials/footer') %>
+
+<style>
+.order-item-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.order-item-img {
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-mid, #eaeaea);
+  background: #f9f9f9;
+}
+.order-item-inline a {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--text-color, #333);
+}
+.order-confirmation-item-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.order-confirmation-item-meta {
+  font-size: 13px;
+  color: var(--gray-500, #777);
+}
+.items-table td {
+  vertical-align: middle;
+}
+</style>

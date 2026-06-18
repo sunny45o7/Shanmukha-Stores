@@ -25,7 +25,11 @@
     <div class="hero-visual" data-animate>
       <% if (typeof banners !=='undefined' && banners.length> 0) { %>
         <div class="main-banner-visual">
-          <img src="<%= banners[0].image %>" alt="Luxury Banner" class="floating-img">
+          <% if (banners[0].image && banners[0].image.match(/\.(mp4|webm|ogg)$/i)) { %>
+            <video src="<%= banners[0].image %>" autoplay muted loop playsinline class="floating-img" style="object-fit: cover;"></video>
+          <% } else { %>
+            <img src="<%= banners[0].image %>" alt="Luxury Banner" class="floating-img">
+          <% } %>
         </div>
         <% } %>
     </div>
@@ -55,8 +59,12 @@
               <div class="product-card-luxury" data-animate="stagger-<%= (idx % 3) + 1 %>">
                 <div class="img-wrap">
                   <a href="/products/<%= p.id %>">
-                    <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
-                      onerror="this.src='/images/placeholder.png'">
+                    <% if (p.image && p.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+                      <video src="<%= p.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <% } else { %>
+                      <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
+                        onerror="this.src='/images/placeholder.png'">
+                    <% } %>
                   </a>
                   <% if (p.stock===0) { %>
                     <span class="float-badge dark">Reserved</span>
@@ -141,7 +149,11 @@
       <div class="ads-luxury-grid">
         <% ads.forEach(ad=> { %>
           <a href="<%= ad.link || '#' %>" class="ad-card-luxury">
-            <img src="<%= ad.image %>" alt="<%= ad.title %>" onerror="this.style.display='none'">
+            <% if (ad.image && ad.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+              <video src="<%= ad.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+            <% } else { %>
+              <img src="<%= ad.image %>" alt="<%= ad.title %>" onerror="this.style.display='none'">
+            <% } %>
             <div class="ad-overlay">
               <div class="ad-info">
                 <h3>

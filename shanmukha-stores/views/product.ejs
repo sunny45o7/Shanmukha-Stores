@@ -10,22 +10,34 @@
                         <% images.forEach((img, idx)=> { %>
                             <div class="thumb-item <%= idx === 0 ? 'active' : '' %>"
                                 onclick="switchMainImage('<%= img.image_url %>', this)">
-                                <img src="<%= img.image_url %>" alt="Product Image <%= idx + 1 %>"
-                                    onerror="this.src='/images/placeholder.png'">
+                                <% if (img.image_url && img.image_url.match(/\.(mp4|webm|ogg)$/i)) { %>
+                                    <video src="<%= img.image_url %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                <% } else { %>
+                                    <img src="<%= img.image_url %>" alt="Product Image <%= idx + 1 %>"
+                                        onerror="this.src='/images/placeholder.png'">
+                                <% } %>
                             </div>
                             <% }) %>
                                 <% } else { %>
                                     <div class="thumb-item active">
-                                        <img src="<%= product.image || '/images/placeholder.png' %>" alt="Product Image"
-                                            onerror="this.src='/images/placeholder.png'">
+                                        <% if (product.image && product.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+                                            <video src="<%= product.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                        <% } else { %>
+                                            <img src="<%= product.image || '/images/placeholder.png' %>" alt="Product Image"
+                                                onerror="this.src='/images/placeholder.png'">
+                                        <% } %>
                                     </div>
                                     <% } %>
                 </div>
 
                 <div class="main-image-wrap">
                     <div class="inner-zoom" id="imageZoom">
-                        <img src="<%= images && images.length > 0 ? images[0].image_url : (product.image || '/images/placeholder.png') %>"
-                            alt="<%= product.name %>" id="mainProductImg" onerror="this.src='/images/placeholder.png'">
+                        <% const mainMedia = images && images.length > 0 ? images[0].image_url : (product.image || '/images/placeholder.png'); %>
+                        <% if (mainMedia && mainMedia.match(/\.(mp4|webm|ogg)$/i)) { %>
+                            <video src="<%= mainMedia %>" autoplay muted loop playsinline id="mainProductImg" style="width: 100%; height: 100%; object-fit: contain;"></video>
+                        <% } else { %>
+                            <img src="<%= mainMedia %>" alt="<%= product.name %>" id="mainProductImg" onerror="this.src='/images/placeholder.png'">
+                        <% } %>
                     </div>
                 </div>
             </div>
@@ -461,8 +473,12 @@
                             <% const pOffer=p.offer_active && Number(p.offer_percent || 0)> 0; %>
                                 <div class="sp-card">
                                     <a href="/products/<%= p.id %>" class="sp-card-img">
-                                        <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
-                                            onerror="this.src='/images/placeholder.png'">
+                                        <% if (p.image && p.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+                                            <video src="<%= p.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                        <% } else { %>
+                                            <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
+                                                onerror="this.src='/images/placeholder.png'">
+                                        <% } %>
                                         <% if (pOffer) { %><span class="sp-badge">
                                                 <%= Number(p.offer_percent).toFixed(0) %>% OFF
                                             </span>
@@ -1659,7 +1675,47 @@
 
                         @media (max-width: 480px) {
                             .sp-grid {
-                                grid-template-columns: 1fr;
+                                grid-template-columns: repeat(4, 1fr);
+                                gap: 6px;
+                            }
+                            .sp-card {
+                                border: none;
+                                background: transparent;
+                                box-shadow: none;
+                            }
+                            .sp-card-img {
+                                height: auto;
+                                aspect-ratio: 1/1;
+                                background: #eef5f3;
+                                border-radius: 10px;
+                                padding: 6px;
+                                margin-bottom: 6px;
+                            }
+                            .sp-card-img img {
+                                object-fit: contain;
+                            }
+                            .sp-card-body {
+                                padding: 0;
+                                gap: 0;
+                            }
+                            .sp-name {
+                                font-size: 10px;
+                                line-height: 1.2;
+                                margin-bottom: 2px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                -webkit-line-clamp: initial;
+                            }
+                            .sp-price {
+                                font-size: 11px;
+                            }
+                            .sp-badge,
+                            .sp-stars,
+                            .sp-old-price,
+                            .price-unit-note,
+                            .sp-btn {
+                                display: none !important;
                             }
                         }
                     </style>
@@ -1676,7 +1732,13 @@
 
                     <script>
                         function switchMainImage(url, el) {
-                            document.getElementById('mainProductImg').src = url;
+                            const zoomContainer = document.getElementById('imageZoom');
+                            const isVideo = url.match(/\\.(mp4|webm|ogg)$/i);
+                            if (isVideo) {
+                                zoomContainer.innerHTML = \`<video src="\${url}" autoplay muted loop playsinline id="mainProductImg" style="width: 100%; height: 100%; object-fit: contain;"></video>\`;
+                            } else {
+                                zoomContainer.innerHTML = \`<img src="\${url}" alt="Product Image" id="mainProductImg" onerror="this.src='/images/placeholder.png'">\`;
+                            }
                             document.querySelectorAll('.thumb-item').forEach(item => item.classList.remove('active'));
                             el.classList.add('active');
                         }
@@ -1692,11 +1754,11 @@
                             updatePriceDisplay(weightInput ? weightInput.value : null);
                         }
 
-                        // Simple Zoom Effect
                         const zoomContainer = document.getElementById('imageZoom');
-                        const mainImg = document.getElementById('mainProductImg');
 
                         zoomContainer.addEventListener('mousemove', (e) => {
+                            const mainImg = document.getElementById('mainProductImg');
+                            if (!mainImg || mainImg.tagName.toLowerCase() === 'video') return;
                             const rect = zoomContainer.getBoundingClientRect();
                             const x = (e.clientX - rect.left) / rect.width * 100;
                             const y = (e.clientY - rect.top) / rect.height * 100;
@@ -1705,6 +1767,8 @@
                         });
 
                         zoomContainer.addEventListener('mouseleave', () => {
+                            const mainImg = document.getElementById('mainProductImg');
+                            if (!mainImg || mainImg.tagName.toLowerCase() === 'video') return;
                             mainImg.style.transform = 'scale(1)';
                         });
 

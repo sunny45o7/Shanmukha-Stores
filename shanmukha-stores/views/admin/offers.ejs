@@ -9,12 +9,13 @@
     <p>Manage product-level offers and platform coupons</p>
   </div>
   <form method="GET" action="/admin/offers" class="search-row">
-    <div class="search-box">
-      <span>🔍</span>
-      <input type="text" name="search" value="<%= search %>" placeholder="Search product...">
+    <div class="search-box glass" style="position:relative;">
+      <span class="search-icon">🔍</span>
+      <input type="text" name="search" id="searchInput" autocomplete="off" value="<%= search %>" placeholder="Search product...">
+      <div id="autocompleteResults" class="autocomplete-dropdown"></div>
     </div>
     <button type="submit" class="btn btn-black btn-sm">Search</button>
-    <% if(search) { %><a href="/admin/offers" class="btn btn-ghost btn-sm">Clear</a><% } %>
+    <a href="/admin/offers" class="btn btn-ghost btn-sm">Reset Filters</a>
   </form>
 </div>
 
@@ -28,10 +29,10 @@
         <thead>
           <tr>
             <th>Product</th>
-            <th>Base Price</th>
+            <th style="text-align: right;">Base Price</th>
             <th>Offer %</th>
             <th>Active</th>
-            <th>Final Price</th>
+            <th style="text-align: right;">Final Price</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -50,18 +51,18 @@
                 <strong><%= p.name %></strong>
                 <div class="tiny"><%= p.category_name || 'Uncategorised' %> · Stock: <%= p.stock %></div>
               </td>
-              <td>₹<%= Number(p.price).toLocaleString('en-IN') %></td>
+              <td style="text-align: right;">₹<%= Number(p.price).toLocaleString('en-IN') %></td>
               <td>
                 <form action="/admin/offers/product/<%= p.id %>" method="POST" style="display:flex;align-items:center;gap:8px;">
-                  <input type="number" name="offer_percent" value="<%= offerPct %>" min="0" max="100" step="0.01" class="inp" style="width:86px;">
+                  <input type="number" name="offer_percent" value="<%= offerPct || 1 %>" min="1" max="100" step="0.01" class="inp" style="width:86px;" oninput="if(this.value > 100) this.value = 100;" onblur="if(this.value !== '' && this.value < 1) this.value = 1;">
               </td>
               <td>
-                  <label style="display:flex;align-items:center;gap:6px;">
+                  <label class="toggle-switch" title="<%= p.offer_active ? 'Active' : 'Inactive' %>">
                     <input type="checkbox" name="offer_active" <%= p.offer_active ? 'checked' : '' %>>
-                    <span><%= p.offer_active ? 'Yes' : 'No' %></span>
+                    <span class="toggle-slider"></span>
                   </label>
               </td>
-              <td>
+              <td style="text-align: right;">
                 <% if (active) { %>
                   <span style="text-decoration:line-through;color:#888;">₹<%= Number(p.price).toLocaleString('en-IN') %></span>
                   <strong style="margin-left:6px;color:var(--emerald);">₹<%= finalPrice.toLocaleString('en-IN') %></strong>
@@ -80,21 +81,33 @@
     </div>
   </div>
 
-    <div class="card">
-      <div class="card-hd"><h3>Create Coupon</h3></div>
-      <form action="/admin/coupons/add" method="POST" style="display:grid;gap:10px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <input class="inp" type="text" name="code" placeholder="Code (e.g. SAVE20)" required>
-          <select class="inp" name="discount_type" required>
-            <option value="percent">Percent</option>
-            <option value="fixed">Fixed Amount</option>
-          </select>
+    <div class="card" style="padding:24px;">
+      <div class="card-hd" style="margin-bottom:20px;"><h3>Create New Coupon</h3></div>
+      <form action="/admin/coupons/add" method="POST" style="display:grid;gap:20px;">
+        <div class="form-grid-2" style="gap:20px;">
+          <div>
+            <label class="form-label">Coupon Code <span style="color:var(--red)">*</span></label>
+            <input class="inp" type="text" name="code" placeholder="e.g. SAVE20" required style="width:100%;">
+          </div>
+          <div>
+            <label class="form-label">Discount Type <span style="color:var(--red)">*</span></label>
+            <select class="inp" name="discount_type" required style="width:100%;">
+              <option value="percent">Percentage (%)</option>
+              <option value="fixed">Fixed Amount (₹)</option>
+            </select>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <input class="inp" type="number" name="discount_value" placeholder="Discount value" min="0.01" step="0.01" required>
-          <input class="inp" type="number" name="min_order_amount" placeholder="Min amount (optional)" min="0" step="0.01">
+        <div class="form-grid-2" style="gap:20px;">
+          <div>
+            <label class="form-label">Discount Value <span style="color:var(--red)">*</span></label>
+            <input class="inp" type="number" name="discount_value" placeholder="e.g. 20" min="0.01" step="0.01" required style="width:100%;">
+          </div>
+          <div>
+            <label class="form-label">Min Order Amount</label>
+            <input class="inp" type="number" name="min_order_amount" placeholder="e.g. 500" min="0" step="0.01" style="width:100%;">
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-grid-2" style="gap:10px;">
           <details class="coupon-picker">
             <summary>Select Categories</summary>
             <div class="coupon-picker-list">
@@ -126,20 +139,39 @@
             </div>
           </details>
         </div>
-        <div class="tiny">Optional restriction: open selectors and tick checkboxes for categories/products.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <input class="inp" type="datetime-local" name="starts_at">
-          <input class="inp" type="datetime-local" name="ends_at">
+        <div class="tiny" style="color:var(--gray-500); margin-top:-10px;">Optional restriction: open selectors and tick checkboxes for categories/products.</div>
+        <div class="form-grid-2" style="gap:20px;">
+          <div>
+            <label class="form-label">Start Date & Time</label>
+            <input class="inp" type="datetime-local" name="starts_at" style="width:100%;">
+          </div>
+          <div>
+            <label class="form-label">End Date & Time</label>
+            <input class="inp" type="datetime-local" name="ends_at" style="width:100%;">
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
-          <input class="inp" type="number" name="usage_limit" placeholder="Usage limit (optional)" min="1">
-          <label style="display:flex;align-items:center;gap:6px;">
-            <input type="checkbox" name="is_active" checked>
-            Active
-          </label>
+        <div class="form-grid-2" style="gap:20px;align-items:center;">
+          <div style="flex:1;">
+            <label class="form-label">Usage Limit</label>
+            <input class="inp" type="number" name="usage_limit" placeholder="No limit" min="1" style="width:100%;">
+          </div>
+          <div style="padding-top:24px;">
+            <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--black);">
+              <span class="toggle-switch">
+                <input type="checkbox" name="is_active" checked>
+                <span class="toggle-slider"></span>
+              </span>
+              Active
+            </label>
+          </div>
         </div>
-        <textarea class="inp" name="description" rows="2" placeholder="Description (optional)"></textarea>
-        <button type="submit" class="btn btn-black">Create Coupon</button>
+        <div>
+          <label class="form-label">Description</label>
+          <textarea class="inp" name="description" rows="2" placeholder="Internal note about this coupon" style="width:100%;"></textarea>
+        </div>
+        <div style="margin-top:10px;">
+          <button type="submit" class="btn btn-black" style="padding:10px 24px; font-size:15px;">Create Coupon</button>
+        </div>
       </form>
     </div>
 
@@ -200,6 +232,8 @@
 </div>
 
 <style>
+
+
   .coupon-picker {
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -243,3 +277,48 @@
 </style>
 
 <%- include('_footer') %>
+
+<style>
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; max-height: 300px; overflow-y: auto; margin-top: 4px; }
+.autocomplete-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.autocomplete-item:hover { background: #f8fafc; }
+.autocomplete-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 12px; }
+.autocomplete-item div { display: flex; flex-direction: column; }
+.autocomplete-item span { font-size: 14px; font-weight: 500; color: #000; }
+.autocomplete-item small { font-size: 12px; color: #666; }
+</style>
+<script>
+  (function(){
+    const sInput = document.getElementById('searchInput');
+    const resDiv = document.getElementById('autocompleteResults');
+    if(!sInput || !resDiv) return;
+    let timer;
+    sInput.addEventListener('input', function(e) {
+      const v = e.target.value.trim();
+      clearTimeout(timer);
+      if(v.length > 0) {
+        timer = setTimeout(async () => {
+          try {
+            const r = await fetch('/admin/api/search/suggestions?type=products&q=' + encodeURIComponent(v));
+            const data = await r.json();
+            if(data && data.length > 0) {
+              resDiv.innerHTML = data.map(item => `
+                <div class="autocomplete-item" onclick="window.location.href='${item.url}'">
+                  ${item.image ? `<img src="${item.image}" onerror="this.src='/images/placeholder.png'">` : ''}
+                  <div>
+                    <span>${item.label}</span>
+                    ${item.sub ? `<small>${item.sub}</small>` : ''}
+                  </div>
+                </div>
+              `).join('');
+              resDiv.style.display = 'block';
+            } else { resDiv.style.display = 'none'; }
+          } catch(e){}
+        }, 200);
+      } else { resDiv.style.display = 'none'; }
+    });
+    document.addEventListener('click', e => {
+      if(e.target !== sInput && !resDiv.contains(e.target)) resDiv.style.display = 'none';
+    });
+  })();
+</script>

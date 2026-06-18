@@ -28,9 +28,6 @@
             <a href="/products/<%= pid %>">
               <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>" onerror="this.src='/images/placeholder.png'">
             </a>
-            <form action="/wishlist/toggle/<%= pid %>" method="POST" class="wishlist-remove-form" data-product-id="<%= pid %>" style="display:contents">
-              <button type="submit" class="wishlist-btn active" title="Remove from wishlist">♥</button>
-            </form>
           </div>
           <div class="product-info">
             <h3 class="product-name"><a href="/products/<%= pid %>"><%= item.name %></a></h3>
@@ -52,11 +49,14 @@
             <% if (item.stock === 0) { %>
               <div class="out-of-stock-label">Out of Stock</div>
             <% } else { %>
-              <form action="/cart/add/<%= pid %>" method="POST">
+              <form action="/cart/add/<%= pid %>" method="POST" style="margin-bottom: 8px;">
                 <input type="hidden" name="quantity" value="1">
                 <button type="submit" class="add-cart-btn">Add to Cart</button>
               </form>
             <% } %>
+            <form action="/wishlist/toggle/<%= pid %>" method="POST" class="wishlist-remove-form" data-product-id="<%= pid %>">
+              <button type="submit" class="btn-secondary" style="width: 100%; border-radius: 8px; font-size: 13px; padding: 8px 12px;">Remove from Wishlist</button>
+            </form>
           </div>
         </div>
       <% }) %>

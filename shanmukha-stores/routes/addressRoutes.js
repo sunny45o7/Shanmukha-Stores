@@ -45,10 +45,11 @@ router.get("/", requireAuth, async (req, res) => {
 // POST ADD ADDRESS
 // ============================================================
 router.post("/add", requireAuth, addressValidation, async (req, res) => {
+  const redirectTo = req.query.from === "checkout" ? "/orders/checkout" : "/addresses";
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.redirect("/addresses?error=" + encodeURIComponent(errors.array()[0].msg));
+      return res.redirect(redirectTo + "?error=" + encodeURIComponent(errors.array()[0].msg));
     }
 
     const { full_name, phone, address_line, city, state, pincode, is_default } = req.body;
@@ -64,11 +65,10 @@ router.post("/add", requireAuth, addressValidation, async (req, res) => {
       [userId, full_name, phone, address_line, city, state, pincode, is_default ? true : false]
     );
 
-    const redirectTo = req.query.from === "checkout" ? "/orders/checkout" : "/addresses";
     res.redirect(redirectTo + "?success=Address added successfully");
   } catch (err) {
     console.error("Add address error:", err);
-    res.redirect("/addresses?error=Failed to add address");
+    res.redirect(redirectTo + "?error=Failed to add address");
   }
 });
 

@@ -13,6 +13,36 @@ const canAccessStaffPanel = (req, res, next) => {
 
 router.get("/", canAccessStaffPanel, (req, res) => res.redirect("/staff/dashboard"));
 
+// ============================================================
+// API: STAFF SEARCH SUGGESTIONS
+// ============================================================
+router.get('/api/search/suggestions', canAccessStaffPanel, async (req, res) => {
+    try {
+        const { q, type } = req.query;
+        if (!q || q.trim().length < 1) return res.json([]);
+        const query = `%${q.trim()}%`;
+        let result = [];
+        
+        if (type === 'all' || !type) {
+            const [p, o] = await Promise.all([
+                pool.query("SELECT id, name, image FROM products WHERE name ILIKE $1 ORDER BY name ASC LIMIT 3", [query]),
+                pool.query("SELECT o.id, o.total_amount, o.status as payment_status, u.full_name as name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id::text ILIKE $1 OR u.full_name ILIKE $1 OR u.phone ILIKE $1 LIMIT 3", [query])
+            ]);
+            result = [
+                ...p.rows.map(item => ({ id: item.id, label: item.name, sub: 'Product', image: item.image, url: `/products/${item.id}` })),
+                ...o.rows.map(item => ({ id: item.id, label: `Order #${item.id} - ${item.name}`, sub: `Order • ₹${item.total_amount} (${item.payment_status})`, url: `/staff/orders?search=${encodeURIComponent(item.id)}` }))
+            ];
+        } else if (type === 'orders') {
+            const r = await pool.query("SELECT o.id, o.total_amount, o.status as payment_status, u.full_name as name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id::text ILIKE $1 OR u.full_name ILIKE $1 OR u.phone ILIKE $1 LIMIT 6", [query]);
+            result = r.rows.map(item => ({ id: item.id, label: `Order #${item.id} - ${item.name}`, sub: `₹${item.total_amount} (${item.payment_status})`, url: `/staff/orders?search=${encodeURIComponent(item.id)}` }));
+        }
+        res.json(result);
+    } catch (err) {
+        console.error("Staff Search API Error:", err.message);
+        res.status(500).json([]);
+    }
+});
+
 router.get("/dashboard", canAccessStaffPanel, async (req, res) => {
   try {
     const [allOrders, pending, processing, delivered, recent] = await Promise.all([
@@ -21,9 +51,7 @@ router.get("/dashboard", canAccessStaffPanel, async (req, res) => {
       pool.query("SELECT COUNT(*) FROM orders WHERE status = 'Processing'"),
       pool.query("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'"),
       pool.query(
-        `SELECT o.*, u.full_name AS user_name, u.email AS user_email
-         FROM orders o
-         JOIN users u ON u.id = o.user_id
+        `SELECT o.*, u.full_name AS user_name, u.email AS user_email, u.phone AS user_phone\n             FROM orders o\n             JOIN users u ON u.id = o.user_id
          ORDER BY o.created_at DESC
          LIMIT 10`
       ),
@@ -50,9 +78,7 @@ router.get("/dashboard", canAccessStaffPanel, async (req, res) => {
 router.get("/orders", canAccessStaffPanel, async (req, res) => {
   try {
     const { status, search } = req.query;
-    let q = `SELECT o.*, u.full_name AS user_name, u.email AS user_email
-             FROM orders o
-             JOIN users u ON u.id = o.user_id`;
+    let q = `SELECT o.*, u.full_name AS user_name, u.email AS user_email, u.phone AS user_phone\n             FROM orders o\n             JOIN users u ON u.id = o.user_id`;
     const params = [];
     const where = [];
     if (status && status !== "all") {
@@ -90,6 +116,12 @@ router.post("/orders/status/:id", canAccessStaffPanel, async (req, res) => {
     if (eta && Number.isNaN(eta.getTime())) {
       return res.redirect("/staff/orders?error=Invalid delivery date/time");
     }
+
+    const existingOrder = await pool.query("SELECT status FROM orders WHERE id = $1", [req.params.id]);
+    if (existingOrder.rows.length && existingOrder.rows[0].status === 'Cancelled') {
+      return res.redirect("/staff/orders?error=Cannot update a cancelled order");
+    }
+
     await pool.query(
       `UPDATE orders
        SET status = $1,
@@ -135,6 +167,10 @@ router.get("/returns", canAccessStaffPanel, async (req, res) => {
 router.post("/returns/status/:id", canAccessStaffPanel, async (req, res) => {
   try {
     const { status } = req.body;
+    const existingReturn = await pool.query("SELECT status FROM returns WHERE id = $1", [req.params.id]);
+    if (existingReturn.rows.length && (existingReturn.rows[0].status === 'Refunded' || existingReturn.rows[0].status === 'Rejected')) {
+      return res.redirect("/staff/returns?error=Cannot update a terminal return status");
+    }
     await pool.query("UPDATE returns SET status = $1 WHERE id = $2", [status, req.params.id]);
     return res.redirect("/staff/returns?success=" + encodeURIComponent("Return status updated to " + status));
   } catch (err) {

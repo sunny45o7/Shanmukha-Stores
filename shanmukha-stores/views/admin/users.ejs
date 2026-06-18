@@ -25,14 +25,14 @@
                                 <% if (selectedRole && selectedRole !== 'all') { %>
                                     <input type="hidden" name="role" value="<%= selectedRole %>">
                                 <% } %>
-                                <div class="search-box">
+                                <div class="search-box" style="position:relative;">
                                     <span>🔍</span>
-                                    <input type="text" name="search" value="<%= search %>"
+                                    <input type="text" name="search" id="searchInput" autocomplete="off" value="<%= search %>"
                                         placeholder="Search users...">
+                                    <div id="autocompleteResults" class="autocomplete-dropdown"></div>
                                 </div>
                                 <button type="submit" class="btn btn-black btn-sm">Search</button>
-                                <% if(search) { %><a href="/admin/users" class="btn btn-ghost btn-sm">Clear</a>
-                                    <% } %>
+                                <a href="/admin/users" class="btn btn-ghost btn-sm">Reset Filters</a>
                             </form>
                         </div>
                     </div>
@@ -49,7 +49,7 @@
                                 <thead>
                                     <tr>
                                         <th>User</th>
-                                        <th>Phone</th>
+                                        <th>Mobile</th>
                                         <th>Orders</th>
                                         <th>Role</th>
                                         <th>Status</th>
@@ -87,14 +87,15 @@
                                                     <span class="badge bg-gray">Admin Protected</span>
                                                 <% } else { %>
                                                     <form action="/admin/users/role/<%= u.id %>" method="POST"
-                                                        style="margin:0;">
-                                                        <select name="role" onchange="this.form.submit()"
+                                                        style="margin:0; display:flex; gap:6px; align-items:center;">
+                                                        <select name="role"
                                                             style="padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; text-transform: uppercase; background: var(--gray-100); cursor: pointer; color: var(--gray-700); outline:none;">
                                                             <option value="user" <%=u.role==='user' ? 'selected' : '' %>
                                                                 >User</option>
                                                             <option value="staff" <%=u.role==='staff' ? 'selected' : '' %>
                                                                 >Staff</option>
                                                         </select>
+                                                        <button type="submit" class="btn btn-black" style="padding:4px 10px; border-radius:20px; font-size:10px; min-height:0;">Save</button>
                                                     </form>
                                                 <% } %>
                                             </td>
@@ -113,9 +114,9 @@
                                                     <% if(u.role ==='staff' || u.role ==='user') { %>
                                                         <form action="/admin/users/toggle/<%= u.id %>" method="POST"
                                                             style="margin:0;">
-                                                            <button type="submit" class="btn-table-action"
+                                                            <button type="submit" class="btn <%= u.is_blocked ? 'btn-green' : 'btn-red' %> btn-sm"
                                                                 title="<%= u.is_blocked ? 'Unblock' : 'Block' %>">
-                                                                <%= u.is_blocked ? '🔓' : '🚫' %>
+                                                                <%= u.is_blocked ? 'Unblock' : 'Block' %>
                                                             </button>
                                                         </form>
                                                         <form action="/admin/users/delete/<%= u.id %>" method="POST"
@@ -235,6 +236,9 @@
                             border-radius: 24px;
                             box-shadow: 0 40px 80px rgba(0, 0, 0, 0.1);
                             animation: modalFadeUp 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                            max-height: 90vh;
+                            overflow-y: auto;
+                            overflow-x: hidden;
                         }
 
                         .modal-hd-minimal {
@@ -316,3 +320,48 @@
                     </style>
 
                     <%- include('_footer') %>
+
+<style>
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; max-height: 300px; overflow-y: auto; margin-top: 4px; }
+.autocomplete-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.autocomplete-item:hover { background: #f8fafc; }
+.autocomplete-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 12px; }
+.autocomplete-item div { display: flex; flex-direction: column; }
+.autocomplete-item span { font-size: 14px; font-weight: 500; color: #000; }
+.autocomplete-item small { font-size: 12px; color: #666; }
+</style>
+<script>
+  (function(){
+    const sInput = document.getElementById('searchInput');
+    const resDiv = document.getElementById('autocompleteResults');
+    if(!sInput || !resDiv) return;
+    let timer;
+    sInput.addEventListener('input', function(e) {
+      const v = e.target.value.trim();
+      clearTimeout(timer);
+      if(v.length > 0) {
+        timer = setTimeout(async () => {
+          try {
+            const r = await fetch('/admin/api/search/suggestions?type=users&q=' + encodeURIComponent(v));
+            const data = await r.json();
+            if(data && data.length > 0) {
+              resDiv.innerHTML = data.map(item => `
+                <div class="autocomplete-item" onclick="window.location.href='${item.url}'">
+                  ${item.image ? `<img src="${item.image}" onerror="this.src='/images/placeholder.png'">` : ''}
+                  <div>
+                    <span>${item.label}</span>
+                    ${item.sub ? `<small>${item.sub}</small>` : ''}
+                  </div>
+                </div>
+              `).join('');
+              resDiv.style.display = 'block';
+            } else { resDiv.style.display = 'none'; }
+          } catch(e){}
+        }, 200);
+      } else { resDiv.style.display = 'none'; }
+    });
+    document.addEventListener('click', e => {
+      if(e.target !== sInput && !resDiv.contains(e.target)) resDiv.style.display = 'none';
+    });
+  })();
+</script>

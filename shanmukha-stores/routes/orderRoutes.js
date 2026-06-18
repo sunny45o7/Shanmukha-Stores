@@ -3,6 +3,8 @@ const pool = require("../config/db");
 const { sendOrderConfirmationEmail } = require("../utils/mailer");
 const { normalizeCouponCode, validateCouponForUser } = require("../utils/couponService");
 const { parseWeightToKg } = require("../utils/weightUtils");
+const PDFDocument = require("pdfkit");
+const { paymentCircuitBreaker, CircuitBreakerOpenError, TimeoutError } = require("../utils/circuitBreaker");
 
 const router = express.Router();
 
@@ -565,7 +567,7 @@ router.post("/place", requireAuth, async (req, res, next) => {
     const userId = req.session.user.id;
     const { address_id, payment_method, notes, from } = req.body;
     const transactionIdRaw = req.body.transaction_id;
-    const normalizedPaymentMethod = String(payment_method || "cod").toLowerCase();
+    let normalizedPaymentMethod = String(payment_method || "cod").toLowerCase();
     const sourceContext = String(from || "").trim().toLowerCase();
     const transactionId = String(transactionIdRaw || "").trim();
     const newAddressPayload = req.body.new_address || {
@@ -761,6 +763,37 @@ router.post("/place", requireAuth, async (req, res, next) => {
       return res.redirect("/orders/checkout?error=Please select or add a delivery address");
     }
 
+    // -- Simulated External Payment API Check (with resilience) --
+    let paymentGatewayFailed = false;
+    let paymentFailureReason = "";
+
+    if (normalizedPaymentMethod === "upi" || normalizedPaymentMethod === "paypal") {
+      try {
+        await paymentCircuitBreaker.executeWithResilience(async () => {
+          await new Promise((resolve, reject) => {
+            if (notes && notes.includes('fail_payment')) {
+              setTimeout(() => reject(new Error('Simulated Payment API Failure')), 500);
+            } else if (notes && notes.includes('timeout_payment')) {
+              setTimeout(resolve, 10000); // 10s delay to trigger timeout
+            } else {
+              setTimeout(resolve, 200);
+            }
+          });
+        }, { timeout: 3000, retries: 1, retryDelayMs: 1000 });
+      } catch (err) {
+        paymentGatewayFailed = true;
+        if (err.name === 'CircuitBreakerOpenError') {
+           paymentFailureReason = "Payment gateway is experiencing delays.";
+        } else if (err.name === 'TimeoutError') {
+           paymentFailureReason = "Payment request timed out.";
+        } else {
+           paymentFailureReason = "Payment verification failed.";
+        }
+        console.warn(`Payment failed: ${paymentFailureReason}. Degrading to COD.`);
+        normalizedPaymentMethod = "cod";
+      }
+    }
+
     // -- Create order --
     const orderColsResult = await client.query(
       "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'orders'"
@@ -947,7 +980,15 @@ router.post("/place", requireAuth, async (req, res, next) => {
       }
     });
 
-    const finalSuccessUrl = "/orders/success/" + order.id + (sourceContext === "scanpay" ? "?from=scanpay" : "");
+    let finalSuccessUrl = "/orders/success/" + order.id;
+    const queryParams = new URLSearchParams();
+    if (sourceContext === "scanpay") queryParams.append("from", "scanpay");
+    if (paymentGatewayFailed) {
+      queryParams.append("warning", `${paymentFailureReason} We secured your order by converting it to Cash on Delivery (COD).`);
+    }
+    const qStr = queryParams.toString();
+    if (qStr) finalSuccessUrl += "?" + qStr;
+
     return res.redirect(finalSuccessUrl);
   } catch (err) {
     if (!transactionCommitted) {
@@ -962,6 +1003,8 @@ router.post("/place", requireAuth, async (req, res, next) => {
       return res.redirect("/orders/success/" + placedOrderId);
     }
     console.error("Place order error:", err);
+
+
     const errMsg = String(err && err.message ? err.message : "");
     if (errMsg.includes("subtotal_amount") || errMsg.includes("coupon_discount") || errMsg.includes("address_snapshot")) {
       return res.redirect("/orders/checkout?error=Checkout is syncing updates. Please refresh and try again.");
@@ -1043,7 +1086,8 @@ router.get("/success/:id", requireAuth, async (req, res, next) => {
       itemsSubtotal,
       couponDiscount,
       couponCode: order.coupon_code || null,
-      suggestedProducts: suggestedProductsResult.rows
+      suggestedProducts: suggestedProductsResult.rows,
+      warning: req.query.warning || null
     });
   } catch (err) {
     next(err);
@@ -1090,6 +1134,145 @@ router.get("/", requireAuth, async (req, res, next) => {
       success: req.query.success || null,
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================
+// GET DOWNLOAD INVOICE
+// ============================================================
+router.get("/invoice/:id", requireAuth, async (req, res, next) => {
+  try {
+    const orderResult = await pool.query(
+      `SELECT orders.*, 
+              addresses.full_name AS addr_name, addresses.phone AS addr_phone,
+              addresses.address_line, addresses.city, addresses.state, addresses.pincode
+       FROM orders 
+       LEFT JOIN addresses ON addresses.id = orders.address_id
+       WHERE orders.id = $1 AND orders.user_id = $2`,
+      [req.params.id, req.session.user.id]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).send("Order not found or unauthorized.");
+    }
+
+    const order = orderResult.rows[0];
+
+    const itemsResult = await pool.query(
+      `SELECT oi.quantity, oi.price, oi.selected_weight, p.name 
+       FROM order_items oi
+       JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id = $1`,
+      [order.id]
+    );
+    const items = itemsResult.rows;
+
+    const storeName = req.app.locals.settings?.store_name || "Shanmukha Stores";
+    
+    const doc = new PDFDocument({ margin: 40 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=Invoice-${order.id}.pdf`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(24).font('Helvetica-Bold').text(storeName, { align: 'center' });
+    doc.fontSize(12).font('Helvetica').fillColor('#666666').text('Invoice', { align: 'center' });
+    doc.moveDown(2);
+
+    // Meta Data
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#111111');
+    const metaY = doc.y;
+    doc.text(`Order No: ${order.id}`, 40, metaY);
+    doc.text(`Date: ${new Date(order.created_at).toLocaleDateString("en-IN")}`, 40, metaY + 15);
+    doc.text(`Payment: ${String(order.payment_method || "COD").toUpperCase()}`, 300, metaY);
+    doc.text(`Items: ${items.length}`, 300, metaY + 15);
+    doc.moveDown(2);
+
+    // Address
+    doc.y = metaY + 45;
+    doc.font('Helvetica-Bold').text('Delivery Address:');
+    doc.font('Helvetica');
+    if (order.addr_name) {
+      doc.text(order.addr_name);
+      if (order.addr_phone) doc.text(order.addr_phone);
+      doc.text(order.address_line);
+      doc.text(`${order.city}, ${order.state} - ${order.pincode}`);
+    } else if (order.address_snapshot) {
+      doc.text(order.address_snapshot);
+    } else {
+      doc.text('-');
+    }
+    doc.moveDown(2);
+
+    // Table Header
+    const tableTop = doc.y + 10;
+    doc.font('Helvetica-Bold');
+    doc.text('No', 40, tableTop);
+    doc.text('Item', 80, tableTop);
+    doc.text('Qty', 380, tableTop);
+    doc.text('Amount', 450, tableTop, { align: 'right', width: 100 });
+    
+    doc.moveTo(40, tableTop + 15).lineTo(550, tableTop + 15).strokeColor('#ececec').stroke();
+    
+    // Table Body
+    let yPos = tableTop + 25;
+    doc.font('Helvetica').fillColor('#111111');
+    items.forEach((item, index) => {
+      const amount = Number(item.price) * Number(item.quantity);
+      const nameStr = item.selected_weight ? `${item.name} (${item.selected_weight})` : item.name;
+      
+      // Handle multi-line item names gracefully
+      const textHeight = doc.heightOfString(nameStr, { width: 280 });
+      
+      doc.text((index + 1).toString(), 40, yPos);
+      doc.text(nameStr, 80, yPos, { width: 280 });
+      doc.text(item.quantity.toString(), 380, yPos);
+      doc.text(`Rs ${Number(amount).toLocaleString('en-IN')}`, 450, yPos, { align: 'right', width: 100 });
+      
+      yPos += textHeight + 8;
+      
+      // Page break check
+      if (yPos > 750) {
+        doc.addPage();
+        yPos = 40;
+      }
+    });
+
+    doc.moveTo(40, yPos).lineTo(550, yPos).strokeColor('#ececec').stroke();
+    yPos += 15;
+
+    // Summary
+    doc.font('Helvetica');
+    doc.text('Subtotal:', 350, yPos);
+    doc.text(`Rs ${Number(order.subtotal_amount || 0).toLocaleString('en-IN')}`, 450, yPos, { align: 'right', width: 100 });
+    yPos += 18;
+
+    if (Number(order.coupon_discount || 0) > 0) {
+      doc.text('Discount:', 350, yPos);
+      doc.text(`- Rs ${Number(order.coupon_discount).toLocaleString('en-IN')}`, 450, yPos, { align: 'right', width: 100 });
+      yPos += 18;
+    }
+
+    doc.text('Delivery:', 350, yPos);
+    if (Number(order.delivery_fee || 0) > 0) {
+      doc.text(`Rs ${Number(order.delivery_fee).toLocaleString('en-IN')}`, 450, yPos, { align: 'right', width: 100 });
+    } else {
+      doc.text('Free', 450, yPos, { align: 'right', width: 100 });
+    }
+    yPos += 18;
+
+    doc.font('Helvetica-Bold');
+    doc.text('Total:', 350, yPos);
+    doc.text(`Rs ${Number(order.total_amount || 0).toLocaleString('en-IN')}`, 450, yPos, { align: 'right', width: 100 });
+
+    doc.moveDown(4);
+    doc.font('Helvetica').fontSize(10).fillColor('#777777').text('Thank you for your business! System-generated invoice.', { align: 'center' });
+
+    doc.end();
+
+  } catch (err) {
+    console.error("Download Invoice Error:", err);
     next(err);
   }
 });

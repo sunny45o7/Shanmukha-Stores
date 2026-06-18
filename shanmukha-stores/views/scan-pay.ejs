@@ -36,10 +36,10 @@
         <p>Enter your UPI transaction ID to place the order.</p>
 
         <% if (error) { %>
-          <div class="alert alert-danger"><%= error %></div>
+          <div class="auth-alert error"><%= error %></div>
         <% } %>
         <% if (success) { %>
-          <div class="alert alert-success"><%= success %></div>
+          <div class="auth-alert success"><%= success %></div>
         <% } %>
 
         <form id="scanPayForm" method="POST" action="/orders/place">
@@ -47,8 +47,8 @@
           <input type="hidden" name="from" value="scanpay">
 
           <div class="form-group">
-            <label for="addressSelect">Select Delivery Address</label>
-            <select name="address_id" id="addressSelect" class="form-control" required>
+            <label for="addressSelect" class="form-label">Select Delivery Address</label>
+            <select name="address_id" id="addressSelect" class="form-input" required>
               <% if (addresses && addresses.length > 0) { %>
                 <% addresses.forEach(address => { %>
                   <option value="<%= address.id %>"><%= address.full_name %> - <%= address.address_line %>, <%= address.city %></option>
@@ -60,11 +60,11 @@
           </div>
 
           <div class="form-group">
-            <label for="transactionIdInput">UPI Transaction ID</label>
-            <input type="text" id="transactionIdInput" name="transaction_id" class="form-control" placeholder="Enter transaction ID" autocomplete="off" required>
+            <label for="transactionIdInput" class="form-label">UPI Transaction ID</label>
+            <input type="text" id="transactionIdInput" name="transaction_id" class="form-input" placeholder="Enter transaction ID" autocomplete="off" required>
           </div>
 
-          <button type="submit" id="placeOrderBtn" class="btn btn-primary btn-block" disabled>Place Order</button>
+          <button type="submit" id="placeOrderBtn" class="auth-btn" disabled>Place Order</button>
         </form>
 
         <p class="text-sm text-muted" style="margin-top:6px;">

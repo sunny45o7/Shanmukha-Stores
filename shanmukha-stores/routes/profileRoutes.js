@@ -138,6 +138,52 @@ router.post(
   }
 );
 
+const multer = require("multer");
+const sharp = require("sharp");
+const path = require("path");
+const fs = require("fs");
+
+const profileUploadDir = path.join(__dirname, "..", "public", "uploads", "profiles");
+if (!fs.existsSync(profileUploadDir)) {
+  fs.mkdirSync(profileUploadDir, { recursive: true });
+}
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) return cb(null, true);
+    cb(new Error("Only image files are allowed"));
+  }
+});
+
+// ============================================================
+// POST UPLOAD PROFILE IMAGE (AJAX)
+// ============================================================
+router.post("/upload-image", requireAuth, upload.single("profile_image_file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: "No image file provided" });
+
+    const userId = req.session.user.id;
+    const ext = path.extname(req.file.originalname) || ".jpg";
+    const filename = `profile_${userId}_${Date.now()}${ext}`;
+    const filepath = path.join(profileUploadDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize(200, 200, { fit: "cover" })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/profiles/${filename}`;
+
+    await pool.query("UPDATE users SET profile_image = $1 WHERE id = $2", [imageUrl, userId]);
+    req.session.user.profile_image = imageUrl;
+
+    res.json({ success: true, url: imageUrl });
+  } catch (err) {
+    console.error("Profile image upload error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.use((req, res) => {
   res.status(404).render("errors/404", {
     title: "Page Not Found",

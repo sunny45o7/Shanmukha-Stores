@@ -29,7 +29,11 @@
                 <% banners.forEach(b => { %>
                 <tr>
                     <td>
-                        <img src="<%= b.image %>" style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);" onerror="this.style.background='var(--gray-100)';this.style.minHeight='54px'">
+                        <% if (b.image && b.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+                            <video src="<%= b.image %>" autoplay muted loop playsinline style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);"></video>
+                        <% } else { %>
+                            <img src="<%= b.image %>" style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);" onerror="this.style.background='var(--gray-100)';this.style.minHeight='54px'">
+                        <% } %>
                     </td>
                     <td style="font-weight:500;color:var(--black);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= b.title %></td>
                     <td style="color:var(--gray-500);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= b.subtitle || '—' %></td>
@@ -76,7 +80,7 @@
             <h3>Add Hero Banner</h3>
             <button class="modal-close" onclick="closeModal('addBanner')">✕</button>
         </div>
-        <form action="/admin/banners/add" method="POST">
+        <form action="/admin/banners/add" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Banner Title *</label>
                 <input type="text" name="title" required placeholder="e.g. Fresh from Farm to Table">
@@ -86,8 +90,10 @@
                 <input type="text" name="subtitle" placeholder="e.g. 100% Organic, Delivered Fresh">
             </div>
             <div class="form-group">
-                <label>Image URL *</label>
-                <input type="url" name="image" required placeholder="https://...">
+                <label>Image/Video Upload *</label>
+                <input type="file" name="image_file" accept="image/*,video/*">
+                <small style="display:block;margin:6px 0;">Or provide an Image URL below:</small>
+                <input type="url" name="image" placeholder="https://...">
             </div>
             <div class="form-group">
                 <label>Link (optional)</label>
@@ -112,7 +118,7 @@
             <h3>Edit Banner</h3>
             <button class="modal-close" onclick="closeModal('editBanner')">✕</button>
         </div>
-        <form id="editBannerForm" method="POST">
+        <form id="editBannerForm" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Banner Title *</label>
                 <input type="text" name="title" id="eBTitle" required>
@@ -122,8 +128,10 @@
                 <input type="text" name="subtitle" id="eBSubtitle">
             </div>
             <div class="form-group">
-                <label>Image URL *</label>
-                <input type="url" name="image" id="eBImage" required>
+                <label>Image/Video Upload *</label>
+                <input type="file" name="image_file" accept="image/*,video/*">
+                <small style="display:block;margin:6px 0;">Or provide an Image URL below:</small>
+                <input type="url" name="image" id="eBImage">
             </div>
             <div class="form-group">
                 <label>Link</label>

@@ -46,6 +46,7 @@
             <td><span class="status-pill"><%= r.status %></span></td>
             <td><%= new Date(r.created_at).toLocaleString('en-IN') %></td>
             <td>
+              <% if (r.status !== 'Refunded' && r.status !== 'Rejected') { %>
               <form action="/staff/returns/status/<%= r.id %>" method="POST" style="display:flex;gap:8px;align-items:center;">
                 <select name="status" class="inp" style="min-width:120px;">
                   <option value="Pending" <%= r.status === 'Pending' ? 'selected' : '' %>>Pending</option>
@@ -55,6 +56,9 @@
                 </select>
                 <button type="submit" class="btn btn-black btn-sm">Update</button>
               </form>
+              <% } else { %>
+                <span class="badge bg-gray">Update Disabled</span>
+              <% } %>
             </td>
           </tr>
         <% }) %>

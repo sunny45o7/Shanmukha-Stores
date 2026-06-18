@@ -26,12 +26,13 @@ const attachUser = async (req, res, next) => {
       req.session.user.role = userCheck.rows[0].role || req.session.user.role;
       req.session.user.profile_image = userCheck.rows[0].profile_image || null;
 
-      // Wishlist count
+      // Wishlist
       const wishlist = await pool.query(
-        "SELECT COUNT(*) FROM wishlist WHERE user_id = $1",
+        "SELECT product_id FROM wishlist WHERE user_id = $1",
         [req.session.user.id]
       );
-      res.locals.wishlistCount = parseInt(wishlist.rows[0].count);
+      res.locals.wishlistCount = wishlist.rows.length;
+      res.locals.wishlistProductIds = wishlist.rows.map(r => Number(r.product_id));
 
       // Cart count
       const cart = await pool.query(
@@ -52,7 +53,7 @@ const attachUser = async (req, res, next) => {
         pool.query(
           `SELECT id, title, message, type, is_read, created_at
            FROM notifications
-           WHERE user_id = $1
+           WHERE user_id = $1 AND is_read = false
            ORDER BY created_at DESC
            LIMIT 6`,
           [req.session.user.id]

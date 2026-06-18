@@ -49,7 +49,7 @@
                                         <input type="email" name="store_email" value="<%= settings.store_email %>">
                                     </div>
                                     <div class="form-group">
-                                        <label>Support Phone</label>
+                                        <label>Support Mobile</label>
                                         <input type="text" name="store_phone" value="<%= settings.store_phone %>">
                                     </div>
                                     <div class="form-group full-width">
@@ -122,10 +122,12 @@
                             <div id="system" class="tab-pane">
                                 <h3>Website System & Performance</h3>
                                 <div class="form-grid">
-                                    <div class="form-group checkbox-group full-width">
-                                        <input type="checkbox" name="marquee_active" id="marquee_active" value="true"
-                                            <%=settings.marquee_active==='true' ? 'checked' : '' %>>
-                                        <label for="marquee_active">Enable Announcement Marquee (Header)</label>
+                                    <div class="form-group full-width" style="display:flex;align-items:center;gap:12px;">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="marquee_active" id="marquee_active" value="true" <%=settings.marquee_active==='true' ? 'checked' : '' %>>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <label for="marquee_active" class="form-label" style="margin:0;">Enable Announcement Marquee (Header)</label>
                                     </div>
                                     <div class="form-group full-width">
                                         <label>Marquee Announcement Text/HTML</label>
@@ -266,6 +268,14 @@
                         .form-group.full-width {
                             grid-column: span 2;
                         }
+                        @media (max-width: 900px) {
+                            .form-group.full-width {
+                                grid-column: span 1;
+                            }
+                            .settings-content {
+                                padding: 20px;
+                            }
+                        }
 
                         .form-group label {
                             display: block;
@@ -337,6 +347,10 @@
                         @media (max-width: 900px) {
                             .settings-container {
                                 flex-direction: column;
+                            }
+
+                            .form-grid {
+                                grid-template-columns: 1fr;
                             }
 
                             .settings-tabs {

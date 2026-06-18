@@ -1,5 +1,5 @@
 <%- include('./partials/navbar') %>
-<% const defaultProfileImage = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"#f1f3f5\"/><circle cx=\"50\" cy=\"38\" r=\"18\" fill=\"#c7ccd1\"/><path d=\"M20 86c4-16 16-24 30-24s26 8 30 24\" fill=\"#c7ccd1\"/></svg>'); %>
+<% const defaultProfileImage = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#f1f3f5"/><circle cx="50" cy="38" r="18" fill="#c7ccd1"/><path d="M20 86c4-16 16-24 30-24s26 8 30 24" fill="#c7ccd1"/></svg>'); %>
 
   <div class="luxury-profile-section page-enter">
     <div class="container">
@@ -34,12 +34,18 @@
                   <div class="user-brief">
                     <div class="luxury-avatar">
                       <img
+                        id="profileAvatarImg"
                         src="<%= profileUser.profile_image || defaultProfileImage %>"
                         alt="Profile"
                         class="luxury-avatar-img"
                         onerror="this.onerror=null;this.src='<%= defaultProfileImage %>';"
                       >
                     </div>
+                    <label for="profileUploadInput" class="profile-edit-btn" title="Upload Profile Picture">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      Edit Image
+                    </label>
+                    <input type="file" id="profileUploadInput" accept="image/*" style="display:none;">
                     <div class="user-meta">
                       <h3>
                         <%= profileUser.name %>
@@ -74,35 +80,20 @@
                   <section id="personal" class="luxury-section-card">
                     <div class="card-header">
                       <h2>Personal Information</h2>
-                      <div class="verify-badge">
-                        <% if (profileUser.is_verified) { %>
-                          <span class="verified">✓ Verified Account</span>
-                          <% } else { %>
-                            <span class="unverified">! Unverified</span>
-                            <% } %>
-                      </div>
                     </div>
 
                     <form method="POST" action="/profile/update" class="luxury-form">
                       <div class="form-row">
                         <div class="form-group">
-                          <label>Full Name</label>
+                          <label>Full Name *</label>
                           <input type="text" name="name" value="<%= profileUser.name %>" required>
                         </div>
                         <div class="form-group">
-                          <label>Phone Number</label>
+                          <label>Mobile Number *</label>
                           <input type="tel" name="phone" value="<%= profileUser.phone || '' %>"
-                            placeholder="Not provided">
+                            placeholder="Not provided" required>
                         </div>
                       </div>
-
-                      <div class="form-group">
-                        <label>Profile Image URL</label>
-                        <input type="url" name="profile_image" value="<%= profileUser.profile_image || '' %>"
-                          placeholder="https://example.com/profile.jpg">
-                        <p class="input-hint">Paste a public image link. Leave empty to use the default profile image.</p>
-                      </div>
-
                       <div class="form-group">
                         <label>Email Address</label>
                         <input type="email" value="<%= profileUser.email %>" readonly class="readonly-input">
@@ -538,4 +529,111 @@
           gap: 20px;
         }
       }
+
+      @media (max-width: 768px) {
+        .luxury-profile-section {
+          padding: 30px 4%;
+        }
+
+        .luxury-title {
+          font-size: 32px;
+        }
+
+        .luxury-form .form-row {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .order-preview-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .item-id, .item-details, .item-price {
+          width: 100%;
+          margin: 0;
+        }
+
+        .order-preview-item .btn-luxury-outline {
+          width: 100%;
+          text-align: center;
+        }
+
+        .profile-sidebar-luxury,
+        .luxury-section-card {
+          padding: 20px;
+        }
+
+        .card-header {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+      .profile-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: -5px;
+        margin-bottom: 20px;
+        padding: 6px 14px;
+        background: var(--bone);
+        color: var(--black);
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 1px solid var(--border);
+      }
+      .profile-edit-btn:hover {
+        background: var(--gold);
+        color: #fff;
+        border-color: var(--gold);
+      }
+      .luxury-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: var(--emerald);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        border: 4px solid var(--champagne);
+        box-shadow: var(--shadow-md);
+      }
     </style>
+    
+    <script>
+      document.getElementById('profileUploadInput')?.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        const formData = new FormData();
+        formData.append('profile_image_file', file);
+        
+        try {
+          const res = await fetch('/profile/upload-image', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById('profileAvatarImg').src = data.url;
+            
+            // Show a temporary success message
+            const btn = document.querySelector('.profile-edit-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '✓';
+            btn.style.background = 'var(--emerald)';
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+              btn.style.background = 'var(--gold)';
+            }, 2000);
+          } else {
+            alert('Upload failed: ' + (data.error || 'Unknown error'));
+          }
+        } catch(err) {
+          alert('Upload failed. Please try again.');
+        }
+      });
+    </script>

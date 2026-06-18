@@ -35,25 +35,38 @@ router.get("/register", (req, res) => {
 router.post("/register", authLimiter, async (req, res) => {
   try {
     const full_name = req.body.full_name || req.body.name || req.body.username || "";
-    const { email, password } = req.body;
+    let email = req.body.email || null;
+    const password = req.body.password;
+    const confirm_password = req.body.confirm_password;
     const phone = req.body.phone || req.body.mobile || null;
 
-    if (!full_name || !email || !password) {
+    if (!full_name || !phone || !password || !confirm_password) {
       return res.redirect("/auth/register?error=Please fill all required fields");
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.redirect("/auth/register?error=Please enter a valid email address");
+    if (password !== confirm_password) {
+      return res.redirect("/auth/register?error=Passwords do not match");
+    }
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.redirect("/auth/register?error=Please enter a valid email address");
+      }
+      const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+      if (existing.rows.length > 0) {
+        return res.redirect("/auth/register?error=Email already registered");
+      }
+    } else {
+      email = `${phone.replace(/\D/g, '')}@shanmukha.local`;
+      const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+      if (existing.rows.length > 0) {
+        return res.redirect("/auth/register?error=This mobile number is already registered.");
+      }
     }
 
     if (password.length < 8) {
       return res.redirect("/auth/register?error=Password must be at least 8 characters long");
-    }
-
-    const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (existing.rows.length > 0) {
-      return res.redirect("/auth/register?error=Email already registered");
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -85,15 +98,16 @@ router.post("/register", authLimiter, async (req, res) => {
 =============================== */
 router.post("/login", authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const login_id = req.body.login_id || req.body.email;
+    const password = req.body.password;
 
-    if (!email || !password) {
-      return res.redirect("/auth/login?error=Please enter email and password");
+    if (!login_id || !password) {
+      return res.redirect("/auth/login?error=Please enter email/mobile and password");
     }
 
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const result = await pool.query("SELECT * FROM users WHERE email = $1 OR phone = $1", [login_id]);
     if (result.rows.length === 0) {
-      return res.redirect("/auth/login?error=No account found with this email");
+      return res.redirect("/auth/login?error=No account found with this email/mobile");
     }
 
     const user = result.rows[0];

@@ -1,4 +1,4 @@
-﻿<%- include('./partials/navbar') %>
+<%- include('./partials/navbar') %>
 
 <section class="cart-section">
   <div class="cart-container">
@@ -52,9 +52,8 @@
                 <div class="qty-form">
                   <form action="/cart/update/<%= item.id %>" method="POST" class="qty-inline-form" id="qtyForm-<%= item.id %>" onsubmit="return submitQty(<%= item.id %>)">
                     <button type="button" class="qty-btn" onclick="changeQty(<%= item.id %>, -1, <%= item.stock %>)">-</button>
-                    <input type="number" name="quantity" value="<%= item.quantity %>" min="1" max="<%= item.stock %>" class="qty-input" id="qtyInput-<%= item.id %>">
+                    <input type="number" name="quantity" value="<%= item.quantity %>" min="1" max="<%= item.stock %>" class="qty-input" id="qtyInput-<%= item.id %>" onchange="submitQty(<%= item.id %>)" onblur="submitQty(<%= item.id %>)">
                     <button type="button" class="qty-btn" onclick="changeQty(<%= item.id %>, 1, <%= item.stock %>)">+</button>
-                    <button type="submit" class="update-btn">Update</button>
                   </form>
                 </div>
 

@@ -9,7 +9,7 @@
 <section class="products-section products-page">
   <form method="GET" action="/products" id="filterForm">
     <div class="filter-bar">
-      <div class="filter-search">
+      <div class="filter-search" style="position:relative;">
         <span class="search-icon">🔍</span>
         <input
           type="text"
@@ -17,7 +17,9 @@
           placeholder="Search products..."
           value="<%= typeof search !== 'undefined' ? search : '' %>"
           id="searchInput"
+          autocomplete="off"
         >
+        <div id="autocompleteResults" class="autocomplete-dropdown"></div>
       </div>
 
       <select name="category" class="filter-select" onchange="document.getElementById('filterForm').submit()">
@@ -34,11 +36,7 @@
         <option value="name_asc" <%= (typeof sort !== 'undefined' && sort === 'name_asc') ? 'selected' : '' %>>Name: A to Z</option>
       </select>
 
-      <button type="submit" class="btn-primary btn-sm filter-apply-btn">Apply</button>
-
-      <% if ((typeof search !== 'undefined' && search) || (typeof selectedCategory !== 'undefined' && selectedCategory) || (typeof sort !== 'undefined' && sort)) { %>
-        <a href="/products" class="btn-secondary btn-sm filter-apply-btn">Clear</a>
-      <% } %>
+      <a href="/products" class="btn-secondary btn-sm filter-apply-btn">Reset Filters</a>
     </div>
   </form>
 
@@ -63,15 +61,27 @@
         <div class="product-card">
           <div class="product-image">
             <a href="/products/<%= p.id %>">
-              <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>" onerror="this.src='/images/placeholder.png'">
+              <% if (p.image && p.image.match(/\.(mp4|webm|ogg)$/i)) { %>
+                <video src="<%= p.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <% } else { %>
+                <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>" onerror="this.src='/images/placeholder.png'">
+              <% } %>
             </a>
 
             <% if (p.stock === 0) { %>
               <span class="product-badge sale">Sold Out</span>
             <% } %>
 
+            <% const isWished = typeof wishlistProductIds !== 'undefined' && wishlistProductIds.includes(Number(p.id)); %>
             <form action="/wishlist/toggle/<%= p.id %>" method="POST" class="wishlist-toggle-form wishlist-form-inline" data-product-id="<%= p.id %>">
-              <button type="submit" class="wishlist-btn" title="Wishlist">♡</button>
+              <button type="submit" class="wishlist-btn <%= isWished ? 'active' : '' %>" title="Wishlist"><%= isWished ? '♥' : '♡' %></button>
+            </form>
+            <form action="/wishlist/toggle/<%= p.id %>" method="POST" class="wishlist-toggle-form wishlist-float-mobile" data-product-id="<%= p.id %>">
+              <button type="submit" class="btn-wishlist-circle-mobile <%= isWished ? 'active' : '' %>" aria-label="Toggle wishlist">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="<%= isWished ? 'currentColor' : 'none' %>" stroke="currentColor" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
             </form>
           </div>
 
@@ -138,10 +148,94 @@
 
 <script>
   let debTimer;
-  document.getElementById('searchInput').addEventListener('input', function () {
-    clearTimeout(debTimer);
-    debTimer = setTimeout(() => document.getElementById('filterForm').submit(), 600);
+  let autoTimer;
+  const searchInput = document.getElementById('searchInput');
+  const autocompleteResults = document.getElementById('autocompleteResults');
+
+  searchInput.addEventListener('input', function (e) {
+    const val = e.target.value.trim();
+    
+    // Autocomplete Logic
+    clearTimeout(autoTimer);
+    if (val.length > 0) {
+      autoTimer = setTimeout(async () => {
+        try {
+          const res = await fetch('/api/search/suggestions?q=' + encodeURIComponent(val));
+          const data = await res.json();
+          if (data && data.length > 0) {
+            autocompleteResults.innerHTML = data.map(item => `
+              <div class="autocomplete-item" onclick="window.location.href='${item.url}'">
+                <div>
+                  <span style="font-weight:600;">${item.name}</span>
+                  <span style="color:var(--gray-500); font-weight:normal;"> - ${item.type}</span>
+                </div>
+              </div>
+            `).join('');
+            autocompleteResults.style.display = 'block';
+          } else {
+            autocompleteResults.style.display = 'none';
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }, 200);
+    } else {
+      autocompleteResults.style.display = 'none';
+    }
   });
+
+  // Hide autocomplete when clicking outside
+  document.addEventListener('click', function(e) {
+    if (e.target !== searchInput && !autocompleteResults.contains(e.target)) {
+        autocompleteResults.style.display = 'none';
+    }
+  });
+
+  // Add styles for the dropdown
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 1000;
+      display: none;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 4px;
+    }
+    .autocomplete-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+    .autocomplete-item:hover {
+      background: var(--gray-50);
+    }
+    .autocomplete-item img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 12px;
+    }
+    .autocomplete-item span {
+      font-size: 14px;
+      color: var(--black);
+      font-weight: 500;
+    }
+  `;
+  document.head.appendChild(style);
 
   document.querySelectorAll('.wishlist-toggle-form').forEach((form) => {
     form.addEventListener('submit', async function (e) {
@@ -158,7 +252,19 @@
           if (data && data.redirect) window.location.href = data.redirect;
           return;
         }
-        btn.textContent = data.status === 'added' ? '♥' : '♡';
+        
+        const svg = btn.querySelector('svg');
+        if (svg) {
+          if (data.status === 'added') {
+            btn.classList.add('active');
+            svg.setAttribute('fill', 'currentColor');
+          } else {
+            btn.classList.remove('active');
+            svg.setAttribute('fill', 'none');
+          }
+        } else {
+          btn.textContent = data.status === 'added' ? '♥' : '♡';
+        }
       } catch (err) {
         console.error(err);
       }

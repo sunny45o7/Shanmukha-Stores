@@ -73,6 +73,49 @@ router.get("/", async (req, res, next) => {
 });
 
 // ============================================================
+// API: SEARCH SUGGESTIONS
+// ============================================================
+router.get("/api/search/suggestions", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 1) return res.json([]);
+    const query = `%${q.trim()}%`;
+    
+    const [products, categories, collections] = await Promise.all([
+      pool.query(
+        "SELECT id, name FROM products WHERE COALESCE(is_enabled, true) = true AND name ILIKE $1 ORDER BY name ASC LIMIT 5",
+        [query]
+      ),
+      pool.query(
+        "SELECT id, name FROM categories WHERE name ILIKE $1 ORDER BY name ASC LIMIT 3",
+        [query]
+      ),
+      pool.query(
+        "SELECT id, name FROM collections WHERE is_active = true AND name ILIKE $1 ORDER BY name ASC LIMIT 3",
+        [query]
+      )
+    ]);
+
+    let results = [];
+
+    products.rows.forEach(p => {
+        results.push({ name: p.name, type: 'Product', url: `/products?search=${encodeURIComponent(p.name)}` });
+    });
+    categories.rows.forEach(c => {
+        results.push({ name: c.name, type: 'Category', url: `/products?category=${c.id}` });
+    });
+    collections.rows.forEach(c => {
+        results.push({ name: c.name, type: 'Collection', url: `/collections/${c.id}` });
+    });
+
+    res.json(results);
+  } catch (err) {
+    console.error("Search API Error:", err.message);
+    res.status(500).json([]);
+  }
+});
+
+// ============================================================
 // GET ALL PRODUCTS
 // ============================================================
 router.get("/products", async (req, res, next) => {

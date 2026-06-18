@@ -11,11 +11,11 @@
   <a href="/staff/orders" class="btn btn-black btn-sm">Open Orders</a>
 </div>
 
-<div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
-  <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val"><%= stats.orders %></div></div>
-  <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val"><%= stats.pending %></div></div>
-  <div class="stat-card"><div class="stat-label">Processing</div><div class="stat-val"><%= stats.processing %></div></div>
-  <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-val"><%= stats.delivered %></div></div>
+<div class="stats-row">
+  <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='/staff/orders'"><div class="stat-label">Total Orders</div><div class="stat-val"><%= stats.orders %></div></div>
+  <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='/staff/orders?status=Pending'"><div class="stat-label">Pending</div><div class="stat-val"><%= stats.pending %></div></div>
+  <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='/staff/orders?status=Processing'"><div class="stat-label">Processing</div><div class="stat-val"><%= stats.processing %></div></div>
+  <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='/staff/orders?status=Delivered'"><div class="stat-label">Delivered</div><div class="stat-val"><%= stats.delivered %></div></div>
 </div>
 
 <div class="card">

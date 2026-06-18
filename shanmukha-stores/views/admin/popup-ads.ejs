@@ -33,9 +33,13 @@
                                     <% popupAds.forEach(ad=> { %>
                                         <tr>
                                             <td>
-                                                <img src="<%= ad.image_url %>"
-                                                    style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);"
-                                                    onerror="this.style.background='var(--gray-100)';this.style.minHeight='54px'">
+                                                <% if (ad.image_url && ad.image_url.match(/\.(mp4|webm|ogg)$/i)) { %>
+                                                    <video src="<%= ad.image_url %>" autoplay muted loop playsinline style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);"></video>
+                                                <% } else { %>
+                                                    <img src="<%= ad.image_url %>"
+                                                        style="width:100px;height:54px;object-fit:cover;border-radius:7px;background:var(--gray-100);"
+                                                        onerror="this.style.background='var(--gray-100)';this.style.minHeight='54px'">
+                                                <% } %>
                                             </td>
                                             <td style="font-weight:700;color:var(--black);">
                                                 <%= ad.title %>
@@ -93,26 +97,29 @@
                                 <h3>Add Popup Ad</h3>
                                 <button class="modal-close" onclick="closeModal('addPopupAd')">✕</button>
                             </div>
-                            <form action="/admin/popup-ads/add" method="POST">
+                            <form action="/admin/popup-ads/add" method="POST" enctype="multipart/form-data">
                                 <div class="form-group">
                                     <label>Ad Title *</label>
                                     <input type="text" name="title" required placeholder="e.g. Summer Sale 50% Off">
                                 </div>
                                 <div class="form-group">
-                                    <label>Image URL *</label>
-                                    <input type="url" name="image_url" required placeholder="https://...">
+                                    <label>Image/Video Upload *</label>
+                                    <input type="file" name="image_file" accept="image/*,video/*">
+                                    <small style="display:block;margin:6px 0;">Or provide an Image URL below:</small>
+                                    <input type="url" name="image_url" placeholder="https://...">
                                 </div>
                                 <div class="form-group">
                                     <label>Target Click URL (Optional)</label>
                                     <input type="text" name="target_url" placeholder="/collections/1 or /products/5">
                                     <small class="text-muted">Where should users go when they click the ad?</small>
                                 </div>
-                                <label
-                                    style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;font-size:13px;font-weight:600;">
-                                    <input type="checkbox" name="is_active"
-                                        style="width:16px;min-height:initial;padding:0;">
-                                    Set as Active Ad (Deactivates others)
-                                </label>
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="is_active">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="form-label" style="margin:0;">Set as Active Ad (Deactivates others)</span>
+                                </div>
 
                                 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
                                     <button type="button" class="btn btn-ghost"
@@ -130,14 +137,16 @@
                                 <h3>Edit Popup Ad</h3>
                                 <button class="modal-close" onclick="closeModal('editPopupAd')">✕</button>
                             </div>
-                            <form id="editPopupAdForm" method="POST">
+                            <form id="editPopupAdForm" method="POST" enctype="multipart/form-data">
                                 <div class="form-group">
                                     <label>Ad Title *</label>
                                     <input type="text" name="title" id="ePTitle" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Image URL *</label>
-                                    <input type="url" name="image_url" id="ePImage" required>
+                                    <label>Image/Video Upload *</label>
+                                    <input type="file" name="image_file" accept="image/*,video/*">
+                                    <small style="display:block;margin:6px 0;">Or provide an Image URL below:</small>
+                                    <input type="url" name="image_url" id="ePImage">
                                 </div>
                                 <div class="form-group">
                                     <label>Target Click URL</label>

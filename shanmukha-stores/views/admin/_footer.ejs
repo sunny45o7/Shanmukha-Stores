@@ -1,8 +1,51 @@
-﻿      </div><!-- end admin-content -->
+      </div><!-- end admin-content -->
     </main>
   </div>
 
   <script>
+    (function() {
+      const resizer = document.getElementById('sidebarResizer');
+      if (!resizer) return;
+      
+      let isResizing = false;
+      const root = document.documentElement;
+
+      // Restore saved width
+      const savedWidth = localStorage.getItem('sidebarWidth');
+      if (savedWidth) {
+        root.style.setProperty('--sidebar-width', savedWidth + 'px');
+      }
+
+      resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        resizer.classList.add('is-resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        // e.clientX gives the distance from the left edge
+        let newWidth = e.clientX;
+        // Constrain width
+        if (newWidth < 180) newWidth = 180;
+        if (newWidth > 600) newWidth = 600;
+        
+        root.style.setProperty('--sidebar-width', newWidth + 'px');
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          resizer.classList.remove('is-resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          const currentWidth = root.style.getPropertyValue('--sidebar-width').replace('px', '');
+          localStorage.setItem('sidebarWidth', currentWidth);
+        }
+      });
+    })();
+
     function openModal(id) {
       const el = document.getElementById(id);
       if (el) el.classList.add('show');
@@ -25,29 +68,30 @@
 
     (function () {
       const sidebar = document.getElementById('adminSidebar');
-      const panelToggle = document.getElementById('panelMobileToggle');
       const layout = document.querySelector('.admin-layout');
-
       const syncMenuButton = () => {
-        if (!sidebar || !panelToggle) return;
-        panelToggle.setAttribute('aria-expanded', sidebar.classList.contains('menu-open') ? 'true' : 'false');
+        const panelToggle = document.getElementById('panelMobileToggle');
+        if (!panelToggle) return;
+        panelToggle.setAttribute('aria-expanded', document.body.classList.contains('sidebar-open') ? 'true' : 'false');
       };
 
       syncMenuButton();
 
-      panelToggle?.addEventListener('click', () => {
-        if (!sidebar) return;
-        sidebar.classList.toggle('menu-open');
-        syncMenuButton();
-      });
-
+      // Event delegation for toggle button and backdrop
       document.addEventListener('click', (e) => {
-        if (!sidebar || !panelToggle) return;
-        const isMobile = window.matchMedia('(max-width: 920px)').matches;
-        if (!isMobile) return;
-        if (sidebar.contains(e.target)) return;
-        sidebar.classList.remove('menu-open');
-        syncMenuButton();
+        const toggleBtn = e.target.closest('#panelMobileToggle');
+        if (toggleBtn) {
+          document.body.classList.toggle('sidebar-open');
+          syncMenuButton();
+          return;
+        }
+
+        const backdrop = e.target.closest('#sidebarBackdrop');
+        if (backdrop) {
+          document.body.classList.remove('sidebar-open');
+          syncMenuButton();
+          return;
+        }
       });
 
       if (sidebar && layout) {
@@ -84,11 +128,104 @@
       });
     })();
 
-    document.querySelectorAll('.modal-bg').forEach((modalBg) => {
-      modalBg.addEventListener('click', (e) => {
-        if (e.target === modalBg) modalBg.classList.remove('show');
-      });
+    // SPA Navigation for Admin Sidebar
+    document.addEventListener('click', async (e) => {
+      const link = e.target.closest('.sidebar-nav .nav-link');
+      if (link && link.href && link.target !== '_blank' && link.href.startsWith(window.location.origin)) {
+        e.preventDefault();
+        
+        const contentArea = document.querySelector('.admin-content');
+        if(contentArea) contentArea.style.opacity = '0.5';
+
+        try {
+          const response = await fetch(link.href);
+          const text = await response.text();
+          
+          const parser = new DOMParser();
+          const newDoc = parser.parseFromString(text, 'text/html');
+          
+          const newContent = newDoc.querySelector('.admin-content');
+          const newTopLeft = newDoc.querySelector('.topbar-left');
+          
+          if (newContent && contentArea) {
+            contentArea.innerHTML = newContent.innerHTML;
+            contentArea.style.opacity = '1';
+            
+            if (newTopLeft) {
+                const oldTopLeft = document.querySelector('.topbar-left');
+                if (oldTopLeft) oldTopLeft.innerHTML = newTopLeft.innerHTML;
+            }
+            
+            document.title = newDoc.title;
+            history.pushState({}, '', link.href);
+            
+            document.querySelectorAll('.sidebar-nav .nav-link').forEach(nav => {
+                nav.classList.remove('active');
+            });
+            link.classList.add('active');
+            
+            // Close mobile sidebar if open
+            document.body.classList.remove('sidebar-open');
+            
+            // Re-execute scripts inside admin-content sequentially
+            const runScripts = async () => {
+              const scripts = contentArea.querySelectorAll('script');
+              for (const oldScript of Array.from(scripts)) {
+                await new Promise((resolve) => {
+                  const newScript = document.createElement('script');
+                  Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                  newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                  
+                  if (newScript.src) {
+                    newScript.onload = resolve;
+                    newScript.onerror = resolve;
+                  }
+                  
+                  oldScript.parentNode.replaceChild(newScript, oldScript);
+                  if (!newScript.src) resolve();
+                });
+              }
+            };
+            runScripts();
+            
+          } else {
+            window.location.href = link.href;
+          }
+        } catch (err) {
+          window.location.href = link.href;
+        }
+      }
     });
+
+    window.addEventListener('popstate', () => {
+      window.location.reload();
+    });
+
+    // Apply minimum date to datetime-local inputs to disable past dates
+    (function() {
+      const setMinDates = () => {
+        const now = new Date();
+        const tzOffset = now.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0,16);
+        document.querySelectorAll('input[type="datetime-local"]').forEach(input => {
+          if (!input.getAttribute('min')) {
+            input.setAttribute('min', localISOTime);
+          }
+        });
+      };
+      
+      setMinDates();
+      // Re-run if modals are dynamically opened or HTML is replaced via SPA
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.addedNodes.length > 0) {
+            setMinDates();
+            break;
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
   </script>
 </body>
 </html>

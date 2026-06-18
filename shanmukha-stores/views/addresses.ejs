@@ -1,4 +1,4 @@
-﻿<%- include('./partials/navbar') %>
+<%- include('./partials/navbar') %>
 
 <div class="container py-40 addresses-shell">
   <div class="page-header address-page-head">
@@ -42,7 +42,7 @@
           <p class="address-line"><%= addr.address_line %></p>
           <p class="text-muted address-loc"><%= addr.city %>, <%= addr.state %> - <%= addr.pincode %></p>
           <% if (addr.phone) { %>
-            <p class="text-muted">Phone: <%= addr.phone %></p>
+            <p class="text-muted">Mobile: <%= addr.phone %></p>
           <% } %>
 
           <div class="address-actions">
@@ -78,7 +78,7 @@
           <input type="text" name="full_name" required>
         </div>
         <div class="form-group">
-          <label>Phone *</label>
+          <label>Mobile *</label>
           <input type="tel" name="phone" required>
         </div>
       </div>
@@ -88,7 +88,7 @@
         <textarea name="address_line" rows="3" required></textarea>
       </div>
 
-      <div class="form-group" style="margin-top:-4px;">
+      <div class="form-group" style="margin-top:-4px; display:none;">
         <button type="button" class="btn btn-outline btn-sm" id="detectLocationBtn" onclick="detectLocation()">Auto Detect Location</button>
         <small id="locationHint" class="text-muted" style="margin-left:8px;"></small>
       </div>
@@ -103,7 +103,7 @@
           <input type="text" name="state" required>
         </div>
         <div class="form-group">
-          <label>Pincode *</label>
+          <label>Pin-code *</label>
           <input type="text" name="pincode" required>
         </div>
       </div>
@@ -241,10 +241,12 @@
 
   .modal-card {
     width: min(760px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     border-radius: 16px;
     border: 1px solid rgba(0, 0, 0, 0.09);
     background: #fff;
-    overflow: hidden;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
     animation: modalPop .22s ease-out;
   }
@@ -472,10 +474,7 @@
     }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
   }
 
-  window.addEventListener('click', function (e) {
-    const modal = document.getElementById('addressModal');
-    if (e.target === modal) closeAddressModal();
-  });
+
 </script>
 
 <%- include('./partials/footer') %>

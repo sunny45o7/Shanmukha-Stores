@@ -11,12 +11,12 @@
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+<div class="order-detail-grid">
   <div class="card">
     <div class="card-hd"><h3>Order Items</h3></div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+        <thead><tr><th>Product</th><th style="text-align: center;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr></thead>
         <tbody>
           <% items.forEach(item => { %>
             <tr>
@@ -29,9 +29,9 @@
                   </span>
                 </div>
               </td>
-              <td><%= item.quantity %></td>
-              <td>&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
-              <td style="font-weight:600;">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
+              <td style="text-align: center;"><%= item.quantity %></td>
+              <td style="text-align: right;">&#8377;<%= Number(item.price).toLocaleString('en-IN') %></td>
+              <td style="font-weight:600; text-align: right;">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
             </tr>
           <% }) %>
         </tbody>
@@ -50,6 +50,7 @@
       <div class="card-hd"><h3>Order Status</h3></div>
       <div class="card-body">
         <div style="margin-bottom:14px;"><span class="badge bg-blue" style="font-size:13px;padding:5px 14px;"><%= order.status %></span></div>
+        <% if (order.status !== 'Cancelled') { %>
         <form action="/staff/orders/status/<%= order.id %>" method="POST">
           <div class="form-group">
             <label>Update Status</label>
@@ -71,6 +72,7 @@
           </div>
           <button type="submit" class="btn btn-black" style="width:100%;">Update Status</button>
         </form>
+        <% } %>
         <% if (order.cancel_reason) { %>
           <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;">
             <strong>Cancellation Reason:</strong> <%= order.cancel_reason %>

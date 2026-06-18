@@ -16,6 +16,11 @@
     <p class="order-confirmation-subtitle">
       Your order has been placed successfully and our team will start processing it right away.
     </p>
+    <% if (typeof warning !== 'undefined' && warning) { %>
+      <div class="alert alert-warning" style="margin-top: 16px; display: inline-block; text-align: left; max-width: 600px; color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 12px 20px; border-radius: 6px;">
+        <strong>Notice:</strong> <%= warning %>
+      </div>
+    <% } %>
   </div>
 
   <div class="order-confirmation-grid">
@@ -414,9 +419,7 @@
     }
 
     closeBtn?.addEventListener('click', closePopup);
-    popup.addEventListener('click', (e) => {
-      if (e.target === popup) closePopup();
-    });
+
 
     setTimeout(closePopup, 5200);
   })();
