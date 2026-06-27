@@ -18,8 +18,24 @@ const wantsJson = (req) => {
 // ============================================================
 // GET USER CART
 // ============================================================
-router.get("/", requireAuth, async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
+    if (!req.session.user) {
+      return res.render("cart", {
+        title: "My Cart",
+        cartItems: [],
+        originalSubtotal: 0,
+        subtotal: 0,
+        offerDiscount: 0,
+        couponDiscount: 0,
+        appliedCoupon: null,
+        couponError: null,
+        total: 0,
+        error: req.query.error || null,
+        success: req.query.success || null,
+      });
+    }
+
     const userId = req.session.user.id;
 
     const cartResult = await pool.query(

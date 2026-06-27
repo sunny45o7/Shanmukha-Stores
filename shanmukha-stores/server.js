@@ -333,14 +333,23 @@ const globalLimiter = rateLimit({
   skip: (req) =>
     req.path.startsWith("/css/") ||
     req.path.startsWith("/images/") ||
-    req.path.startsWith("/uploads/"),
+    req.path.startsWith("/uploads/") ||
+    req.path.startsWith("/api/webhooks"),
 });
 app.use(globalLimiter);
 
 // ============================================================
 // MIDDLEWARE
 // ============================================================
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      if (req.originalUrl && req.originalUrl.startsWith("/api/webhooks")) {
+        req.rawBody = buf.toString();
+      }
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

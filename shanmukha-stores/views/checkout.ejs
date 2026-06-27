@@ -331,13 +331,13 @@
 
   <!-- EJS variables for JavaScript use -->
   <div id="checkout-data" style="display: none;"
-       data-bill-items='<%- JSON.stringify(cartItems || []) %>'
-       data-store-name='<%- ((settings && settings.store_name) ? settings.store_name.replace(/'/g, "\\'").replace(/</g, "\\u003c") : 'Shanmukha Stores') %>'
-       data-subtotal-value='<%- typeof originalSubtotal !== 'undefined' ? originalSubtotal : (typeof subtotal !== 'undefined' ? subtotal : total) %>'
-       data-offer-discount-value='<%- typeof offerDiscount !== 'undefined' ? offerDiscount : 0 %>'
-       data-coupon-discount-value='<%- typeof couponDiscount !== 'undefined' ? couponDiscount : 0 %>'
-       data-total-value='<%- total %>'
-       data-coupon-code-value='<%- ((appliedCoupon && appliedCoupon.code) ? appliedCoupon.code.replace(/'/g, "\\'").replace(/</g, "\\u003c") : '') %>'>
+       data-bill-items="<%= JSON.stringify(cartItems || []) %>"
+       data-store-name="<%= ((settings && settings.store_name) ? settings.store_name : 'Shanmukha Stores') %>"
+       data-subtotal-value="<%= typeof originalSubtotal !== 'undefined' ? originalSubtotal : (typeof subtotal !== 'undefined' ? subtotal : total) %>"
+       data-offer-discount-value="<%= typeof offerDiscount !== 'undefined' ? offerDiscount : 0 %>"
+       data-coupon-discount-value="<%= typeof couponDiscount !== 'undefined' ? couponDiscount : 0 %>"
+       data-total-value="<%= total %>"
+       data-coupon-code-value="<%= ((appliedCoupon && appliedCoupon.code) ? appliedCoupon.code : '') %>">
   </div>
 
   <!-- Add Address Modal -->

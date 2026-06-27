@@ -141,8 +141,11 @@ const addProductImages = async (client, productId, imageUrls, preferredPrimaryIm
 };
 
 const isAdmin = (req, res, next) => {
-    if (!req.session.user || req.session.user.role !== 'admin') {
+    if (!req.session.user) {
         return res.redirect('/auth/login?error=Admin access required');
+    }
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).send('403 Forbidden: Admin access required');
     }
     next();
 };
@@ -186,11 +189,14 @@ router.get('/api/search/suggestions', isAdmin, async (req, res) => {
 });
 
 const isStaff = (req, res, next) => {
-    if (!req.session.user || req.session.user.role !== 'admin') {
-        if (req.session.user && req.session.user.role === 'staff') {
-            return res.redirect('/staff/dashboard?error=Use Staff Panel for staff operations');
-        }
+    if (!req.session.user) {
         return res.redirect('/auth/login?error=Administrative privileges required');
+    }
+    if (req.session.user.role === 'staff') {
+        return res.redirect('/staff/dashboard?error=Use Staff Panel for staff operations');
+    }
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).send('403 Forbidden: Administrative privileges required');
     }
     next();
 };

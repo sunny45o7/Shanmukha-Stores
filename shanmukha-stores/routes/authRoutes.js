@@ -34,11 +34,11 @@ router.get("/register", (req, res) => {
 =============================== */
 router.post("/register", authLimiter, async (req, res) => {
   try {
-    const full_name = req.body.full_name || req.body.name || req.body.username || "";
-    let email = req.body.email || null;
-    const password = req.body.password;
-    const confirm_password = req.body.confirm_password;
-    const phone = req.body.phone || req.body.mobile || null;
+    const full_name = String(req.body.full_name || req.body.name || req.body.username || "").trim();
+    let email = req.body.email ? String(req.body.email).trim() : null;
+    const password = String(req.body.password || "");
+    const confirm_password = String(req.body.confirm_password || "");
+    const phone = req.body.phone ? String(req.body.phone || req.body.mobile || "").trim() : null;
 
     if (!full_name || !phone || !password || !confirm_password) {
       return res.redirect("/auth/register?error=Please fill all required fields");

@@ -78,13 +78,21 @@ button {
 }
 
 /* Base Body Luxury */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: 'Inter', -apple-system, sans-serif;
   background: var(--cream);
   color: var(--gray-900);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
 }
 
 /* Global Animations */
@@ -129,7 +137,7 @@ body {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 6%;
+  padding: 0 5%;
 }
 
 .nav-right {
@@ -458,7 +466,7 @@ body {
   background: linear-gradient(145deg, #F5F5F0 0%, #E8EDE4 50%, #DDE5D8 100%);
   position: relative;
   overflow: hidden;
-  padding: 80px 8%;
+  padding: 80px 5%;
 }
 
 .hero-bg-shape {
@@ -1125,7 +1133,7 @@ body {
   margin: 0 5% 90px;
   border-radius: var(--radius-xl);
   background: var(--black);
-  padding: 90px 8%;
+  padding: 90px 5%;
   text-align: center;
   overflow: hidden;
   position: relative;
@@ -2104,7 +2112,7 @@ body {
   min-height: 90vh;
   display: flex;
   align-items: center;
-  padding: 0 8%;
+  padding: 0 5%;
   background: var(--bone);
   overflow: hidden;
 }
@@ -2228,7 +2236,7 @@ body {
 
 /* ── FEATURED PRODUCTS GRID ── */
 .featured-section {
-  padding: 120px 8%;
+  padding: 120px 5%;
   background: var(--cream);
 }
 
@@ -3039,7 +3047,7 @@ body {
 @media(max-width:768px) {
   .main-header {
     height: 60px;
-    padding: 0 4%;
+    padding: 0 5%;
   }
 
   .logo a {
@@ -3055,7 +3063,7 @@ body {
     padding: 4px;
   }
 
-  .nav-links {
+  .nav-links, .auth-links {
     display: none;
   }
 

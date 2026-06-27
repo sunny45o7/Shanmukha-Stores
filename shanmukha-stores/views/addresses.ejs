@@ -46,7 +46,7 @@
           <% } %>
 
           <div class="address-actions">
-            <button type="button" class="btn btn-outline btn-sm" onclick='editAddress(<%- JSON.stringify(addr) %>)'>Edit</button>
+            <button type="button" class="btn btn-outline btn-sm" data-addr="<%= JSON.stringify(addr) %>" onclick="editAddress(JSON.parse(this.getAttribute('data-addr')))">Edit</button>
 
             <% if (!addr.is_default) { %>
               <form method="POST" action="/addresses/set-default/<%= addr.id %>">
@@ -71,7 +71,7 @@
       <button type="button" class="modal-close" onclick="closeAddressModal()">x</button>
     </div>
 
-    <form id="addressForm" method="POST" action="/addresses/add<%= from === 'checkout' ? '?from=checkout' : '' %>" class="modal-form">
+    <form id="addressForm" method="POST" action="/addresses/add<%= from === "checkout" ? "?from=checkout" : "" %>" class="modal-form">
       <div class="form-row-2">
         <div class="form-group">
           <label>Full Name *</label>
@@ -409,7 +409,7 @@
 
     title.textContent = 'Add Address';
     saveBtn.textContent = 'Save Address';
-    form.action = '/addresses/add<%= from === 'checkout' ? '?from=checkout' : '' %>';
+    form.action = '/addresses/add<%= from === "checkout" ? "?from=checkout" : "" %>';
     form.reset();
 
     modal.style.display = 'flex';

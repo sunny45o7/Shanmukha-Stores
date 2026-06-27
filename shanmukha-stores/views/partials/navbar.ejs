@@ -258,22 +258,7 @@
                             }
                             setTimeout(() => loader.remove(), 650);
                         });
-                        document.querySelectorAll('a[href]').forEach(link => {
-                            const href = link.getAttribute('href');
-                            const targetBlank = (link.getAttribute('target') || '').toLowerCase() === '_blank';
-                            if (!targetBlank && !href.startsWith('#') && !href.startsWith('javascript') && !href.startsWith('mailto')) {
-                                link.addEventListener('click', () => {
-                                    loader.style.transform = 'scaleX(0)';
-                                    loader.style.transition = 'none';
-                                    loader.style.opacity = '1';
-                                    if (loaderOverlay) loaderOverlay.classList.remove('done');
-                                    requestAnimationFrame(() => {
-                                        loader.style.transition = 'transform 0.5s ease';
-                                        loader.style.transform = 'scaleX(0.85)';
-                                    });
-                                });
-                            }
-                        });
+
 
                         // Toast helper
                         window.showToast = (msg, type = 'success', duration = 2500) => {

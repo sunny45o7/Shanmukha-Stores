@@ -361,7 +361,7 @@
                                             <%= star %> ★
                                         </span>
                                         <div class="br-bar-wrap">
-                                            <div class="br-bar-fill" style="width:<%= pct %>%"></div>
+                                            <div class="br-bar-fill" <%- `style="width:${pct}%"` %>></div>
                                         </div>
                                         <span class="br-pct">
                                             <%= pct %>%
@@ -1503,6 +1503,7 @@
                             margin: 0;
                             display: -webkit-box;
                             -webkit-line-clamp: 2;
+                            line-clamp: 2;
                             -webkit-box-orient: vertical;
                             overflow: hidden;
                         }
@@ -1672,6 +1673,29 @@
                             .btn-submit-review {
                                 width: 100%;
                             }
+
+                            .product-tabs {
+                                padding: 24px 20px;
+                                margin-top: 40px;
+                            }
+
+                            .tab-header {
+                                gap: 20px;
+                                overflow-x: auto;
+                                overflow-y: hidden;
+                                white-space: nowrap;
+                                padding-bottom: 5px;
+                                -webkit-overflow-scrolling: touch;
+                                scrollbar-width: none; /* Firefox */
+                            }
+                            .tab-header::-webkit-scrollbar {
+                                display: none; /* Chrome/Safari */
+                            }
+
+                            .tab-btn {
+                                font-size: 14px;
+                                padding: 10px 0;
+                            }
                         }
 
                         @media (max-width: 480px) {
@@ -1707,6 +1731,7 @@
                                 overflow: hidden;
                                 text-overflow: ellipsis;
                                 -webkit-line-clamp: initial;
+                                line-clamp: initial;
                             }
                             .sp-price {
                                 font-size: 11px;
@@ -1736,9 +1761,9 @@
                             const zoomContainer = document.getElementById('imageZoom');
                             const isVideo = url.match(/\\.(mp4|webm|ogg)$/i);
                             if (isVideo) {
-                                zoomContainer.innerHTML = \`<video src="\${url}" autoplay muted loop playsinline id="mainProductImg" style="width: 100%; height: 100%; object-fit: contain;"></video>\`;
+                                zoomContainer.innerHTML = '<video src="' + url + '" autoplay muted loop playsinline id="mainProductImg" style="width: 100%; height: 100%; object-fit: contain;"></video>';
                             } else {
-                                zoomContainer.innerHTML = \`<img src="\${url}" alt="Product Image" id="mainProductImg" onerror="this.src='/images/placeholder.png'">\`;
+                                zoomContainer.innerHTML = '<img src="' + url + '" alt="Product Image" id="mainProductImg" onerror="this.src=\'/images/placeholder.png\'">';
                             }
                             document.querySelectorAll('.thumb-item').forEach(item => item.classList.remove('active'));
                             el.classList.add('active');
@@ -1763,7 +1788,7 @@
                             const rect = zoomContainer.getBoundingClientRect();
                             const x = (e.clientX - rect.left) / rect.width * 100;
                             const y = (e.clientY - rect.top) / rect.height * 100;
-                            mainImg.style.transformOrigin = `${x}% ${y}%`;
+                            mainImg.style.transformOrigin = x + '% ' + y + '%';
                             mainImg.style.transform = 'scale(1.8)';
                         });
 
