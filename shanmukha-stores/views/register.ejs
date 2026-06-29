@@ -25,32 +25,38 @@
                                     <div class="form-group">
                                         <label class="form-label">Full Name *</label>
                                         <input type="text" name="full_name" class="form-input"
-                                            placeholder="Your full name" required autocomplete="name">
+                                            required autocomplete="name">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Email Address</label>
                                         <input type="email" name="email" class="form-input"
-                                            placeholder="you@example.com" autocomplete="email">
+                                            autocomplete="email">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Mobile Number *</label>
-                                        <input type="tel" name="phone" class="form-input" placeholder="+91 98765 43210"
+                                        <input type="tel" name="phone" class="form-input"
                                             required autocomplete="tel">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Password *</label>
                                         <div class="password-wrap">
                                             <input type="password" name="password" class="form-input"
-                                                placeholder="Min. 6 characters" required id="regPass"
-                                                autocomplete="new-password">
+                                                required id="regPass"
+                                                autocomplete="new-password" oninput="checkPasswordStrength(this.value)">
                                             <span class="toggle-pass" onclick="togglePass('regPass', this)">👁</span>
                                         </div>
+                                        <div class="password-strength" id="strengthBar"></div>
+                                        <ul class="password-hints" id="passwordHints">
+                                            <li id="hint-length" class="hint-fail">At least 6 characters</li>
+                                            <li id="hint-upper" class="hint-fail">One uppercase letter</li>
+                                            <li id="hint-number" class="hint-fail">One number</li>
+                                        </ul>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Confirm Password *</label>
                                         <div class="password-wrap">
                                             <input type="password" name="confirm_password" class="form-input"
-                                                placeholder="Confirm password" required id="regPassConfirm"
+                                                required id="regPassConfirm"
                                                 autocomplete="new-password">
                                             <span class="toggle-pass" onclick="togglePass('regPassConfirm', this)">👁</span>
                                         </div>
@@ -72,6 +78,36 @@
                 if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
                 else { input.type = 'password'; btn.textContent = '👁'; }
             }
+            function checkPasswordStrength(val) {
+                const lengthPass = val.length >= 6;
+                const upperPass = /[A-Z]/.test(val);
+                const numberPass = /[0-9]/.test(val);
+                
+                document.getElementById('hint-length').className = lengthPass ? 'hint-pass' : 'hint-fail';
+                document.getElementById('hint-upper').className = upperPass ? 'hint-pass' : 'hint-fail';
+                document.getElementById('hint-number').className = numberPass ? 'hint-pass' : 'hint-fail';
+
+                let strength = 0;
+                if (lengthPass) strength++;
+                if (upperPass) strength++;
+                if (numberPass) strength++;
+                if (/[^A-Za-z0-9]/.test(val)) strength++;
+                
+                const bar = document.getElementById('strengthBar');
+                if (val.length === 0) {
+                    bar.style.width = '0%';
+                    bar.style.backgroundColor = 'transparent';
+                } else if (strength <= 1) {
+                    bar.style.width = '33%';
+                    bar.style.backgroundColor = '#ff4d4d'; // Weak (Red)
+                } else if (strength === 2 || strength === 3) {
+                    bar.style.width = '66%';
+                    bar.style.backgroundColor = '#ffa64d'; // Medium (Orange)
+                } else {
+                    bar.style.width = '100%';
+                    bar.style.backgroundColor = '#2c7a4b'; // Strong (Green)
+                }
+            }
             function validateForm() {
                 const pwd = document.getElementById('regPass').value;
                 const cpwd = document.getElementById('regPassConfirm').value;
@@ -82,3 +118,13 @@
                 return true;
             }
         </script>
+        <style>
+            .password-strength {
+                height: 4px;
+                width: 0%;
+                background-color: transparent;
+                border-radius: 2px;
+                margin-top: 8px;
+                transition: all 0.3s ease;
+            }
+        </style>

@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap">
-    <link rel="stylesheet" href="/css/style.css?v=4">
+    <link rel="stylesheet" href="/css/style.css?v=8">
 </head>
 
 <body>
@@ -106,8 +106,13 @@
 
                             <!-- Logo -->
                             <div class="logo">
-                                <a href="/"><span>🌿</span>
-                                    <%= safeStoreName %>
+                                <a href="/" class="brand-logo">
+                                    <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 22C12 22 11 12 4 7C4 7 8 5 12 11C12 11 16 5 20 7C20 7 13 12 12 22Z" fill="#7cb342"/>
+                                        <path d="M12 15C12 15 7 11 6 7C6 7 9 6 12 11" fill="#8bc34a"/>
+                                        <path d="M12 15C12 15 17 11 18 7C18 7 15 6 12 11" fill="#8bc34a"/>
+                                    </svg>
+                                    <span class="brand-text"><%= safeStoreName %></span>
                                 </a>
                             </div>
 

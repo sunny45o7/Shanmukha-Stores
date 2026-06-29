@@ -153,19 +153,30 @@ body {
   width: 100%;
 }
 
-.logo a {
+.brand-logo {
   font-family: 'Playfair Display', serif;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--emerald);
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a432b;
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
-.logo a span {
-  color: var(--gold);
+.brand-logo:hover {
+  opacity: 0.9;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.brand-text {
+  color: #1a432b;
 }
 
 .nav-links {
@@ -1299,12 +1310,12 @@ body {
 .form-input {
   width: 100%;
   padding: 13px 16px;
-  border: 1.5px solid var(--border-mid);
+  border: 2px solid #e5e7eb;
   border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 15px;
   color: var(--black);
-  background: var(--gray-50);
+  background: #ffffff;
   outline: none;
   transition: var(--transition);
 }
@@ -3050,8 +3061,8 @@ body {
     padding: 0 5%;
   }
 
-  .logo a {
-    font-size: clamp(16px, 4vw, 20px);
+  .brand-logo {
+    font-size: clamp(20px, 5vw, 24px);
     white-space: nowrap;
   }
 
