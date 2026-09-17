@@ -484,27 +484,31 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
+  let dbReady = false;
   let retries = 5;
   const retryDelayMs = 3000;
 
   while (retries > 0) {
     try {
       await ensureDatabaseSchema();
-      app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
-      });
-      return;
+      dbReady = true;
+      break;
     } catch (err) {
       retries -= 1;
       console.error(`❌ Startup schema check failed. Retries remaining: ${retries}. Error:`, err.message || err);
       if (retries === 0) {
-        console.error("CRITICAL: Startup schema check failed after maximum attempts. Exiting...");
-        process.exit(1);
+        console.warn("⚠️ PostgreSQL not available. Starting app in degraded mode without DB-backed features.");
+        break;
       }
       console.log(`Waiting ${retryDelayMs / 1000}s before next attempt...`);
       await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
     }
   }
+
+  app.locals.dbReady = dbReady;
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
+  });
 };
 
 

@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const { sendPasswordResetEmail, sendVerificationEmail } = require("../utils/mailer");
+const { sendOTP, verifyOTP } = require("../utils/msg91Service");
 const { authLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
@@ -30,6 +31,31 @@ router.get("/register", (req, res) => {
 });
 
 /* ===============================
+   SEND OTP
+=============================== */
+router.post("/send-otp", authLimiter, async (req, res) => {
+  try {
+    const { phone, context } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: "Phone number is required" });
+    }
+    
+    const existing = await pool.query("SELECT * FROM users WHERE phone = $1", [phone]);
+    if (context === "register" && existing.rows.length > 0) {
+      return res.status(400).json({ success: false, message: "This mobile number is already registered." });
+    } else if ((context === "login" || context === "reset") && existing.rows.length === 0) {
+      return res.status(400).json({ success: false, message: "No account found with this mobile number." });
+    }
+
+    await sendOTP(phone);
+    return res.json({ success: true, message: "OTP sent successfully" });
+  } catch (err) {
+    console.error("Send OTP error:", err.message);
+    return res.status(500).json({ success: false, message: err.message || "Failed to send OTP" });
+  }
+});
+
+/* ===============================
    REGISTER
 =============================== */
 router.post("/register", authLimiter, async (req, res) => {
@@ -39,9 +65,17 @@ router.post("/register", authLimiter, async (req, res) => {
     const password = String(req.body.password || "");
     const confirm_password = String(req.body.confirm_password || "");
     const phone = req.body.phone ? String(req.body.phone || req.body.mobile || "").trim() : null;
+    const otp = req.body.otp ? String(req.body.otp).trim() : null;
 
-    if (!full_name || !phone || !password || !confirm_password) {
-      return res.redirect("/auth/register?error=Please fill all required fields");
+    if (!full_name || !phone || !password || !confirm_password || !otp) {
+      return res.redirect("/auth/register?error=Please fill all required fields including OTP");
+    }
+
+    // Verify OTP first
+    try {
+      await verifyOTP(phone, otp);
+    } catch (otpErr) {
+      return res.redirect("/auth/register?error=" + encodeURIComponent(otpErr.message || "Invalid OTP"));
     }
 
     if (password !== confirm_password) {
@@ -153,6 +187,72 @@ router.post("/login", authLimiter, async (req, res) => {
     res.redirect("/");
   } catch (err) {
     console.error("Login error:", err.message);
+    res.redirect("/auth/login?error=Login failed. Please try again.");
+  }
+});
+
+/* ===============================
+   LOGIN OTP
+=============================== */
+router.post("/login-otp", authLimiter, async (req, res) => {
+  try {
+    const phone = String(req.body.phone || "").trim();
+    const otp = String(req.body.otp || "").trim();
+
+    if (!phone || !otp) {
+      return res.redirect("/auth/login?error=Please enter mobile number and OTP");
+    }
+
+    const result = await pool.query("SELECT * FROM users WHERE phone = $1", [phone]);
+    if (result.rows.length === 0) {
+      return res.redirect("/auth/login?error=No account found with this mobile number");
+    }
+
+    const user = result.rows[0];
+    if (user.is_blocked) {
+      return res.redirect("/auth/login?error=Your account has been blocked");
+    }
+
+    // Verify OTP
+    try {
+      await verifyOTP(phone, otp);
+    } catch (otpErr) {
+      return res.redirect("/auth/login?error=" + encodeURIComponent(otpErr.message || "Invalid OTP"));
+    }
+
+    req.session.user = {
+      id: user.id,
+      name: user.full_name,
+      role: user.role || "user",
+      profile_image: user.profile_image || null,
+    };
+
+    if (user.role === "admin" || user.role === "staff") {
+      await pool.query(
+        "INSERT INTO staff_activities (user_id, action, details) VALUES ($1, $2, $3)",
+        [
+          user.id,
+          user.role === "admin" ? "Admin Login (OTP)" : "Staff Login (OTP)",
+          JSON.stringify({
+            role: user.role,
+            email: user.email,
+            phone: user.phone,
+            ip: req.ip || null,
+            user_agent: req.get("user-agent") || null,
+          }),
+        ]
+      );
+    }
+
+    if (user.role === "staff") {
+      return res.redirect("/staff/dashboard");
+    }
+    if (user.role === "admin") {
+      return res.redirect("/admin/dashboard");
+    }
+    res.redirect("/");
+  } catch (err) {
+    console.error("OTP Login error:", err.message);
     res.redirect("/auth/login?error=Login failed. Please try again.");
   }
 });
@@ -300,6 +400,49 @@ router.post("/reset-password", authLimiter, async (req, res) => {
     return res.redirect("/auth/login?success=Password reset successful. Please login.");
   } catch (err) {
     return res.redirect("/auth/forgot-password?error=Reset token expired or invalid");
+  }
+});
+
+/* ===============================
+   RESET PASSWORD (OTP)
+=============================== */
+router.post("/reset-password-otp", authLimiter, async (req, res) => {
+  try {
+    const phone = String(req.body.phone || "").trim();
+    const otp = String(req.body.otp || "").trim();
+    const password = req.body.password;
+    const confirm_password = req.body.confirm_password;
+
+    if (!phone || !otp || !password || !confirm_password) {
+      return res.redirect("/auth/forgot-password?error=Please fill all required fields");
+    }
+    if (password.length < 8) {
+      return res.redirect("/auth/forgot-password?error=Password must be at least 8 characters long");
+    }
+    if (password !== confirm_password) {
+      return res.redirect("/auth/forgot-password?error=Passwords do not match");
+    }
+
+    const result = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
+    if (result.rows.length === 0) {
+      return res.redirect("/auth/forgot-password?error=No account found with this mobile number");
+    }
+    const userId = result.rows[0].id;
+
+    // Verify OTP
+    try {
+      await verifyOTP(phone, otp);
+    } catch (otpErr) {
+      return res.redirect("/auth/forgot-password?error=" + encodeURIComponent(otpErr.message || "Invalid OTP"));
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, userId]);
+
+    return res.redirect("/auth/login?success=Password reset successful. Please login.");
+  } catch (err) {
+    console.error("OTP Reset Password error:", err.message);
+    return res.redirect("/auth/forgot-password?error=Failed to reset password. Please try again.");
   }
 });
 
