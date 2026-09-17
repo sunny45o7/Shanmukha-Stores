@@ -1,0 +1,85 @@
+<%- include('./partials/navbar') %>
+
+    <section class="success-section">
+        <div class="success-icon">🎉</div>
+        <h1>Order Placed Successfully!</h1>
+        <p class="success-subtitle">Thank you for shopping with Shanmukha Stores. We'll get your order ready soon.</p>
+
+        <div class="success-card">
+            <h2
+                style="font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:var(--black);margin-bottom:18px">
+                Order Summary</h2>
+            <div class="success-row"><span>Order ID</span><strong>#<%= order.id %></strong></div>
+            <div class="success-row"><span>Status</span><strong><span class="status-pill pending">
+                        <%= order.status %>
+                    </span></strong></div>
+            <div class="success-row"><span>Items Subtotal</span><strong>₹<%=
+                        Number(typeof itemsSubtotal !== 'undefined' ? itemsSubtotal : order.total_amount).toLocaleString('en-IN') %></strong></div>
+            <% if (typeof couponDiscount !== 'undefined' && Number(couponDiscount) > 0) { %>
+                <div class="success-row"><span>Coupon Discount</span><strong style="color:var(--green-mid)">-₹<%=
+                            Number(couponDiscount).toLocaleString('en-IN') %></strong></div>
+            <% } %>
+            <div class="success-row"><span>Total Amount</span><strong>₹<%=
+                        Number(order.total_amount).toLocaleString('en-IN') %></strong></div>
+            <div class="success-row"><span>Payment</span><strong style="text-transform:uppercase">
+                    <%= order.payment_method || 'COD' %>
+                </strong></div>
+            <% if (order.addr_name) { %>
+                <div class="success-row"><span>Delivery To</span><strong>
+                        <%= order.addr_name %>, <%= order.city %>
+                    </strong></div>
+                <% } else if (order.address_snapshot) { %>
+                    <div class="success-row"><span>Delivery To</span><strong>
+                            <%= order.address_snapshot %>
+                        </strong></div>
+                    <% } %>
+        </div>
+
+        <% if (typeof items !=='undefined' && items.length> 0) { %>
+            <div class="success-items" style="text-align:left;margin-bottom:24px">
+                <h2
+                    style="font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:var(--black);margin-bottom:16px">
+                    Items Ordered</h2>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th style="text-align:center">Qty</th>
+                            <th style="text-align:right">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% items.forEach(item=> { %>
+                            <tr>
+                                <td>
+                                    <%= item.name %>
+                                        <% if (item.selected_weight) { %>
+                                            <span style="font-size:0.85em;color:var(--gray-500);font-weight:400;">(<%=
+                                                    item.selected_weight %>)</span>
+                                            <% } %>
+                                </td>
+                                <td style="text-align:center">
+                                    <%= item.quantity %>
+                                </td>
+                                <td style="text-align:right">₹<%= Number(item.price *
+                                        item.quantity).toLocaleString('en-IN') %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+
+                <div
+                    style="background:var(--green-soft);color:var(--green-mid);padding:14px 20px;border-radius:var(--radius-sm);margin-bottom:28px;font-size:14px;font-weight:500;text-align:center">
+                    📧 An order confirmation has been sent to your email.
+                </div>
+
+                <div class="success-actions">
+                    <a href="/orders" class="btn-primary">View My Orders</a>
+                    <a href="/products" class="btn-secondary">Continue Shopping</a>
+                </div>
+    </section>
+
+    <%- include('./partials/footer') %>

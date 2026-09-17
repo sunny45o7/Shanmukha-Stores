@@ -1,0 +1,325 @@
+<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok">✅ <%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err">❌ <%= error %></div><% } %>
+
+<div class="page-hd">
+  <div>
+    <h2>Offers & Coupons</h2>
+    <p>Manage product-level offers and platform coupons</p>
+  </div>
+  <form method="GET" action="/admin/offers" class="search-row">
+    <div class="search-box glass" style="position:relative;">
+      <span class="search-icon">🔍</span>
+      <input type="text" name="search" id="searchInput" autocomplete="off" value="<%= search %>" placeholder="Search product...">
+      <div id="autocompleteResults" class="autocomplete-dropdown"></div>
+    </div>
+    <button type="submit" class="btn btn-black btn-sm">Search</button>
+    <a href="/admin/offers" class="btn btn-ghost btn-sm">Reset Filters</a>
+  </form>
+</div>
+
+<div style="display:grid;gap:24px;">
+  <div class="card">
+    <div class="card-hd">
+      <h3>Product Offers</h3>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th style="text-align: right;">Base Price</th>
+            <th>Offer %</th>
+            <th>Active</th>
+            <th style="text-align: right;">Final Price</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!products || products.length === 0) { %>
+            <tr><td colspan="6" class="text-muted">No products found.</td></tr>
+          <% } %>
+
+          <% products.forEach(function(p) { 
+            const offerPct = Number(p.offer_percent || 0);
+            const active = !!p.offer_active && offerPct > 0;
+            const finalPrice = active ? (Number(p.price) * (1 - offerPct / 100)) : Number(p.price);
+          %>
+            <tr>
+              <td>
+                <strong><%= p.name %></strong>
+                <div class="tiny"><%= p.category_name || 'Uncategorised' %> · Stock: <%= p.stock %></div>
+              </td>
+              <td style="text-align: right;">₹<%= Number(p.price).toLocaleString('en-IN') %></td>
+              <td>
+                <form action="/admin/offers/product/<%= p.id %>" method="POST" id="offer-form-<%= p.id %>" style="display:none;"></form>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="number" form="offer-form-<%= p.id %>" name="offer_percent" value="<%= offerPct || 1 %>" min="1" max="100" step="0.01" class="inp" style="width:86px;" oninput="if(this.value > 100) this.value = 100;" onblur="if(this.value !== '' && this.value < 1) this.value = 1;">
+                </div>
+              </td>
+              <td>
+                  <label class="toggle-switch" title="<%= p.offer_active ? 'Active' : 'Inactive' %>">
+                    <input type="checkbox" form="offer-form-<%= p.id %>" name="offer_active" <%= p.offer_active ? 'checked' : '' %>>
+                    <span class="toggle-slider"></span>
+                  </label>
+              </td>
+              <td style="text-align: right;">
+                <% if (active) { %>
+                  <span style="text-decoration:line-through;color:#888;">₹<%= Number(p.price).toLocaleString('en-IN') %></span>
+                  <strong style="margin-left:6px;color:var(--emerald);">₹<%= finalPrice.toLocaleString('en-IN') %></strong>
+                <% } else { %>
+                  ₹<%= Number(p.price).toLocaleString('en-IN') %>
+                <% } %>
+              </td>
+              <td>
+                  <button type="submit" form="offer-form-<%= p.id %>" class="btn btn-black btn-sm">Save</button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+    <div class="card" style="padding:24px;">
+      <div class="card-hd" style="margin-bottom:20px;"><h3>Create New Coupon</h3></div>
+      <form action="/admin/coupons/add" method="POST" style="display:grid;gap:20px;">
+        <div class="form-grid-2" style="gap:20px;">
+          <div>
+            <label class="form-label">Coupon Code <span style="color:var(--red)">*</span></label>
+            <input class="inp" type="text" name="code" placeholder="e.g. SAVE20" required style="width:100%;">
+          </div>
+          <div>
+            <label class="form-label">Discount Type <span style="color:var(--red)">*</span></label>
+            <select class="inp" name="discount_type" required style="width:100%;">
+              <option value="percent">Percentage (%)</option>
+              <option value="fixed">Fixed Amount (₹)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-2" style="gap:20px;">
+          <div>
+            <label class="form-label">Discount Value <span style="color:var(--red)">*</span></label>
+            <input class="inp" type="number" name="discount_value" placeholder="e.g. 20" min="0.01" step="0.01" required style="width:100%;">
+          </div>
+          <div>
+            <label class="form-label">Min Order Amount</label>
+            <input class="inp" type="number" name="min_order_amount" placeholder="e.g. 500" min="0" step="0.01" style="width:100%;">
+          </div>
+        </div>
+        <div class="form-grid-2" style="gap:10px;">
+          <details class="coupon-picker">
+            <summary>Select Categories</summary>
+            <div class="coupon-picker-list">
+              <% if (categories && categories.length) { %>
+                <% categories.forEach(function(cat) { %>
+                  <label class="coupon-picker-item">
+                    <input type="checkbox" name="applicable_category_ids[]" value="<%= cat.id %>">
+                    <span><%= cat.name %></span>
+                  </label>
+                <% }) %>
+              <% } else { %>
+                <div class="tiny">No categories available.</div>
+              <% } %>
+            </div>
+          </details>
+          <details class="coupon-picker">
+            <summary>Select Products</summary>
+            <div class="coupon-picker-list">
+              <% if (products && products.length) { %>
+                <% products.forEach(function(prod) { %>
+                  <label class="coupon-picker-item">
+                    <input type="checkbox" name="applicable_product_ids[]" value="<%= prod.id %>">
+                    <span><%= prod.name %></span>
+                  </label>
+                <% }) %>
+              <% } else { %>
+                <div class="tiny">No products available.</div>
+              <% } %>
+            </div>
+          </details>
+        </div>
+        <div class="tiny" style="color:var(--gray-500); margin-top:-10px;">Optional restriction: open selectors and tick checkboxes for categories/products.</div>
+        <div class="form-grid-2" style="gap:20px;">
+          <div>
+            <label class="form-label">Start Date & Time</label>
+            <input class="inp" type="datetime-local" name="starts_at" style="width:100%;">
+          </div>
+          <div>
+            <label class="form-label">End Date & Time</label>
+            <input class="inp" type="datetime-local" name="ends_at" style="width:100%;">
+          </div>
+        </div>
+        <div class="form-grid-2" style="gap:20px;align-items:center;">
+          <div style="flex:1;">
+            <label class="form-label">Usage Limit</label>
+            <input class="inp" type="number" name="usage_limit" placeholder="No limit" min="1" style="width:100%;">
+          </div>
+          <div style="padding-top:24px;">
+            <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--black);">
+              <span class="toggle-switch">
+                <input type="checkbox" name="is_active" checked>
+                <span class="toggle-slider"></span>
+              </span>
+              Active
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Description</label>
+          <textarea class="inp" name="description" rows="2" placeholder="Internal note about this coupon" style="width:100%;"></textarea>
+        </div>
+        <div style="margin-top:10px;">
+          <button type="submit" class="btn btn-black" style="padding:10px 24px; font-size:15px;">Create Coupon</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h3>Coupons</h3></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Discount</th>
+              <th>Scope</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!coupons || coupons.length === 0) { %>
+              <tr><td colspan="5" class="text-muted">No coupons created yet.</td></tr>
+            <% } %>
+            <% coupons.forEach(function(c) { %>
+              <% const restrictedProducts = Array.isArray(c.applicable_product_ids) ? c.applicable_product_ids.length : 0; %>
+              <% const restrictedCategories = Array.isArray(c.applicable_category_ids) ? c.applicable_category_ids.length : 0; %>
+              <tr>
+                <td>
+                  <strong><%= c.code %></strong>
+                  <div class="tiny">Used: <%= c.used_count || 0 %><%= c.usage_limit ? (' / ' + c.usage_limit) : '' %></div>
+                </td>
+                <td>
+                  <%= c.discount_type === 'percent' ? (Number(c.discount_value) + '%') : ('₹' + Number(c.discount_value).toLocaleString('en-IN')) %>
+                </td>
+                <td>
+                  <% if (!restrictedProducts && !restrictedCategories) { %>
+                    <span class="tiny">All products</span>
+                  <% } else { %>
+                    <span class="tiny">
+                      <% if (restrictedCategories) { %>Categories: <%= restrictedCategories %><% } %>
+                      <% if (restrictedCategories && restrictedProducts) { %> | <% } %>
+                      <% if (restrictedProducts) { %>Products: <%= restrictedProducts %><% } %>
+                    </span>
+                  <% } %>
+                </td>
+                <td><span class="badge <%= c.is_active ? 'bg-green' : 'bg-red' %>"><%= c.is_active ? 'Active' : 'Inactive' %></span></td>
+                <td style="display:flex;gap:8px;">
+                  <form action="/admin/coupons/toggle/<%= c.id %>" method="POST">
+                    <button type="submit" class="btn btn-ghost btn-sm"><%= c.is_active ? 'Disable' : 'Enable' %></button>
+                  </form>
+                  <form action="/admin/coupons/delete/<%= c.id %>" method="POST" onsubmit="return confirm('Delete this coupon?')">
+                    <button type="submit" class="btn btn-red btn-sm">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+
+<style>
+
+
+  .coupon-picker {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .coupon-picker > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    border-bottom: 1px solid transparent;
+  }
+  .coupon-picker[open] > summary {
+    border-bottom-color: var(--line-soft);
+    background: #f9fafc;
+  }
+  .coupon-picker-list {
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+  }
+  .coupon-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #334155;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+  }
+  .coupon-picker-item:hover {
+    background: #f8fafc;
+    border-color: var(--line-soft);
+  }
+</style>
+
+<%- include('_footer') %>
+
+<style>
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; display: none; max-height: 300px; overflow-y: auto; margin-top: 4px; }
+.autocomplete-item { display: flex; align-items: center; padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.autocomplete-item:hover { background: #f8fafc; }
+.autocomplete-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 12px; }
+.autocomplete-item div { display: flex; flex-direction: column; }
+.autocomplete-item span { font-size: 14px; font-weight: 500; color: #000; }
+.autocomplete-item small { font-size: 12px; color: #666; }
+</style>
+<script>
+  (function(){
+    const sInput = document.getElementById('searchInput');
+    const resDiv = document.getElementById('autocompleteResults');
+    if(!sInput || !resDiv) return;
+    let timer;
+    sInput.addEventListener('input', function(e) {
+      const v = e.target.value.trim();
+      clearTimeout(timer);
+      if(v.length > 0) {
+        timer = setTimeout(async () => {
+          try {
+            const r = await fetch('/admin/api/search/suggestions?type=products&q=' + encodeURIComponent(v));
+            const data = await r.json();
+            if(data && data.length > 0) {
+              resDiv.innerHTML = data.map(item => `
+                <div class="autocomplete-item" onclick="window.location.href='${item.url}'">
+                  ${item.image ? `<img src="${item.image}" onerror="this.src='/images/placeholder.png'">` : ''}
+                  <div>
+                    <span>${item.label}</span>
+                    ${item.sub ? `<small>${item.sub}</small>` : ''}
+                  </div>
+                </div>
+              `).join('');
+              resDiv.style.display = 'block';
+            } else { resDiv.style.display = 'none'; }
+          } catch(e){}
+        }, 200);
+      } else { resDiv.style.display = 'none'; }
+    });
+    document.addEventListener('click', e => {
+      if(e.target !== sInput && !resDiv.contains(e.target)) resDiv.style.display = 'none';
+    });
+  })();
+</script>

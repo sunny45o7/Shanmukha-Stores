@@ -1,0 +1,93 @@
+<%- include('./partials/navbar') %>
+
+<section class="wishlist-section">
+  <div class="section-page-header">
+    <div class="section-label">Account</div>
+    <h1>My Wishlist</h1>
+    <p>
+      <% if (wishlist && wishlist.length > 0) { %>
+        <%= wishlist.length %> saved item(s)
+      <% } else { %>
+        Your saved items appear here
+      <% } %>
+    </p>
+  </div>
+
+  <% if (!wishlist || wishlist.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">♡</div>
+      <h2>Your Wishlist is Empty</h2>
+      <p>Browse products and tap heart to save items here</p>
+      <a href="/products" class="btn-primary">Browse Products</a>
+    </div>
+  <% } else { %>
+    <div class="products-grid">
+      <% wishlist.forEach(item => { const pid = item.product_id || item.id; %>
+        <div class="product-card" id="wishlistCard-<%= pid %>">
+          <div class="product-image">
+            <a href="/products/<%= pid %>">
+              <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>" onerror="this.src='/images/placeholder.png'">
+            </a>
+          </div>
+          <div class="product-info">
+            <h3 class="product-name"><a href="/products/<%= pid %>"><%= item.name %></a></h3>
+            <p class="product-price">&#8377;<%= Number(item.price).toLocaleString('en-IN') %>
+              <% if (item.price_type === 'kg') { %>
+                <span class="price-unit-note">per kg</span>
+              <% } else { %>
+                <span class="price-unit-note">per unit</span>
+              <% } %>
+            </p>
+            <% if (item.price_type === 'kg') { %>
+              <div class="product-sizes-pill-list">
+                <% const availWeights = Array.isArray(item.available_weights) ? item.available_weights : (item.available_weights ? JSON.parse(item.available_weights) : []); %>
+                <% availWeights.forEach(size => { %>
+                  <span class="size-pill"><%= size %></span>
+                <% }) %>
+              </div>
+            <% } %>
+            <% if (item.stock === 0) { %>
+              <div class="out-of-stock-label">Out of Stock</div>
+            <% } else { %>
+              <form action="/cart/add/<%= pid %>" method="POST" style="margin-bottom: 8px;">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="add-cart-btn">Add to Cart</button>
+              </form>
+            <% } %>
+            <form action="/wishlist/toggle/<%= pid %>" method="POST" class="wishlist-remove-form" data-product-id="<%= pid %>">
+              <button type="submit" class="btn-secondary" style="width: 100%; border-radius: 8px; font-size: 13px; padding: 8px 12px;">Remove from Wishlist</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<script>
+  document.querySelectorAll('.wishlist-remove-form').forEach((form) => {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const productId = this.dataset.productId;
+      try {
+        const res = await fetch(`/wishlist/toggle/${productId}`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) return;
+        if (data.status === 'removed') {
+          const card = document.getElementById(`wishlistCard-${productId}`);
+          if (card) card.remove();
+          if (!document.querySelector('.wishlist-remove-form')) {
+            window.location.reload();
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+</script>
+
+<%- include('./partials/footer') %>

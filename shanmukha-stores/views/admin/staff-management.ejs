@@ -1,0 +1,155 @@
+<%- include('_header') %>
+
+<% if(success) { %><div class="alert alert-ok"><%= success %></div><% } %>
+<% if(error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<div class="page-hd">
+  <div>
+    <h2>Staff Management</h2>
+    <p>Control staff access, blocks, and activity logs</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <a href="/admin/users?role=staff" class="btn btn-ghost btn-sm">Open Users Staff Tab</a>
+  </div>
+</div>
+
+<div class="stats-row" style="grid-template-columns:repeat(6, 1fr);">
+  <div class="stat-card">
+    <div class="stat-icon">Team</div>
+    <div class="stat-label">Total Staff</div>
+    <div class="stat-val"><%= stats.totalStaff %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">Active</div>
+    <div class="stat-label">Active Staff</div>
+    <div class="stat-val"><%= stats.activeStaff %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">Blocked</div>
+    <div class="stat-label">Blocked Staff</div>
+    <div class="stat-val"><%= stats.blockedStaff %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">Login</div>
+    <div class="stat-label">Staff Logins</div>
+    <div class="stat-val"><%= stats.staffLogins %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">Logout</div>
+    <div class="stat-label">Staff Logouts</div>
+    <div class="stat-val"><%= stats.staffLogouts %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">All</div>
+    <div class="stat-label">All Role Logins</div>
+    <div class="stat-val"><%= stats.totalLogins %></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-hd">
+      <h3>Staff Accounts</h3>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Last Active</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% staff.forEach(s => { %>
+            <tr>
+              <td>
+                <div style="font-weight:600;color:var(--black)"><%= s.name %></div>
+                <div style="font-size:12px;color:var(--gray-500)">Joined <%= new Date(s.created_at).toLocaleDateString('en-IN') %></div>
+              </td>
+              <td><%= s.email %></td>
+              <td>
+                <% if (s.is_blocked) { %>
+                  <span class="badge bg-red">Blocked</span>
+                <% } else { %>
+                  <span class="badge bg-green">Active</span>
+                <% } %>
+              </td>
+              <td>
+                <%= s.last_active ? new Date(s.last_active).toLocaleString('en-IN') : '-' %>
+              </td>
+              <td>
+                <form method="POST" action="/admin/staff/toggle/<%= s.id %>" onsubmit="return confirm('Change this staff account status?')">
+                  <button type="submit" class="btn <%= s.is_blocked ? 'btn-green' : 'btn-red' %> btn-sm">
+                    <%= s.is_blocked ? 'Unblock' : 'Block' %>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+          <% if(!staff.length) { %>
+            <tr>
+              <td colspan="5">
+                <div class="empty">
+                  <div class="big">Team</div>
+                  <h3>No staff accounts</h3>
+                  <p>Add staff from Users section.</p>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">
+      <h3>Recent Login / Logout Activity</h3>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>User</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% recentActivity.forEach(a => { %>
+            <tr>
+              <td><%= new Date(a.timestamp).toLocaleString('en-IN') %></td>
+              <td>
+                <div style="font-weight:600;color:var(--black)"><%= a.user_name || 'Unknown User' %></div>
+                <div style="font-size:12px;color:var(--gray-500)"><%= a.user_email || '-' %></div>
+              </td>
+              <td>
+                <% if ((a.action || '').includes('Login')) { %>
+                  <span class="badge bg-green"><%= a.action %></span>
+                <% } else { %>
+                  <span class="badge bg-blue"><%= a.action %></span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+          <% if(!recentActivity.length) { %>
+            <tr>
+              <td colspan="3">
+                <div class="empty">
+                  <div class="big">Log</div>
+                  <h3>No activity yet</h3>
+                  <p>Staff and admin login/logout events will appear here.</p>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('_footer') %>

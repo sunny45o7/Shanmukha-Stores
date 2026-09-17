@@ -1,0 +1,115 @@
+<%- include('./partials/navbar') %>
+
+    <style>
+        .collections-page {
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 60vh;
+        }
+
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .collections-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 30px;
+            }
+        }
+
+        .collection-card {
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .collection-card:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .collection-img {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+            background: #f4f4f4;
+        }
+
+        .collection-info {
+            padding: 20px;
+        }
+
+        .collection-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #111;
+        }
+
+        .collection-desc {
+            font-size: 14px;
+            color: #666;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+    </style>
+
+    <div class="collections-page">
+        <h1 class="section-title">Our Collections</h1>
+        <p class="section-subtitle">Curated selections just for you</p>
+
+        <% if (collections && collections.length> 0) { %>
+            <div class="collections-grid">
+                <% collections.forEach(c=> { %>
+                    <a href="/collections/<%= c.id %>" class="collection-card">
+                        <img src="<%= c.image || '/images/placeholder.png' %>" class="collection-img"
+                            alt="<%= c.name %>" onerror="this.src='/images/placeholder.png'">
+                        <div class="collection-info">
+                            <h3 class="collection-title">
+                                <%= c.name %>
+                            </h3>
+                            <p class="collection-desc">
+                                <%= c.description || 'Explore our exclusive ' + c.name + ' products.' %>
+                            </p>
+                        </div>
+                    </a>
+                    <% }) %>
+            </div>
+            <% } else { %>
+                <div style="text-align:center; padding: 60px 20px;">
+                    <div style="font-size:40px; margin-bottom:15px;">🛍️</div>
+                    <h2>No Collections Yet</h2>
+                    <p style="color:#666;">Check back later for curated product collections.</p>
+                    <a href="/products" class="btn-primary"
+                        style="display:inline-block; margin-top:20px; padding:10px 24px; text-decoration:none;">Shop All
+                        Products</a>
+                </div>
+                <% } %>
+    </div>
+
+    <%- include('./partials/footer') %>

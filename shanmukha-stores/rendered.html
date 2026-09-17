@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Shanmukha Stores
+    </title>
+    <meta name="description"
+        content="Premium organic groceries &amp; essentials delivered fresh in Vijayawada.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    
+        
+
+            <!-- Announcement Marquee -->
+            
+                <div class="marquee-strip">
+                    <div class="marquee-content">
+                        Welcome to Shanmukha Stores! Use code NEW10 for 10% off.
+                    </div>
+                </div>
+                <style>
+                    .marquee-strip {
+                        background: var(--black);
+                        color: white;
+                        padding: 10px 0;
+                        overflow: hidden;
+                        position: relative;
+                        z-index: 1001;
+                        font-size: 13px;
+                        font-weight: 500;
+                        height: 38px;
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .marquee-content {
+                        white-space: nowrap;
+                        animation: marquee-scroll 30s linear infinite;
+                        padding-left: 100%;
+                        display: inline-block;
+                    }
+
+                    @keyframes marquee-scroll {
+                        0% {
+                            transform: translateX(0);
+                        }
+
+                        100% {
+                            transform: translateX(-100%);
+                        }
+                    }
+                </style>
+                
+
+                    <!-- Page Loader -->
+                    <div class="page-loader-overlay" id="pageLoaderOverlay">
+                        <div class="loader-card">
+                            <div class="loader-brand">
+                                Shanmukha Stores
+                            </div>
+                            <div class="loader-sub">Preparing your store experience...</div>
+                            <div class="loader-spinner"></div>
+                        </div>
+                    </div>
+                    <div class="page-loader" id="pageLoader"></div>
+
+                    <!-- Toast Container -->
+                    <div class="toast-container" id="toastContainer"></div>
+
+                    <!-- Scroll To Top -->
+                    <button class="scroll-top" id="scrollTop"
+                        onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+                    <!-- NAVBAR -->
+                    <header class="main-header" id="mainHeader">
+                        <div class="nav-container">
+
+                            <!-- Logo -->
+                            <div class="logo">
+                                <a href="/"><span>🌿</span>
+                                    Shanmukha Stores
+                                </a>
+                            </div>
+
+                            <!-- Desktop Nav -->
+                            <nav class="nav-links" id="desktopNav">
+                                <a href="/"
+                                    class="active">Home</a>
+                                <a href="/products"
+                                    class="">Shop</a>
+                                
+                            </nav>
+
+                            <!-- Right side -->
+                            <div class="nav-right">
+
+                                
+                                        <div class="auth-links">
+                                            <a href="/auth/login" class="login-btn">Login</a>
+                                            <a href="/auth/register" class="signup-btn">Sign Up</a>
+                                        </div>
+                                        
+
+                                            <!-- Hamburger -->
+                                            <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+                                                <span></span><span></span><span></span>
+                                            </button>
+                            </div>
+
+                        </div>
+                    </header>
+
+                    <!-- Mobile Nav -->
+                    <div class="mobile-nav" id="mobileNav">
+                        <a href="/">🏠 Home</a>
+                        <a href="/products">🛒 Shop All Products</a>
+                        
+                                        <a href="/auth/login">Login</a>
+                                        <a href="/auth/register">Sign Up</a>
+                                        
+                    </div>
+
+                    <script>
+                        // Navbar scroll effect
+                        const header = document.getElementById('mainHeader');
+                        const scrollTopBtn = document.getElementById('scrollTop');
+                        window.addEventListener('scroll', () => {
+                            header.classList.toggle('scrolled', window.scrollY > 40);
+                            scrollTopBtn.classList.toggle('visible', window.scrollY > 300);
+                        }, { passive: true });
+
+                        // Hamburger
+                        const hamburger = document.getElementById('hamburgerBtn');
+                        const mobileNav = document.getElementById('mobileNav');
+                        hamburger.addEventListener('click', () => {
+                            mobileNav.classList.toggle('open');
+                            const spans = hamburger.querySelectorAll('span');
+                            if (mobileNav.classList.contains('open')) {
+                                spans[0].style.transform = 'rotate(45deg) translate(5px,5px)';
+                                spans[1].style.opacity = '0';
+                                spans[2].style.transform = 'rotate(-45deg) translate(5px,-5px)';
+                            } else {
+                                spans[0].style.transform = '';
+                                spans[1].style.opacity = '';
+                                spans[2].style.transform = '';
+                            }
+                        });
+                        document.addEventListener('click', (e) => {
+                            if (!hamburger.contains(e.target) && !mobileNav.contains(e.target)) {
+                                mobileNav.classList.remove('open');
+                                hamburger.querySelectorAll('span').forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+                            }
+                        });
+
+                        // Page loader
+                        const loader = document.getElementById('pageLoader');
+                        const loaderOverlay = document.getElementById('pageLoaderOverlay');
+                        window.addEventListener('load', () => {
+                            loader.classList.add('done');
+                            if (loaderOverlay) {
+                                loaderOverlay.classList.add('done');
+                                setTimeout(() => loaderOverlay.remove(), 650);
+                            }
+                            setTimeout(() => loader.remove(), 650);
+                        });
+                        document.querySelectorAll('a[href]').forEach(link => {
+                            const href = link.getAttribute('href');
+                            const targetBlank = (link.getAttribute('target') || '').toLowerCase() === '_blank';
+                            if (!targetBlank && !href.startsWith('#') && !href.startsWith('javascript') && !href.startsWith('mailto')) {
+                                link.addEventListener('click', () => {
+                                    loader.style.transform = 'scaleX(0)';
+                                    loader.style.transition = 'none';
+                                    loader.style.opacity = '1';
+                                    if (loaderOverlay) loaderOverlay.classList.remove('done');
+                                    requestAnimationFrame(() => {
+                                        loader.style.transition = 'transform 0.5s ease';
+                                        loader.style.transform = 'scaleX(0.85)';
+                                    });
+                                });
+                            }
+                        });
+
+                        // Toast helper
+                        window.showToast = (msg, type = 'success', duration = 2500) => {
+                            const c = document.getElementById('toastContainer');
+                            const t = document.createElement('div');
+                            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+                            t.className = `toast ${type}`;
+                            t.innerHTML = `<span class="toast-icon">${icons[type] || '💬'}</span><p>${msg}</p>`;
+                            c.appendChild(t);
+                            setTimeout(() => {
+                                t.classList.add('removing');
+                                setTimeout(() => t.remove(), 350);
+                            }, duration);
+                        };
+
+                    </script>
+
+
+
+  <!-- HERO LUXURY -->
+  <section class="hero-luxury">
+    <div class="hero-content" data-animate>
+      
+        <div class="hero-tag stagger-1">
+          Authenticity in Every Piece
+        </div>
+        
+            <h1 class="stagger-2">The Art of <em>Fine</em> Living & Dining</h1>
+            <p class="stagger-3">Discover a curated sanctuary of premium organic groceries, handpicked for those who
+              seek
+              the
+              extraordinary in the everyday.</p>
+            <div class="hero-actions stagger-3">
+              <a href="/products" class="btn-luxury">Explore Gallery</a>
+              <a href="#featured" class="btn-luxury-outline">Curated Selection</a>
+            </div>
+    </div>
+
+    <div class="hero-visual" data-animate>
+      
+        <div class="main-banner-visual">
+          <img src="https://img.freepik.com/free-photo/many-different-nuts-dried-berries-prunes-pumpkin-seeds-bowls-dark-wooden-background-antioxidant-product-healthy-food-top-view_193819-3926.jpg?size=626&amp;ext=jpg" alt="Luxury Banner" class="floating-img">
+        </div>
+        
+    </div>
+  </section>
+
+  <!-- CURATED COLLECTION -->
+  <section class="featured-section" id="featured">
+    <div class="home-section-header" data-animate>
+      <span class="section-tag">The Curated Gallery</span>
+      <h2 class="section-title-luxury">Exceptional Provisions</h2>
+    </div>
+
+    
+      <div class="luxury-category-pills" data-animate>
+        <a href="/products" class="pill active">All Essentials</a>
+        
+          <a href="/products?category=7" class="pill">
+            cold pressed oils
+          </a>
+          
+          <a href="/products?category=3" class="pill">
+            Dry Fruits
+          </a>
+          
+          <a href="/products?category=4" class="pill">
+            Dryfruit Gift Boxes
+          </a>
+          
+          <a href="/products?category=8" class="pill">
+            Healthy Snacks
+          </a>
+          
+          <a href="/products?category=5" class="pill">
+            honey
+          </a>
+          
+          <a href="/products?category=6" class="pill">
+            Organic Dals
+          </a>
+          
+      </div>
+      
+
+        <div class="products-luxury-grid">
+          
+            
+              <div class="product-card-luxury" data-animate="stagger-1">
+                <div class="img-wrap">
+                  <a href="/products/5">
+                    <img src="/uploads/products/1772534493866-446923959.jpeg" alt="Dasa dinusulu"
+                      onerror="this.src='/images/placeholder.png'">
+                  </a>
+                  
+
+                      <div class="card-actions-float">
+                        <form action="/cart/add/5" method="POST" style="flex: 1;">
+                          <input type="hidden" name="quantity" value="1">
+                          <button type="submit" class="btn-luxury-card-atc" >Add to Collection</button>
+                        </form>
+                        <form action="/wishlist/toggle/5" method="POST" class="wishlist-toggle-form" data-product-id="5">
+                          <button type="submit" class="btn-circle wishlist-btn-home" aria-label="Toggle wishlist">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                </div>
+                <div class="product-info-luxury">
+                  
+                  
+                  
+                  
+                  <span class="category">
+                    Healthy Snacks
+                  </span>
+                  <h3><a href="/products/5">
+                      Dasa dinusulu
+                    </a></h3>
+
+                  <div class="price home-price-wrap">
+                    <span class="home-price-current">&#8377;140</span>
+                    
+                    
+                      <span class="home-price-unit">per unit</span>
+                    
+                  </div>
+                </div>
+              </div>
+              
+              <div class="product-card-luxury" data-animate="stagger-2">
+                <div class="img-wrap">
+                  <a href="/products/4">
+                    <img src="/uploads/products/1772533323064-193991753.png" alt="Kaju round"
+                      onerror="this.src='/images/placeholder.png'">
+                  </a>
+                  
+
+                      <div class="card-actions-float">
+                        <form action="/cart/add/4" method="POST" style="flex: 1;">
+                          <input type="hidden" name="quantity" value="1">
+                          <button type="submit" class="btn-luxury-card-atc" >Add to Collection</button>
+                        </form>
+                        <form action="/wishlist/toggle/4" method="POST" class="wishlist-toggle-form" data-product-id="4">
+                          <button type="submit" class="btn-circle wishlist-btn-home" aria-label="Toggle wishlist">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                </div>
+                <div class="product-info-luxury">
+                  
+                  
+                  
+                  
+                  <span class="category">
+                    Dry Fruits
+                  </span>
+                  <h3><a href="/products/4">
+                      Kaju round
+                    </a></h3>
+
+                  <div class="price home-price-wrap">
+                    <span class="home-price-current">&#8377;1,000</span>
+                    
+                    
+                      <span class="home-price-unit">per kg</span>
+                    
+                  </div>
+                </div>
+              </div>
+              
+              <div class="product-card-luxury" data-animate="stagger-3">
+                <div class="img-wrap">
+                  <a href="/products/3">
+                    <img src="https://5.imimg.com/data5/SELLER/Default/2020/11/WM/NW/EU/88014294/almond-badam.jpg" alt="badam "
+                      onerror="this.src='/images/placeholder.png'">
+                  </a>
+                  
+
+                      <div class="card-actions-float">
+                        <form action="/cart/add/3" method="POST" style="flex: 1;">
+                          <input type="hidden" name="quantity" value="1">
+                          <button type="submit" class="btn-luxury-card-atc" >Add to Collection</button>
+                        </form>
+                        <form action="/wishlist/toggle/3" method="POST" class="wishlist-toggle-form" data-product-id="3">
+                          <button type="submit" class="btn-circle wishlist-btn-home" aria-label="Toggle wishlist">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.77-8.77 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                </div>
+                <div class="product-info-luxury">
+                  
+                  
+                  
+                  
+                  <span class="category">
+                    Dry Fruits
+                  </span>
+                  <h3><a href="/products/3">
+                      badam 
+                    </a></h3>
+
+                  <div class="price home-price-wrap">
+                    <span class="home-price-current">&#8377;1,000</span>
+                    
+                    
+                      <span class="home-price-unit">per kg</span>
+                    
+                  </div>
+                </div>
+              </div>
+              
+                
+        </div>
+
+        <div class="collection-footer" data-animate>
+          <a href="/products" class="btn-luxury-outline">View Entire Collection</a>
+        </div>
+  </section>
+
+  <!-- LUXURY QUOTE -->
+  <section class="luxury-quote-section" data-animate>
+    <div class="quote-content">
+      <span class="serif-quote">“</span>
+      <h2>Quality is never an accident; it is always the result of high intention, sincere effort, intelligent direction
+        and skillful execution.</h2>
+      <p>— THE SHANMUKHA PHILOSOPHY</p>
+    </div>
+  </section>
+
+  <!-- PROMO AD GRID -->
+  
+
+      
+
+      <footer class="main-footer">
+    <div class="footer-container">
+        <div class="footer-brand">
+            <h2>🌿 Shanmukha Stores</h2>
+            <p>Premium organic groceries &amp; fresh essentials delivered to your door. Quality you trust, taste you
+                love.</p>
+            <div class="footer-socials">
+                <a href="#" class="footer-social-btn">📘</a>
+                <a href="#" class="footer-social-btn">📸</a>
+                <a href="#" class="footer-social-btn">🐦</a>
+                <a href="#" class="footer-social-btn">▶️</a>
+            </div>
+        </div>
+        <div class="footer-column">
+            <h4>Shop</h4>
+            <ul>
+                <li><a href="/products">All Products</a></li>
+                <li><a href="/wishlist">My Wishlist</a></li>
+                <li><a href="/cart">Shopping Cart</a></li>
+                <li><a href="/orders">My Orders</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Support</h4>
+            <ul>
+                <li><a href="#">Help Center</a></li>
+                <li><a href="#">Shipping Policy</a></li>
+                <li><a href="#">Return Policy</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Contact</h4>
+            <ul>
+                <li><a href="mailto:support@shanmukhastores.com">support@shanmukhastores.com</a></li>
+                <li><a href="tel:+919000000000">+91 90000 00000</a></li>
+                <li>Vijayawada, Andhra Pradesh</li>
+                <li>Mon–Sat: 9AM – 7PM</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>© 2026 Shanmukha Stores. All Rights Reserved.</p>
+        <div class="footer-payment">
+            <span class="payment-icon">UPI</span>
+            <span class="payment-icon">COD</span>
+            <span class="payment-icon">Visa</span>
+            <span class="payment-icon">MC</span>
+        </div>
+        <div class="footer-legal">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+        </div>
+    </div>
+</footer>
+
+
+    <div class="popup-ad-overlay" id="globalPopupAdOverlay">
+        <div class="popup-ad-modal" onclick="handlePopupClick(event, '')"
+            style="cursor: default;">
+            <div class="popup-ad-content">
+                <img src="https://th.bing.com/th/id/OIP.rAFD6UXwFJPHwDX922wX-AHaE8?w=234&amp;h=180&amp;c=7&amp;r=0&amp;o=7&amp;dpr=1.5&amp;pid=1.7&amp;rm=3" alt="Summer sale " class="popup-ad-img">
+            </div>
+            <button class="popup-ad-close" id="popupAdCloseBtn" disabled>Close</button>
+        </div>
+    </div>
+
+    <style>
+        .popup-ad-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .popup-ad-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup-ad-modal {
+            position: relative;
+            max-width: 600px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: transparent;
+        }
+
+        .popup-ad-overlay.show .popup-ad-modal {
+            transform: scale(1);
+        }
+
+        .popup-ad-content {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-ad-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            max-height: 80vh;
+        }
+
+        .popup-ad-close {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            color: #111;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 24px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .popup-ad-close:disabled {
+            background: rgba(255, 255, 255, 0.5);
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .popup-ad-close:not(:disabled):hover {
+            background: #fff;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+
+    <script>
+        function handlePopupClick(e, targetUrl) {
+            if (e.target.id === 'popupAdCloseBtn') return; // Don't navigate if clicking the close button
+            if (targetUrl && targetUrl !== 'undefined') {
+                window.location.href = targetUrl;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const popupId = 'popup_ad_1_shown';
+
+            // Check if we've already shown this exact popup id in this session
+            if (!sessionStorage.getItem(popupId)) {
+                setTimeout(() => {
+                    const overlay = document.getElementById('globalPopupAdOverlay');
+                    const closeBtn = document.getElementById('popupAdCloseBtn');
+
+                    if (!overlay || !closeBtn) return;
+
+                    overlay.classList.add('show');
+                    sessionStorage.setItem(popupId, 'true'); // Mark as shown
+
+                    let timeLeft = 5;
+                    closeBtn.innerText = `Ignore in ${timeLeft}s`;
+
+                    const timer = setInterval(() => {
+                        timeLeft--;
+                        if (timeLeft <= 0) {
+                            clearInterval(timer);
+                            closeBtn.innerText = 'Close';
+                            closeBtn.disabled = false;
+                        } else {
+                            closeBtn.innerText = `Ignore in ${timeLeft}s`;
+                        }
+                    }, 1000);
+
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // prevent modal click
+                        overlay.classList.remove('show');
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                        }, 400);
+                    });
+
+                }, 1500); // Small delay before showing ad on page load
+            }
+        });
+    </script>
+    
+
+    </body>
+
+    </html>
+
+        <script>
+          document.querySelectorAll('.wishlist-toggle-form').forEach((form) => {
+            form.addEventListener('submit', async function (e) {
+              e.preventDefault();
+              const productId = this.dataset.productId;
+              const btn = this.querySelector('button');
+              const icon = this.querySelector('svg');
+              try {
+                const res = await fetch(`/wishlist/toggle/${productId}`, {
+                  method: 'POST',
+                  headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.ok) {
+                  if (data && data.redirect) window.location.href = data.redirect;
+                  return;
+                }
+                const active = data.status === 'added';
+                btn.classList.toggle('active', active);
+                if (icon) icon.setAttribute('fill', active ? 'currentColor' : 'none');
+              } catch (err) {
+                console.error(err);
+              }
+            });
+          });
+
+        </script>
+
+        <style>
+          /* Additional Inline Luxury Styles for Index */
+          .hero-visual {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+          }
+
+          .main-banner-visual {
+            position: relative;
+            z-index: 5;
+          }
+
+          .floating-img {
+            max-width: 90%;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            animation: float 6s ease-in-out infinite;
+            border: 1px solid var(--border);
+          }
+
+          @keyframes float {
+
+            0%,
+            100% {
+              transform: translateY(0);
+            }
+
+            50% {
+              transform: translateY(-20px);
+            }
+          }
+
+          .luxury-category-pills {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+          }
+
+          .pill {
+            padding: 10px 24px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-700);
+            transition: var(--transition);
+          }
+
+          .pill:hover,
+          .pill.active {
+            background: var(--black);
+            color: #fff;
+            border-color: var(--black);
+          }
+
+          .float-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+
+          .float-badge.dark {
+            background: var(--black);
+            color: #fff;
+          }
+
+          .btn-luxury-card-atc {
+            width: 100%;
+            height: 48px;
+            background: rgba(10, 10, 10, 0.95);
+            color: #fff;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+          }
+
+          .btn-luxury-card-atc:hover {
+            background: var(--emerald);
+          }
+
+          .btn-luxury-card-atc:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            background: #6c757d;
+          }
+
+          .card-actions-float {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .card-actions-float form {
+            margin: 0;
+          }
+
+          .collection-footer {
+            text-align: center;
+            margin-top: 80px;
+          }
+
+          .home-price-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+
+          .home-price-current {
+            color: var(--emerald);
+            font-weight: 700;
+          }
+
+          .home-price-original {
+            color: var(--gray-500);
+            text-decoration: line-through;
+            font-size: 13px;
+          }
+
+          .home-offer-pill {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #fff;
+            background: var(--emerald);
+            border-radius: 999px;
+            padding: 3px 8px;
+          }
+
+          .home-price-unit {
+            font-size: 11px;
+            color: var(--gray-500);
+            text-transform: lowercase;
+          }
+
+          .luxury-quote-section {
+            padding: 120px 8%;
+            background: var(--bone);
+            text-align: center;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+          }
+
+          .serif-quote {
+            font-family: 'Playfair Display', serif;
+            font-size: 120px;
+            line-height: 0;
+            display: block;
+            margin-bottom: 40px;
+            color: var(--champagne);
+          }
+
+          .luxury-quote-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(24px, 3vw, 36px);
+            max-width: 900px;
+            margin: 0 auto 30px;
+            font-weight: 500;
+            line-height: 1.5;
+            color: var(--emerald);
+          }
+
+          .luxury-quote-section p {
+            font-size: 12px;
+            letter-spacing: 3px;
+            font-weight: 700;
+            color: var(--gray-500);
+          }
+
+          .premium-ads-section {
+            padding: 80px 8%;
+            background: #fff;
+          }
+
+          .collab-section {
+            padding: 70px 8%;
+            border-top: 1px solid var(--border);
+            background: #fff;
+          }
+
+          .collab-grid {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+          }
+
+          .collab-item {
+            height: 80px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background: #fff;
+            transition: transform .2s ease, box-shadow .2s ease;
+          }
+
+          .collab-item img {
+            max-width: 100%;
+            max-height: 48px;
+            object-fit: contain;
+            filter: grayscale(100%);
+            opacity: .85;
+            transition: filter .2s ease, opacity .2s ease;
+          }
+
+          .collab-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+          }
+
+          .collab-item:hover img {
+            filter: grayscale(0%);
+            opacity: 1;
+          }
+
+          .ads-luxury-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+          }
+
+          .ad-card-luxury {
+            position: relative;
+            height: 350px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: block;
+          }
+
+          .ad-card-luxury img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s ease;
+          }
+
+          .ad-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 70%);
+            padding: 40px;
+            display: flex;
+            align-items: flex-end;
+          }
+
+          .ad-info h3 {
+            color: #fff;
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            margin-bottom: 8px;
+          }
+
+          .ad-info p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-bottom: 20px;
+          }
+
+          .ad-btn {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 4px;
+          }
+
+          .ad-card-luxury:hover img {
+            transform: scale(1.05);
+          }
+
+          @media (max-width: 768px) {
+            .hero-luxury {
+              padding-top: 140px;
+              flex-direction: column;
+              text-align: center;
+            }
+
+            .hero-actions {
+              justify-content: center;
+            }
+
+            .ads-luxury-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+        </style>
+

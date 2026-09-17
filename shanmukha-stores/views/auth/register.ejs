@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | Shanmukha Stores</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('../partials/navbar') %>
+
+  <section class="auth-section">
+    <div class="auth-container">
+      <div class="auth-left">
+        <h1>Create Account</h1>
+        <p>Join Shanmukha Stores to unlock a world of premium products, faster checkout, and exclusive offers.</p>
+        <div class="auth-benefit">
+          <span class="icon">✨</span>
+          <span>Earn rewards with every purchase</span>
+        </div>
+        <div class="auth-benefit">
+          <span class="icon">🚚</span>
+          <span>Track your orders in real-time</span>
+        </div>
+        <div class="auth-benefit">
+          <span class="icon">🛡️</span>
+          <span>Secure and personalized checkout</span>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <h2>Join Us</h2>
+
+        <% if (error) { %>
+          <div class="auth-alert error"><%= error %></div>
+        <% } %>
+        <% if (success) { %>
+          <div class="auth-alert success"><%= success %></div>
+        <% } %>
+
+        <form method="POST" action="/auth/register" novalidate onsubmit="return validateForm()">
+          <div class="form-group">
+            <label for="name" class="form-label">Full Name *</label>
+            <input type="text" id="name" name="name" class="form-input" required
+                   value="<%= typeof old !== 'undefined' ? old.name || '' : '' %>">
+          </div>
+
+          <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-input"
+                   value="<%= typeof old !== 'undefined' ? old.email || '' : '' %>">
+          </div>
+
+          <div class="form-group">
+            <label for="phone" class="form-label">Mobile Number *</label>
+            <input type="tel" id="phone" name="phone" class="form-input" required
+                   value="<%= typeof old !== 'undefined' ? old.phone || '' : '' %>">
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Password *</label>
+            <div class="password-wrap">
+              <input type="password" id="password" name="password" class="form-input" required
+                     autocomplete="new-password"
+                     oninput="checkPassword(this.value)">
+              <span class="toggle-pass" onclick="togglePassword('password')">👁</span>
+            </div>
+            <div class="password-strength" id="strengthBar"></div>
+            <ul class="password-hints" id="passwordHints">
+              <li id="hint-length" class="hint-fail">At least 6 characters</li>
+              <li id="hint-upper" class="hint-fail">One uppercase letter</li>
+              <li id="hint-number" class="hint-fail">One number</li>
+            </ul>
+          </div>
+
+          <div class="form-group">
+            <label for="confirm_password" class="form-label">Confirm Password *</label>
+            <div class="password-wrap">
+              <input type="password" id="confirm_password" name="confirm_password" class="form-input"
+                     required autocomplete="new-password">
+              <span class="toggle-pass" onclick="togglePassword('confirm_password')">👁</span>
+            </div>
+          </div>
+
+          <button type="submit" class="auth-btn">Create Account</button>
+          <p style="text-align:center;font-size:12px;color:var(--gray-500);margin-top:12px;">
+            By registering, you'll receive a verification email.
+          </p>
+        </form>
+
+        <div style="margin-top:24px;text-align:center;font-size:14px;color:var(--gray-500);">
+          Already have an account? <a href="/auth/login" style="color:var(--black);font-weight:600;">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%- include('../partials/footer') %>
+  <script>
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+    function checkPassword(val) {
+      const lengthPass = val.length >= 6;
+      const upperPass = /[A-Z]/.test(val);
+      const numberPass = /[0-9]/.test(val);
+      
+      document.getElementById('hint-length').className = lengthPass ? 'hint-pass' : 'hint-fail';
+      document.getElementById('hint-upper').className = upperPass ? 'hint-pass' : 'hint-fail';
+      document.getElementById('hint-number').className = numberPass ? 'hint-pass' : 'hint-fail';
+
+      // Password Strength Logic
+      let strength = 0;
+      if (lengthPass) strength++;
+      if (upperPass) strength++;
+      if (numberPass) strength++;
+      if (/[^A-Za-z0-9]/.test(val)) strength++; // Special character adds to strength
+      
+      const bar = document.getElementById('strengthBar');
+      if (val.length === 0) {
+        bar.style.width = '0%';
+        bar.style.backgroundColor = 'transparent';
+      } else if (strength <= 1) {
+        bar.style.width = '33%';
+        bar.style.backgroundColor = '#ff4d4d'; // Weak (Red)
+      } else if (strength === 2 || strength === 3) {
+        bar.style.width = '66%';
+        bar.style.backgroundColor = '#ffa64d'; // Medium (Orange)
+      } else {
+        bar.style.width = '100%';
+        bar.style.backgroundColor = '#2c7a4b'; // Strong (Green)
+      }
+    }
+    function validateForm() {
+      const pwd = document.getElementById('password').value;
+      const cpwd = document.getElementById('confirm_password').value;
+      if (pwd !== cpwd) {
+        alert('Passwords do not match!');
+        return false;
+      }
+      return true;
+    }
+  </script>
+  <style>
+    .password-strength {
+      height: 4px;
+      width: 0%;
+      background-color: transparent;
+      border-radius: 2px;
+      margin-top: 8px;
+      transition: all 0.3s ease;
+    }
+  </style>
+</body>
+</html>
