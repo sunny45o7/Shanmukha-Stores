@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: shanmukha-stores-app
+    runtime: node
+    rootDir: shanmukha-stores
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OTP_SECRET
+        generateValue: true
+
+  - type: web
+    name: shanmukha-stores-backend
+    runtime: node
+    rootDir: ShanmukhaStoresBackend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"

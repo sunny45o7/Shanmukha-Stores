@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "shanmukha-stores/server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "shanmukha-stores/views/**",
+          "shanmukha-stores/public/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/uploads/(.*)",
+      "dest": "shanmukha-stores/public/uploads/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "shanmukha-stores/public/css/$1"
+    },
+    {
+      "src": "/images/(.*)",
+      "dest": "shanmukha-stores/public/images/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "shanmukha-stores/public/js/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "shanmukha-stores/server.js"
+    }
+  ]
+}

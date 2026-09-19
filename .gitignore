@@ -1,8 +1,20 @@
+# Dependencies
 node_modules/
+
+# Environment files
 .env
+.env.*
+!.env.example
+
+# OS and Logs
 .DS_Store
-coverage/
+Thumbs.db
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Deploy & Tooling Artifacts
+.vercel/
+coverage/
 .system_generated/

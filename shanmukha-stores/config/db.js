@@ -1,12 +1,15 @@
 const { Pool } = require("pg");
 require("dotenv").config();
 
+const isRemoteDb =
+  process.env.DB_SSL === "true" ||
+  process.env.NODE_ENV === "production" ||
+  /supabase\.com|render\.com|aws|railway/.test(process.env.DATABASE_URL || "");
+
 const poolConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DB_SSL === "true" || process.env.NODE_ENV === "production"
-        ? { rejectUnauthorized: false }
-        : false,
+      ssl: isRemoteDb ? { rejectUnauthorized: false } : false,
     }
   : {
       user: process.env.DB_USER,

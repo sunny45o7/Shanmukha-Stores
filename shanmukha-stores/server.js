@@ -302,6 +302,8 @@ const ensureDatabaseSchema = async () => {
   await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_note VARCHAR(255)");
   await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP");
   await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_reason TEXT");
+  await pool.query("ALTER TABLE collaborations ADD COLUMN IF NOT EXISTS website TEXT");
+  await pool.query("ALTER TABLE collaborations ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0");
 
   await pool.query("ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS cart_items_cart_id_product_id_key");
   try {
@@ -506,9 +508,11 @@ const startServer = async () => {
   }
 
   app.locals.dbReady = dbReady;
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
-  });
+  if (process.env.VERCEL !== "1") {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
+    });
+  }
 };
 
 
@@ -527,3 +531,5 @@ process.on("unhandledRejection", (err) => {
 });
 
 startServer();
+
+module.exports = app;
