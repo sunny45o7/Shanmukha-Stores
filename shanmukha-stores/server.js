@@ -364,7 +364,7 @@ app.use(
       tableName: "user_sessions",
       errorLog: (err) => console.error("Session Store Error:", err.message),
     }),
-    secret: process.env.SESSION_SECRET || "fallback_secret_change_me",
+    secret: process.env.SESSION_SECRET || "shanmukha_super_secret_key_2026",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -525,16 +525,7 @@ const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTI
 
 const startServer = async () => {
   if (isServerless) {
-    // In serverless (Vercel), perform schema verification asynchronously without blocking requests
-    ensureDatabaseSchema()
-      .then(() => {
-        app.locals.dbReady = true;
-        console.log("Database schema verified successfully (serverless).");
-      })
-      .catch((err) => {
-        app.locals.dbReady = false;
-        console.warn("Serverless DB schema init non-fatal warning:", err.message);
-      });
+    app.locals.dbReady = true;
     return;
   }
 
