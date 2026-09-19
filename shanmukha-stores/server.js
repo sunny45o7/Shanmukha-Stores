@@ -3,6 +3,18 @@ const helmet = require("helmet");
 const compression = require("compression");
 const app = express();
 
+// Instant health check before any heavy middleware or session
+app.get(["/health", "/api/health"], (req, res) => {
+  res.json({
+    status: "ok",
+    app: "Shanmukha Stores",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    isServerless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
+    dbConnected: Boolean(app.locals.dbReady),
+  });
+});
+
 app.use(compression());
 
 app.use(
@@ -455,20 +467,6 @@ publicDirs.forEach((dir) => {
   app.use("/uploads", express.static(path.join(dir, "uploads")));
 });
 
-// ============================================================
-// HEALTH CHECK ENDPOINT
-// ============================================================
-app.get(["/health", "/api/health"], (req, res) => {
-  res.json({
-    status: "ok",
-    app: "Shanmukha Stores",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    isServerless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
-    dbConnected: Boolean(app.locals.dbReady),
-    hasDbUrl: Boolean(process.env.DATABASE_URL),
-  });
-});
 
 // ============================================================
 // ROUTES
