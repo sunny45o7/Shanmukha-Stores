@@ -1,30 +1,43 @@
-const sharp = require('sharp');
+let sharp;
+try {
+    sharp = require('sharp');
+} catch (e) {
+    console.warn('Notice: sharp native module not loaded in this environment, using raw image fallback');
+}
 const path = require('path');
 const fs = require('fs');
 
 /**
- * Processes an image buffer into a compressed WebP file.
+ * Processes an image buffer into a compressed WebP file (or direct image if sharp is unavailable).
  * @param {Buffer} buffer - The image data as a buffer.
  * @param {string} uploadDir - The directory to save the file in.
  * @param {string} filenameBase - The base filename (without extension).
- * @returns {Promise<string>} - The relative path to the saved WebP file.
+ * @returns {Promise<string>} - The relative path to the saved image file.
  */
 async function processImageToWebP(buffer, uploadDir, filenameBase) {
     if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+        try {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        } catch (e) {}
     }
 
-    const filename = `${filenameBase}.webp`;
-    const outputPath = path.join(uploadDir, filename);
+    if (sharp) {
+        const filename = `${filenameBase}.webp`;
+        const outputPath = path.join(uploadDir, filename);
 
-    await sharp(buffer)
-        .webp({ quality: 80 }) // 80 is a good balance for e-commerce
-        .toFile(outputPath);
+        await sharp(buffer)
+            .webp({ quality: 80 }) // 80 is a good balance for e-commerce
+            .toFile(outputPath);
 
-    // Return the relative path from the 'public' directory
-    // Existing code uses /uploads/... format
-    const relativePath = outputPath.split(path.join('public', path.sep)).pop().replace(/\\/g, '/');
-    return `/${relativePath}`;
+        const relativePath = outputPath.split(path.join('public', path.sep)).pop().replace(/\\/g, '/');
+        return `/${relativePath}`;
+    } else {
+        const filename = `${filenameBase}.jpg`;
+        const outputPath = path.join(uploadDir, filename);
+        await fs.promises.writeFile(outputPath, buffer);
+        const relativePath = outputPath.split(path.join('public', path.sep)).pop().replace(/\\/g, '/');
+        return `/${relativePath}`;
+    }
 }
 
 /**

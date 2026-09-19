@@ -13,3 +13,4 @@ yarn-error.log*
 .vercel/
 coverage/
 .system_generated/
+.env*.local

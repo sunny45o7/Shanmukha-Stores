@@ -5,7 +5,7 @@
   "description": "Shanmukha Stores Web Application",
   "main": "api/index.js",
   "scripts": {
-    "build": "echo 'Build complete'",
+    "build": "node -e \"const fs = require('fs'); if (!fs.existsSync('public')) fs.mkdirSync('public', { recursive: true });\"",
     "start": "node shanmukha-stores/server.js",
     "dev": "node shanmukha-stores/server.js"
   },

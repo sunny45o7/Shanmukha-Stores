@@ -139,13 +139,20 @@ router.post(
 );
 
 const multer = require("multer");
-const sharp = require("sharp");
+let sharp;
+try {
+  sharp = require("sharp");
+} catch (e) {
+  console.warn("Notice: sharp native module not loaded in this environment, using raw image fallback");
+}
 const path = require("path");
 const fs = require("fs");
 
 const profileUploadDir = path.join(__dirname, "..", "public", "uploads", "profiles");
 if (!fs.existsSync(profileUploadDir)) {
-  fs.mkdirSync(profileUploadDir, { recursive: true });
+  try {
+    fs.mkdirSync(profileUploadDir, { recursive: true });
+  } catch (e) {}
 }
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -168,9 +175,13 @@ router.post("/upload-image", requireAuth, upload.single("profile_image_file"), a
     const filename = `profile_${userId}_${Date.now()}${ext}`;
     const filepath = path.join(profileUploadDir, filename);
 
-    await sharp(req.file.buffer)
-      .resize(200, 200, { fit: "cover" })
-      .toFile(filepath);
+    if (sharp) {
+      await sharp(req.file.buffer)
+        .resize(200, 200, { fit: "cover" })
+        .toFile(filepath);
+    } else {
+      await fs.promises.writeFile(filepath, req.file.buffer);
+    }
 
     const imageUrl = `/uploads/profiles/${filename}`;
 
