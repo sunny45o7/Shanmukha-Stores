@@ -362,6 +362,7 @@ app.use(
     store: new pgSession({
       pool: pool,
       tableName: "user_sessions",
+      errorLog: (err) => console.error("Session Store Error:", err.message),
     }),
     secret: process.env.SESSION_SECRET || "fallback_secret_change_me",
     resave: false,
@@ -433,12 +434,26 @@ app.use(async (req, res, next) => {
 // VIEW ENGINE
 // ============================================================
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public"), {
-  maxAge: '7d',
-  eta: true,
-  lastModified: true
-}));
+const viewsDirs = [
+  path.join(__dirname, "views"),
+  path.join(process.cwd(), "views"),
+  path.join(process.cwd(), "shanmukha-stores", "views"),
+].filter((d) => {
+  try { return require("fs").existsSync(d); } catch (e) { return false; }
+});
+app.set("views", viewsDirs.length > 0 ? viewsDirs : path.join(__dirname, "views"));
+
+const publicDirs = [
+  path.join(__dirname, "public"),
+  path.join(process.cwd(), "public"),
+  path.join(process.cwd(), "shanmukha-stores", "public"),
+].filter((d) => {
+  try { return require("fs").existsSync(d); } catch (e) { return false; }
+});
+publicDirs.forEach((dir) => {
+  app.use(express.static(dir, { maxAge: "7d", eta: true, lastModified: true }));
+  app.use("/uploads", express.static(path.join(dir, "uploads")));
+});
 
 // ============================================================
 // ROUTES
@@ -469,23 +484,45 @@ app.use((req, res) => {
 // 500 ERROR PAGE
 // ============================================================
 app.use((err, req, res, next) => {
-  console.error("Server Error:", err.stack);
+  console.error("Server Error:", err.stack || err.message || err);
   if (res.headersSent) {
     return next(err);
   }
-  res.status(500).render("errors/500", {
-    title: "Server Error",
-    user: res.locals.user || null,
-    error: process.env.NODE_ENV === "development" ? err.message : "Something went wrong.",
-  });
+  res.status(500);
+  try {
+    res.render("errors/500", {
+      title: "Server Error",
+      user: res.locals.user || null,
+      error: process.env.NODE_ENV === "development" ? err.message : "Something went wrong.",
+    });
+  } catch (renderErr) {
+    res.type("html").send(
+      `<!DOCTYPE html><html><head><title>500 - Server Error</title></head><body style="font-family:sans-serif;padding:40px;text-align:center;"><h1>Server Error</h1><p>${process.env.NODE_ENV === "development" ? err.message : "Something went wrong."}</p><a href="/">Return Home</a></body></html>`
+    );
+  }
 });
 
 // ============================================================
 // SERVER START
 // ============================================================
 const PORT = process.env.PORT || 3000;
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 const startServer = async () => {
+  if (isServerless) {
+    // In serverless (Vercel), perform schema verification asynchronously without blocking requests
+    ensureDatabaseSchema()
+      .then(() => {
+        app.locals.dbReady = true;
+        console.log("Database schema verified successfully (serverless).");
+      })
+      .catch((err) => {
+        app.locals.dbReady = false;
+        console.warn("Serverless DB schema init non-fatal warning:", err.message);
+      });
+    return;
+  }
+
   let dbReady = false;
   let retries = 5;
   const retryDelayMs = 3000;
@@ -508,11 +545,9 @@ const startServer = async () => {
   }
 
   app.locals.dbReady = dbReady;
-  if (process.env.VERCEL !== "1") {
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
-    });
-  }
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
+  });
 };
 
 
@@ -520,14 +555,14 @@ const startServer = async () => {
 // GLOBAL PROCESS ERROR HANDLERS
 // ============================================================
 process.on("uncaughtException", (err) => {
-  console.error("CRITICAL: Uncaught Exception! Shutting down...");
-  console.error(err.stack || err);
-  process.exit(1);
+  console.error("CRITICAL: Uncaught Exception:", err.stack || err);
+  if (!isServerless) {
+    process.exit(1);
+  }
 });
 
 process.on("unhandledRejection", (err) => {
-  console.error("CRITICAL: Unhandled Promise Rejection!");
-  console.error(err.stack || err);
+  console.error("CRITICAL: Unhandled Promise Rejection:", err.stack || err);
 });
 
 startServer();

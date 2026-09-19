@@ -74,18 +74,14 @@ router.get("/", async (req, res, next) => {
       store_tagline: "Authenticity in Every Piece",
     };
 
-    if (req.app.locals.dbReady === false || err && (err.code === "ECONNREFUSED" || err.code === "ECONNRESET" || /terminat|connect/i.test(err.message))) {
-      return res.status(200).render("index", {
-        title: "Shanmukha Stores",
-        products: [],
-        categories: [],
-        banners: [],
-        collaborations: [],
-        settings: fallbackSettings,
-      });
-    }
-
-    next(err);
+    return res.status(200).render("index", {
+      title: "Shanmukha Stores",
+      products: [],
+      categories: [],
+      banners: [],
+      collaborations: [],
+      settings: fallbackSettings,
+    });
   }
 });
 
