@@ -2,9 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "includeFiles": [
-        "shanmukha-stores/**"
-      ]
+      "includeFiles": "shanmukha-stores/**"
     }
   },
   "rewrites": [
