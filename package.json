@@ -5,6 +5,7 @@
   "description": "Shanmukha Stores Web Application",
   "main": "api/index.js",
   "scripts": {
+    "build": "echo 'Build complete'",
     "start": "node shanmukha-stores/server.js",
     "dev": "node shanmukha-stores/server.js"
   },

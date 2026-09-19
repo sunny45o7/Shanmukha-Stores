@@ -456,6 +456,21 @@ publicDirs.forEach((dir) => {
 });
 
 // ============================================================
+// HEALTH CHECK ENDPOINT
+// ============================================================
+app.get(["/health", "/api/health"], (req, res) => {
+  res.json({
+    status: "ok",
+    app: "Shanmukha Stores",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    isServerless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
+    dbConnected: Boolean(app.locals.dbReady),
+    hasDbUrl: Boolean(process.env.DATABASE_URL),
+  });
+});
+
+// ============================================================
 // ROUTES
 // ============================================================
 app.use("/", productRoutes);
