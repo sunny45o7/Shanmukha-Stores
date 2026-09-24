@@ -554,38 +554,44 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-const startServer = async () => {
+const startServer = () => {
   if (isServerless) {
     app.locals.dbReady = true;
     return;
   }
 
-  let dbReady = false;
-  let retries = 5;
-  const retryDelayMs = 3000;
+  // Open HTTP port immediately so hosting platforms (e.g. Render, Railway) detect port binding without delay
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 
-  while (retries > 0) {
-    try {
-      await ensureDatabaseSchema();
-      dbReady = true;
-      break;
-    } catch (err) {
-      retries -= 1;
-      console.error(`❌ Startup schema check failed. Retries remaining: ${retries}. Error:`, err.message || err);
-      if (retries === 0) {
-        console.warn("⚠️ PostgreSQL not available. Starting app in degraded mode without DB-backed features.");
+  // Verify database schema asynchronously in background
+  (async () => {
+    let dbReady = false;
+    let retries = 5;
+    const retryDelayMs = 3000;
+
+    while (retries > 0) {
+      try {
+        await ensureDatabaseSchema();
+        dbReady = true;
+        console.log("✅ Database schema verified successfully.");
         break;
+      } catch (err) {
+        retries -= 1;
+        console.error(`❌ Startup schema check failed. Retries remaining: ${retries}. Error:`, err.message || err);
+        if (retries === 0) {
+          console.warn("⚠️ PostgreSQL schema check failed. App running in degraded mode.");
+          break;
+        }
+        console.log(`Waiting ${retryDelayMs / 1000}s before next attempt...`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
       }
-      console.log(`Waiting ${retryDelayMs / 1000}s before next attempt...`);
-      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
     }
-  }
 
-  app.locals.dbReady = dbReady;
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
+    app.locals.dbReady = dbReady;
 
-    if (process.env.ENABLE_WHATSAPP_BOT !== "false") {
+    if (dbReady && process.env.ENABLE_WHATSAPP_BOT !== "false") {
       try {
         const { initWhatsAppBot } = require("./services/whatsappBot");
         initWhatsAppBot();
@@ -593,7 +599,7 @@ const startServer = async () => {
         console.error("WhatsApp bot start error:", waErr);
       }
     }
-  });
+  })();
 };
 
 

@@ -15,8 +15,12 @@ const {
 const { processImageToWebP, processMediaFile } = require('../utils/imageUtils');
 
 const qrCodeUploadDir = path.join(__dirname, '..', 'public', 'uploads');
-if (!fs.existsSync(qrCodeUploadDir)) {
-    fs.mkdirSync(qrCodeUploadDir, { recursive: true });
+try {
+    if (!fs.existsSync(qrCodeUploadDir)) {
+        fs.mkdirSync(qrCodeUploadDir, { recursive: true });
+    }
+} catch (e) {
+    // Read-only filesystem in serverless environments (e.g. Vercel)
 }
 
 const qrCodeImageStorage = multer.diskStorage({

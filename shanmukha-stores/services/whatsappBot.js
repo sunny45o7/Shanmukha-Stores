@@ -1,21 +1,14 @@
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-} = require('@whiskeysockets/baileys');
-const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
-const qrcodeTerminal = require('qrcode-terminal');
-const QRCode = require('qrcode');
 const pool = require('../config/db');
 const { generateUpiQrBuffer, DEFAULT_UPI_ID, DEFAULT_MERCHANT_NAME } = require('../utils/upiQrGenerator');
+
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 let sock = null;
 let botStatus = {
   connected: false,
-  status: 'disconnected', // 'disconnected' | 'connecting' | 'qr_ready' | 'connected'
+  status: isServerless ? 'serverless_disabled' : 'disconnected', // 'disconnected' | 'connecting' | 'qr_ready' | 'connected' | 'serverless_disabled'
   qrCodeDataUrl: null,
   phoneNumber: null,
   lastUpdated: new Date(),
@@ -27,9 +20,35 @@ const AUTH_DIR = path.join(__dirname, '..', 'whatsapp_auth');
  * Initialize Baileys WhatsApp Bot
  */
 async function initWhatsAppBot() {
+  if (isServerless) {
+    console.log('[WhatsApp Bot] Serverless environment detected. WhatsApp bot daemon disabled.');
+    botStatus.status = 'serverless_disabled';
+    return;
+  }
+
   try {
-    if (!fs.existsSync(AUTH_DIR)) {
-      fs.mkdirSync(AUTH_DIR, { recursive: true });
+    let makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, pino, QRCode, qrcodeTerminal;
+    try {
+      const baileys = require('@whiskeysockets/baileys');
+      makeWASocket = baileys.default || baileys.makeWASocket;
+      useMultiFileAuthState = baileys.useMultiFileAuthState;
+      DisconnectReason = baileys.DisconnectReason;
+      fetchLatestBaileysVersion = baileys.fetchLatestBaileysVersion;
+      pino = require('pino');
+      QRCode = require('qrcode');
+      qrcodeTerminal = require('qrcode-terminal');
+    } catch (importErr) {
+      console.warn('[WhatsApp Bot] Baileys or QR dependencies could not be loaded in this environment:', importErr.message);
+      botStatus.status = 'failed';
+      return;
+    }
+
+    try {
+      if (!fs.existsSync(AUTH_DIR)) {
+        fs.mkdirSync(AUTH_DIR, { recursive: true });
+      }
+    } catch (fsErr) {
+      console.warn('[WhatsApp Bot] Could not create auth directory:', fsErr.message);
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);

@@ -49,7 +49,9 @@ async function processImageToWebP(buffer, uploadDir, filenameBase) {
  */
 async function processMediaFile(file, uploadDir, filenameBase) {
     if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+        try {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        } catch (e) {}
     }
 
     const isVideo = file.mimetype && file.mimetype.startsWith('video/');

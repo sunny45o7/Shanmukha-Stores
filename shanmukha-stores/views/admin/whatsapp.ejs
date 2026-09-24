@@ -30,6 +30,10 @@
                 <span class="status-pill" style="background:#fff4df; color:#c97f16; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">
                     🟡 Scan QR to Link
                 </span>
+            <% } else if (botStatus.status === 'serverless_disabled') { %>
+                <span class="status-pill" style="background:#fee2e2; color:#b91c1c; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">
+                    ⚠️ Disabled on Serverless
+                </span>
             <% } else { %>
                 <span class="status-pill" style="background:#f1f5f9; color:#64748b; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">
                     ⚪ Initializing...
@@ -113,4 +117,4 @@
     }, 3000);
 </script>
 
-<%- include('./partials/footer') || '' %>
+<%- include('_footer') %>
