@@ -353,6 +353,36 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ============================================================
+// STATIC ASSETS WITH AGGRESSIVE CACHING (Mounted early to bypass DB/session)
+// ============================================================
+const publicDirs = [
+  path.join(__dirname, "public"),
+  path.join(process.cwd(), "public"),
+  path.join(process.cwd(), "shanmukha-stores", "public"),
+].filter((d) => {
+  try { return require("fs").existsSync(d); } catch (e) { return false; }
+});
+
+const staticCacheOptions = {
+  maxAge: "30d",
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (/\.(webp|png|jpg|jpeg|svg|gif|ico|css|js|woff|woff2|ttf|mp4|webm)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
+    }
+  },
+};
+
+publicDirs.forEach((dir) => {
+  const uploadsPath = path.join(dir, "uploads");
+  if (require("fs").existsSync(uploadsPath)) {
+    app.use("/uploads", express.static(uploadsPath, staticCacheOptions));
+  }
+  app.use(express.static(dir, staticCacheOptions));
+});
+
+// ============================================================
 // MIDDLEWARE
 // ============================================================
 app.use(
@@ -366,8 +396,6 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 app.use(
   session({
@@ -397,45 +425,62 @@ app.use((req, res, next) => {
 app.use(attachUser);
 
 // ============================================================
-// GLOBAL SETTINGS
+// GLOBAL SETTINGS (IN-MEMORY CACHE TO AVOID SERIAL DB CALLS)
 // ============================================================
+let cachedSettingsData = null;
+let lastSettingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 60 * 1000; // 60 seconds TTL
+
+app.locals.invalidateSettingsCache = () => {
+  cachedSettingsData = null;
+  lastSettingsCacheTime = 0;
+};
+
 app.use(async (req, res, next) => {
   try {
-    const result = await pool.query("SELECT * FROM store_settings");
-    const settings = {};
-    result.rows.forEach((r) => {
-      settings[r.setting_key] = r.setting_value;
-    });
+    const now = Date.now();
+    if (!cachedSettingsData || now - lastSettingsCacheTime > SETTINGS_CACHE_TTL) {
+      const [result, adResult, collectionsResult] = await Promise.all([
+        pool.query("SELECT * FROM store_settings"),
+        pool.query("SELECT * FROM popup_ads WHERE is_active = true ORDER BY id DESC LIMIT 1"),
+        pool.query("SELECT id, name FROM collections WHERE is_active = true ORDER BY id DESC"),
+      ]);
 
-    const normalize = (value, fallback) => {
-      if (value === null || value === undefined) return fallback;
-      const str = String(value).trim();
-      return str.length > 0 ? str : fallback;
-    };
+      const settings = {};
+      result.rows.forEach((r) => {
+        settings[r.setting_key] = r.setting_value;
+      });
 
-    res.locals.settings = {
-      store_name: normalize(settings.store_name, "Shanmukha Stores"),
-      store_tagline: normalize(settings.store_tagline, "Authenticity in Every Piece"),
-      ...settings,
-    };
+      const normalize = (value, fallback) => {
+        if (value === null || value === undefined) return fallback;
+        const str = String(value).trim();
+        return str.length > 0 ? str : fallback;
+      };
 
-    // Fetch active popup ad
-    const adResult = await pool.query(
-      "SELECT * FROM popup_ads WHERE is_active = true ORDER BY id DESC LIMIT 1"
-    );
-    res.locals.popupAd = adResult.rows[0] || null;
+      const finalSettings = {
+        store_name: normalize(settings.store_name, "Shanmukha Stores"),
+        store_tagline: normalize(settings.store_tagline, "Authenticity in Every Piece"),
+        ...settings,
+      };
 
-    res.locals.collectionsList = await pool.query(
-      "SELECT id, name FROM collections WHERE is_active = true ORDER BY id DESC"
-    ).then(res => res.rows);
+      finalSettings.store_name = normalize(finalSettings.store_name, "Shanmukha Stores");
+      finalSettings.store_tagline = normalize(finalSettings.store_tagline, "Authenticity in Every Piece");
 
-    // Critical branding fallbacks (do not allow blank overrides from DB)
-    res.locals.settings.store_name = normalize(res.locals.settings.store_name, "Shanmukha Stores");
-    res.locals.settings.store_tagline = normalize(res.locals.settings.store_tagline, "Authenticity in Every Piece");
+      cachedSettingsData = {
+        settings: finalSettings,
+        popupAd: adResult.rows[0] || null,
+        collectionsList: collectionsResult.rows || [],
+      };
+      lastSettingsCacheTime = now;
+    }
+
+    res.locals.settings = cachedSettingsData.settings;
+    res.locals.popupAd = cachedSettingsData.popupAd;
+    res.locals.collectionsList = cachedSettingsData.collectionsList;
     next();
   } catch (err) {
     console.error("Settings Middleware Error:", err);
-    res.locals.settings = { store_name: "Shanmukha Stores" };
+    res.locals.settings = { store_name: "Shanmukha Stores", store_tagline: "Authenticity in Every Piece" };
     res.locals.popupAd = null;
     res.locals.collectionsList = [];
     next();
@@ -454,18 +499,6 @@ const viewsDirs = [
   try { return require("fs").existsSync(d); } catch (e) { return false; }
 });
 app.set("views", viewsDirs.length > 0 ? viewsDirs : path.join(__dirname, "views"));
-
-const publicDirs = [
-  path.join(__dirname, "public"),
-  path.join(process.cwd(), "public"),
-  path.join(process.cwd(), "shanmukha-stores", "public"),
-].filter((d) => {
-  try { return require("fs").existsSync(d); } catch (e) { return false; }
-});
-publicDirs.forEach((dir) => {
-  app.use(express.static(dir, { maxAge: "7d", eta: true, lastModified: true }));
-  app.use("/uploads", express.static(path.join(dir, "uploads")));
-});
 
 
 // ============================================================
@@ -551,6 +584,15 @@ const startServer = async () => {
   app.locals.dbReady = dbReady;
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}${dbReady ? "" : " (degraded mode)"}`);
+
+    if (process.env.ENABLE_WHATSAPP_BOT !== "false") {
+      try {
+        const { initWhatsAppBot } = require("./services/whatsappBot");
+        initWhatsAppBot();
+      } catch (waErr) {
+        console.error("WhatsApp bot start error:", waErr);
+      }
+    }
   });
 };
 

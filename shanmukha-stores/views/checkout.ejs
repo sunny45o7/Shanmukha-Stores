@@ -168,103 +168,127 @@
 
                 <div>
                   <div class="card sticky-card checkout-summary-card">
-                    <div class="card-header">
-                      <h2>Order Summary</h2>
+                    <div class="card-header checkout-summary-header">
+                      <div class="checkout-summary-header-left">
+                        <span class="checkout-summary-header-icon">📋</span>
+                        <h2 class="checkout-summary-title">Order Summary</h2>
+                      </div>
+                      <span class="checkout-summary-count-badge">
+                        <%= typeof totalItems !== 'undefined' ? totalItems : cartItems.reduce((s, i) => s + i.quantity, 0) %> <%= (typeof totalItems !== 'undefined' ? totalItems : cartItems.reduce((s, i) => s + i.quantity, 0)) === 1 ? 'item' : 'items' %>
+                      </span>
                     </div>
-                    <div class="card-body">
-                      <div class="checkout-items">
-                        <% cartItems.forEach(item=> { %>
-                          <div class="checkout-item">
-                            <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>"
-                              class="checkout-item-img" onerror="this.src='/images/placeholder.png'">
-                            <div class="checkout-item-info">
-                              <p class="checkout-item-name">
-                                <a href="/products/<%= item.product_id %>" style="font-weight:500;color:var(--black)">
-                                  <%= item.name %>
-                                    <% if (item.selected_weight) { %>
-                                      <span style="font-size:0.85em;color:var(--gray-500);font-weight:400;">(<%=
-                                          item.selected_weight %>)</span>
-                                      <% } %>
-                                </a>
-                              </p>
-                              <p class="text-sm text-muted">Qty: <%= item.quantity %>
-                              </p>
-                              <% if (typeof item.stock !=='undefined' && item.quantity> item.stock) { %>
-                                <p class="text-sm" style="color:var(--danger);">Insufficient stock</p>
-                                <% } %>
-                            </div>
-                            <div class="checkout-item-price">&#8377;<%= Number(item.subtotal).toLocaleString('en-IN') %>
-                            </div>
-                          </div>
-                          <% }) %>
-                      </div>
 
-                      <div class="coupon-inline-box">
-                        <% if (appliedCoupon) { %>
-                          <div class="coupon-inline-applied">
-                            <div>
-                              <strong>Coupon Applied:</strong>
-                              <%= appliedCoupon.code %>
-                            </div>
-                            <a href="/cart" class="btn btn-outline btn-sm">Change</a>
-                          </div>
-                          <% } else { %>
-                            <div class="coupon-inline-applied">
-                              <div>Apply coupon from cart page.</div>
-                              <a href="/cart" class="btn btn-outline btn-sm">Go to Cart</a>
-                            </div>
-                            <% } %>
-                      </div>
-
-                      <hr>
-
-                      <div class="price-summary">
-                        <div class="price-row">
-                          <span>Subtotal (<%= typeof totalItems !=='undefined' ? totalItems : cartItems.reduce((s, i)=>
-                              s + i.quantity, 0) %> items)</span>
-                          <span>&#8377;<%= Number(typeof originalSubtotal !=='undefined' ? originalSubtotal : (typeof
-                              subtotal !=='undefined' ? subtotal : total)).toLocaleString('en-IN') %></span>
-                        </div>
-                        <% if (typeof offerDiscount !=='undefined' && Number(offerDiscount)> 0) { %>
-                          <div class="price-row" style="color:var(--success, green);">
-                            <span>Offer Discount</span>
-                            <span>-&#8377;<%= Number(offerDiscount).toLocaleString('en-IN') %></span>
-                          </div>
-                          <% } %>
-                            <% if (appliedCoupon) { %>
-                              <div class="price-row" style="color:var(--success, green);">
-                                <span>Coupon (<%= appliedCoupon.code %>)</span>
-                                <span>-&#8377;<%= Number(couponDiscount || 0).toLocaleString('en-IN') %></span>
+                    <div class="card-body checkout-summary-body">
+                      <!-- Cart Items Preview -->
+                      <div class="checkout-items-wrapper">
+                        <div class="checkout-items-list">
+                          <% cartItems.forEach(item => { %>
+                            <div class="checkout-item-luxury">
+                              <div class="checkout-item-thumb">
+                                <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>"
+                                  class="checkout-item-img" onerror="this.src='/images/placeholder.png'">
+                                <span class="checkout-item-qty-pill">x<%= item.quantity %></span>
                               </div>
-                              <% } else if (couponError) { %>
-                                <div class="price-row" style="color:var(--danger, #d9534f);font-size:12px;">
-                                  <span>Coupon</span>
-                                  <span>
-                                    <%= couponError %>
-                                  </span>
-                                </div>
+                              <div class="checkout-item-info">
+                                <h4 class="checkout-item-name">
+                                  <a href="/products/<%= item.product_id %>">
+                                    <%= item.name %>
+                                  </a>
+                                </h4>
+                                <% if (item.selected_weight) { %>
+                                  <span class="checkout-weight-tag"><%= item.selected_weight %></span>
                                 <% } %>
-                                  <div class="price-row">
-                                    <span>Delivery</span>
-                                    <span style="color:var(--success, green);">Free</span>
-                                  </div>
-                                  <hr>
-                                  <div class="price-row total-row">
-                                    <strong>Total</strong>
-                                    <strong>&#8377;<%= Number(total).toLocaleString('en-IN') %></strong>
-                                  </div>
+                                <% if (typeof item.stock !== 'undefined' && item.quantity > item.stock) { %>
+                                  <p class="checkout-stock-warning">Insufficient stock (<%= item.stock %> left)</p>
+                                <% } %>
+                              </div>
+                              <div class="checkout-item-price-col">
+                                <span class="checkout-item-price-val">&#8377;<%= Number(item.subtotal).toLocaleString('en-IN') %></span>
+                              </div>
+                            </div>
+                          <% }) %>
+                        </div>
                       </div>
 
-                      <div class="checkout-actions">
-                        <button type="button" class="btn btn-outline btn-block btn-print-modern"
-                          onclick="printBill()">PDF Bill Preview</button>
-                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="placeOrderBtn">Place
-                          Order</button>
+                      <!-- Coupon Card -->
+                      <div class="checkout-coupon-card">
+                        <% if (appliedCoupon) { %>
+                          <div class="coupon-applied-luxury">
+                            <div class="coupon-applied-info">
+                              <span class="coupon-icon-tag">🏷️</span>
+                              <div>
+                                <span class="coupon-code-label">Coupon Applied</span>
+                                <strong class="coupon-code-value"><%= appliedCoupon.code %></strong>
+                              </div>
+                            </div>
+                            <a href="/cart" class="coupon-action-pill">Change</a>
+                          </div>
+                        <% } else { %>
+                          <div class="coupon-prompt-luxury">
+                            <div class="coupon-prompt-info">
+                              <span class="coupon-icon-tag">🎟️</span>
+                              <span>Have a promo code?</span>
+                            </div>
+                            <a href="/cart" class="coupon-action-pill">Apply in Cart</a>
+                          </div>
+                        <% } %>
                       </div>
 
-                      <p class="checkout-legal-note">
-                        By placing your order, you agree to our Terms of Service.
-                      </p>
+                      <!-- Price Breakdown -->
+                      <div class="checkout-price-breakdown">
+                        <div class="breakdown-row">
+                          <span class="breakdown-label">Items Subtotal</span>
+                          <span class="breakdown-val">&#8377;<%= Number(typeof originalSubtotal !== 'undefined' ? originalSubtotal : (typeof subtotal !== 'undefined' ? subtotal : total)).toLocaleString('en-IN') %></span>
+                        </div>
+                        <% if (typeof offerDiscount !== 'undefined' && Number(offerDiscount) > 0) { %>
+                          <div class="breakdown-row discount-row">
+                            <span class="breakdown-label">Special Offer Discount</span>
+                            <span class="breakdown-val discount-val">-&#8377;<%= Number(offerDiscount).toLocaleString('en-IN') %></span>
+                          </div>
+                        <% } %>
+                        <% if (appliedCoupon) { %>
+                          <div class="breakdown-row discount-row">
+                            <span class="breakdown-label">Coupon Savings (<%= appliedCoupon.code %>)</span>
+                            <span class="breakdown-val discount-val">-&#8377;<%= Number(couponDiscount || 0).toLocaleString('en-IN') %></span>
+                          </div>
+                        <% } else if (couponError) { %>
+                          <div class="breakdown-row error-row">
+                            <span class="breakdown-label">Coupon Notice</span>
+                            <span class="breakdown-val error-val"><%= couponError %></span>
+                          </div>
+                        <% } %>
+                        <div class="breakdown-row delivery-row">
+                          <span class="breakdown-label">Standard Delivery</span>
+                          <span class="delivery-free-badge">FREE</span>
+                        </div>
+                      </div>
+
+                      <!-- Grand Total Box -->
+                      <div class="checkout-total-payable-card">
+                        <div class="total-payable-left">
+                          <span class="total-payable-title">Total Payable</span>
+                          <span class="total-payable-tax-note">All taxes &amp; fees included</span>
+                        </div>
+                        <div class="total-payable-right">
+                          <span class="total-payable-amount">&#8377;<%= Number(total).toLocaleString('en-IN') %></span>
+                        </div>
+                      </div>
+
+                      <!-- Actions -->
+                      <div class="checkout-actions-luxury">
+                        <button type="submit" class="btn-place-order-luxury" id="placeOrderBtn">
+                          <span>Confirm &amp; Place Order</span>
+                          <span class="order-arrow-icon">→</span>
+                        </button>
+                        <button type="button" class="btn-pdf-preview-luxury" onclick="printBill()">
+                          <span>📄 Preview PDF Invoice</span>
+                        </button>
+                      </div>
+
+                      <div class="checkout-security-footer">
+                        <span class="security-lock-icon">🔒</span>
+                        <span>256-Bit SSL Encrypted &bull; 100% Genuine Certified Organics</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -514,32 +538,49 @@
       const addressText = selectedAddressText();
       const notes = document.getElementById('orderNotes')?.value?.trim() || '';
 
-      const inr = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
+      const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' | ' +
+                            now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
       const itemLines = billItems.map((item, idx) => {
         const weight = item.selected_weight ? ` (${item.selected_weight})` : '';
-        return `▫️ *${item.name}${weight}*\n    Qty: ${item.quantity}  |  Price: ${inr(item.subtotal)}`;
+        const unitRate = item.quantity > 0 ? (item.subtotal / item.quantity) : item.subtotal;
+        return `${idx + 1}️⃣ *${item.name}${weight}*\n   • Qty: ${item.quantity}  |  Rate: ${inr(unitRate)}\n   • Subtotal: ${inr(item.subtotal)}`;
       }).join('\n\n');
 
-      let msg = `🛒 *NEW ORDER - ${storeName.toUpperCase()}*\n`;
-      msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-      if (orderId) msg += `🔖 *Order ID:* #${orderId}\n\n`;
+      const upiId = '6302603728-pc97@ybl';
+      const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(storeName)}&am=${totalValue.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Order_ORD_${orderId || 'NEW'}`)}`;
 
-      msg += `📦 *ORDER ITEMS:*\n${itemLines}\n\n`;
+      let msg = `🧾 ══════════════════════════ 🧾\n`;
+      msg += `      *${storeName.toUpperCase()} - ORDER BILL*\n`;
+      msg += `🧾 ══════════════════════════ 🧾\n\n`;
+      if (orderId) msg += `🔖 *Invoice No:* #ORD-${orderId}\n`;
+      msg += `📅 *Date:* ${formattedDate}\n\n`;
 
-      msg += `💵 *PAYMENT SUMMARY:*\n`;
-      msg += `  ▫️ Subtotal: ${inr(subtotalValue)}\n`;
-      if (offerDiscountValue > 0) msg += `  ▫️ Offer Discount: -${inr(offerDiscountValue)}\n`;
-      if (couponDiscountValue > 0) msg += `  ▫️ Coupon${couponCodeValue ? ' (' + couponCodeValue + ')' : ''}: -${inr(couponDiscountValue)}\n`;
-      msg += `  ▫️ Delivery Fee: *FREE*\n`;
-      msg += `  ✨ *TOTAL PAYABLE: ${inr(totalValue)}*\n\n`;
+      msg += `📦 *ORDERED ITEMS:*\n──────────────────────────────\n${itemLines}\n──────────────────────────────\n\n`;
 
-      msg += `📍 *DELIVERY ADDRESS:*\n${addressText}\n\n`;
-      msg += `💳 *PAYMENT METHOD:* WhatsApp Pay\n`;
-      if (notes) msg += `📝 *CUSTOMER NOTE:* ${notes}\n\n`;
+      msg += `💵 *BILL SUMMARY:*\n`;
+      msg += `▫️ Items Subtotal:   ${inr(subtotalValue)}\n`;
+      if (offerDiscountValue > 0) msg += `▫️ Store Discount:  -${inr(offerDiscountValue)}\n`;
+      if (couponDiscountValue > 0) msg += `▫️ Coupon (${couponCodeValue}): -${inr(couponDiscountValue)}\n`;
+      msg += `▫️ Delivery Fee:     *FREE*\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `✨ *FINAL PAYABLE AMOUNT: ${inr(totalValue)}*\n`;
+      msg += `💳 *Payment Mode:* WhatsApp Pay (UPI)\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-      msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-      msg += `Hello! I just placed an order. Please confirm the details. 🙏✨`;
+      msg += `📍 *DELIVERY ADDRESS:*\n${addressText}\n`;
+      if (notes) msg += `📝 *Customer Note:* ${notes}\n`;
+
+      msg += `\n📲 *PAYMENT DETAILS (UPI):*\n`;
+      msg += `▫️ UPI ID: *${upiId}*\n`;
+      msg += `▫️ Amount: *${inr(totalValue)}*\n`;
+      msg += `▫️ Tap to Pay directly via UPI:\n👉 ${upiUri}\n\n`;
+
+      msg += `📸 *REQUEST:* \n`;
+      msg += `Please send a *screenshot of your payment* or *UTR / UPI Reference Number* right here once paid to confirm your order dispatch immediately! 🙏✨`;
+
       return msg;
     }
 
@@ -1081,106 +1122,383 @@
       box-shadow: 0 0 0 3px rgba(28, 74, 48, 0.1);
     }
 
-    .checkout-summary-card .card-body {
-      display: grid;
-      gap: 12px;
+    /* ── LUXURY ORDER SUMMARY CARD ── */
+    .checkout-summary-card {
+      border-radius: 20px !important;
+      border: 1.5px solid rgba(28, 74, 48, 0.14) !important;
+      box-shadow: 0 16px 36px rgba(28, 74, 48, 0.08) !important;
+      background: #ffffff !important;
+      overflow: hidden;
+      margin-bottom: 24px;
     }
 
-    .checkout-item {
-      display: grid;
-      grid-template-columns: 56px 1fr auto;
-      gap: 10px;
+    .checkout-summary-header {
+      background: linear-gradient(135deg, #1c4a30 0%, #153c26 60%, #0f2c1b 100%) !important;
+      color: #ffffff !important;
+      padding: 16px 20px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      border-bottom: none !important;
+    }
+
+    .checkout-summary-header-left {
+      display: flex;
       align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px dashed #ececec;
+      gap: 10px;
     }
 
-    .checkout-item:last-child {
-      border-bottom: none;
+    .checkout-summary-header-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.16);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
     }
 
-    .checkout-item-img {
-      width: 56px;
-      height: 56px;
+    .checkout-summary-title {
+      font-family: 'Playfair Display', serif !important;
+      font-size: 18px !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      margin: 0 !important;
+      letter-spacing: 0.3px;
+    }
+
+    .checkout-summary-count-badge {
+      background: rgba(255, 255, 255, 0.18);
+      color: #e8a78a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      letter-spacing: 0.3px;
+    }
+
+    .checkout-summary-body {
+      padding: 18px 20px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 14px !important;
+    }
+
+    .checkout-items-wrapper {
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .checkout-items-wrapper::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .checkout-items-wrapper::-webkit-scrollbar-thumb {
+      background: rgba(28, 74, 48, 0.2);
+      border-radius: 10px;
+    }
+
+    .checkout-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .checkout-item-luxury {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fbfdfb;
+      border: 1px solid rgba(28, 74, 48, 0.06);
+      transition: background 0.2s ease;
+    }
+
+    .checkout-item-luxury:hover {
+      background: #f4f8f5;
+    }
+
+    .checkout-item-thumb {
+      position: relative;
+      width: 50px;
+      height: 50px;
+      flex-shrink: 0;
+    }
+
+    .checkout-item-thumb img {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       border-radius: 10px;
-      border: 1px solid #efefef;
-      background: #fafafa;
+      border: 1px solid rgba(28, 74, 48, 0.12);
+      background: #fff;
+    }
+
+    .checkout-item-qty-pill {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      background: #1c4a30;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 6px;
+      border: 1.5px solid #fff;
+    }
+
+    .checkout-item-info {
+      flex: 1;
+      min-width: 0;
     }
 
     .checkout-item-name {
-      margin-bottom: 4px;
+      margin: 0 0 2px 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      line-height: 1.3;
     }
 
-    .price-summary .price-row {
+    .checkout-item-name a {
+      color: #111827;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .checkout-item-name a:hover {
+      color: #1c4a30;
+    }
+
+    .checkout-weight-tag {
+      display: inline-block;
+      font-size: 11px;
+      color: #78350f;
+      background: #fef3c7;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .checkout-stock-warning {
+      color: #dc2626;
+      font-size: 11px;
+      font-weight: 600;
+      margin: 2px 0 0 0;
+    }
+
+    .checkout-item-price-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .checkout-item-price-val {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #1c4a30;
+    }
+
+    /* Coupon Luxury Box */
+    .checkout-coupon-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      border: 1.5px dashed #86efac;
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+
+    .coupon-applied-luxury,
+    .coupon-prompt-luxury {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .coupon-applied-info,
+    .coupon-prompt-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .coupon-code-label {
+      display: block;
+      font-size: 11px;
+      color: #065f46;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .coupon-code-value {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #047857;
+      letter-spacing: 0.5px;
+    }
+
+    .coupon-action-pill {
+      background: #ffffff;
+      color: #065f46;
+      border: 1px solid rgba(6, 95, 70, 0.25);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .coupon-action-pill:hover {
+      background: #065f46;
+      color: #ffffff;
+    }
+
+    /* Price Breakdown */
+    .checkout-price-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 4px 0;
+      border-top: 1px dashed rgba(28, 74, 48, 0.12);
+      padding-top: 12px;
+    }
+
+    .breakdown-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 14px;
-      margin-bottom: 8px;
+      font-size: 13.5px;
+      color: #4b5563;
     }
 
-    .price-summary .total-row {
-      font-size: 18px;
+    .breakdown-row.discount-row {
+      color: #16a34a;
+      font-weight: 600;
     }
 
-    .checkout-actions {
-      display: grid;
-      gap: 10px;
-      margin-top: 8px;
+    .breakdown-row.error-row {
+      color: #dc2626;
+      font-size: 12px;
     }
 
-    .checkout-actions .btn {
-      min-height: 46px;
-      justify-content: center;
-      font-weight: 700;
+    .delivery-free-badge {
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
     }
 
-    .coupon-inline-box {
-      margin-top: 10px;
-    }
-
-    .coupon-inline-form,
-    .coupon-inline-applied {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
+    /* Total Payable Card */
+    .checkout-total-payable-card {
+      background: linear-gradient(135deg, #f7faf8 0%, #eef5f1 100%);
+      border: 1.5px solid rgba(28, 74, 48, 0.18);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
       align-items: center;
     }
 
-
-
-    .btn-print-modern {
-      border-radius: 999px;
+    .total-payable-title {
+      display: block;
+      font-size: 14.5px;
       font-weight: 700;
-      letter-spacing: .2px;
-      border-color: rgba(28, 74, 48, 0.3);
       color: #1c4a30;
-      background: linear-gradient(180deg, #ffffff 0%, #f4f8f6 100%);
+      letter-spacing: 0.2px;
     }
 
-    .btn-print-modern:hover {
-      border-color: #1c4a30;
-      background: linear-gradient(180deg, #f7fbf8 0%, #ebf5f0 100%);
-      color: #123222;
+    .total-payable-tax-note {
+      display: block;
+      font-size: 11px;
+      color: #6b7280;
     }
 
-    .btn-block {
+    .total-payable-amount {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1c4a30;
+      letter-spacing: 0.3px;
+    }
+
+    /* Actions Luxury */
+    .checkout-actions-luxury {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-place-order-luxury {
       width: 100%;
+      min-height: 48px;
+      background: linear-gradient(135deg, #1c4a30 0%, #245e3d 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      font-size: 15.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(28, 74, 48, 0.28);
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-place-order-luxury:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(28, 74, 48, 0.38);
+      background: linear-gradient(135deg, #153c26 0%, #1e5235 100%);
+    }
+
+    .order-arrow-icon {
+      font-size: 18px;
+      transition: transform 0.2s ease;
+    }
+
+    .btn-place-order-luxury:hover .order-arrow-icon {
+      transform: translateX(4px);
+    }
+
+    .btn-pdf-preview-luxury {
+      width: 100%;
+      min-height: 42px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: 1.5px solid rgba(28, 74, 48, 0.25);
+      color: #1c4a30;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
       justify-content: center;
     }
 
-    .btn-lg {
-      min-height: 46px;
-      font-size: 15px;
-      font-weight: 700;
+    .btn-pdf-preview-luxury:hover {
+      background: #f4f8f5;
+      border-color: #1c4a30;
     }
 
-    .checkout-legal-note {
+    .checkout-security-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       font-size: 11px;
-      color: var(--gray-500);
+      color: #6b7280;
       text-align: center;
-      margin-top: 8px;
+      margin-top: 2px;
     }
 
     .print-bill {

@@ -23,84 +23,191 @@
     <% } %>
   </div>
 
+  <% if (typeof upiDetails !== 'undefined' && upiDetails) { %>
+    <div class="whatsapp-pay-hero-card" id="whatsappPayCard">
+      <div class="pay-hero-top-strip">
+        <div class="pay-hero-badge">
+          <span class="pulse-dot"></span> WhatsApp Pay &bull; Complete Payment via UPI
+        </div>
+        <div class="pay-order-tag">Order #<%= order.id %></div>
+      </div>
+      
+      <div class="pay-hero-grid">
+        <!-- QR Section -->
+        <div class="pay-qr-side">
+          <div class="pay-qr-box">
+            <% if (upiDetails.qrCodeDataUrl) { %>
+              <img src="<%= upiDetails.qrCodeDataUrl %>" alt="Scan to pay ₹<%= upiDetails.amount %>" class="dynamic-upi-qr" id="dynamicUpiQrImg" />
+            <% } %>
+            <div class="pay-qr-scan-text">
+              Scan with <strong>GPay, PhonePe, Paytm</strong>
+            </div>
+          </div>
+          <div class="pay-qr-amount-chip">
+            Payable: <strong>&#8377;<%= Number(upiDetails.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></strong>
+          </div>
+        </div>
+
+        <!-- Instructions & Action Side -->
+        <div class="pay-info-side">
+          <div class="pay-headline">
+            <h3>Complete Your Order Payment</h3>
+            <p>Scan the dynamic QR code on the left with any UPI app, or tap below to pay directly.</p>
+          </div>
+
+          <div class="pay-upi-row">
+            <span class="upi-tag">UPI ID:</span>
+            <code class="upi-address" id="merchantUpiText"><%= upiDetails.upiId %></code>
+            <button type="button" class="btn-copy-upi" onclick="copyMerchantUpi()" id="copyUpiBtn">
+              📋 Copy
+            </button>
+          </div>
+
+          <!-- Mobile 1-Tap Pay Button -->
+          <a href="<%= upiDetails.upiUri %>" class="btn-upi-instant-pay">
+            <span>⚡ Tap to Pay &#8377;<%= Number(upiDetails.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %> with UPI</span>
+          </a>
+
+          <!-- Screenshot Alert Notice -->
+          <div class="pay-screenshot-box">
+            <div class="screenshot-icon">📸</div>
+            <div class="screenshot-content">
+              <h4>Please Send Payment Screenshot</h4>
+              <p>After paying, please share your <strong>screenshot</strong> or <strong>UTR / Reference Number</strong> on WhatsApp to verify and dispatch your order immediately.</p>
+            </div>
+          </div>
+
+          <!-- WhatsApp Chat Button -->
+          <a href="<%= upiDetails.whatsAppScreenshotUrl %>" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-screenshot">
+            <span class="wa-icon">💬</span>
+            <span>Send Screenshot on WhatsApp (+91 <%= upiDetails.whatsAppPhone.replace(/^91/, '') %>)</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
   <div class="order-confirmation-grid">
     <article class="order-confirmation-card">
-      <h2>Order Summary</h2>
-      <div class="order-confirmation-row"><span>Order ID</span><strong>#<%= order.id %></strong></div>
-      <div class="order-confirmation-row">
-        <span>Status</span>
-        <strong><span class="status-pill pending"><%= order.status %></span></strong>
-      </div>
-      <div class="order-confirmation-row">
-        <span>Items Subtotal</span>
-        <strong>&#8377;<%= Number(typeof itemsSubtotal !== 'undefined' ? itemsSubtotal : order.total_amount).toLocaleString('en-IN') %></strong>
-      </div>
-      <% if (typeof couponDiscount !== 'undefined' && Number(couponDiscount) > 0) { %>
-        <div class="order-confirmation-row">
-          <span>Coupon Discount<% if (couponCode) { %> (<%= couponCode %>)<% } %></span>
-          <strong style="color:#198754;">-&#8377;<%= Number(couponDiscount).toLocaleString('en-IN') %></strong>
+      <div class="card-header-luxury">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="header-icon-badge">📋</span>
+          <h2>Order Summary</h2>
         </div>
-      <% } %>
-      <div class="order-confirmation-row">
-        <span>Total Amount</span>
-        <strong>&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></strong>
+        <span class="order-id-chip">#<%= order.id %></span>
       </div>
-      <div class="order-confirmation-row">
-        <span>Payment Method</span>
-        <strong class="text-uppercase"><%= order.payment_method || 'COD' %></strong>
+      <div class="order-confirmation-rows">
+        <div class="order-confirmation-row">
+          <span class="row-label">Order Status</span>
+          <span class="status-pill status-<%= String(order.status || 'pending').toLowerCase() %>">
+            <span class="status-dot"></span> <%= order.status %>
+          </span>
+        </div>
+        <div class="order-confirmation-row">
+          <span class="row-label">Items Subtotal</span>
+          <strong>&#8377;<%= Number(typeof itemsSubtotal !== 'undefined' ? itemsSubtotal : order.total_amount).toLocaleString('en-IN') %></strong>
+        </div>
+        <% if (typeof couponDiscount !== 'undefined' && Number(couponDiscount) > 0) { %>
+          <div class="order-confirmation-row discount-row">
+            <span class="row-label">Coupon Discount<% if (couponCode) { %> (<%= couponCode %>)<% } %></span>
+            <strong class="discount-val">-&#8377;<%= Number(couponDiscount).toLocaleString('en-IN') %></strong>
+          </div>
+        <% } %>
+        <div class="order-confirmation-row">
+          <span class="row-label">Delivery</span>
+          <span style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 11px; padding: 2px 8px; border-radius: 999px;">FREE</span>
+        </div>
+        <div class="order-confirmation-row">
+          <span class="row-label">Payment Method</span>
+          <span class="payment-method-tag"><%= (order.payment_method || 'COD').toUpperCase() %></span>
+        </div>
+        <% if (order.addr_name) { %>
+          <div class="order-confirmation-row delivery-row">
+            <span class="row-label">Delivery Address</span>
+            <span class="delivery-address"><span class="geo-icon">📍</span> <strong><%= order.addr_name %>, <%= order.city %></strong></span>
+          </div>
+        <% } else if (order.address_snapshot) { %>
+          <div class="order-confirmation-row delivery-row">
+            <span class="row-label">Delivery Address</span>
+            <span class="delivery-address"><span class="geo-icon">📍</span> <strong><%= order.address_snapshot %></strong></span>
+          </div>
+        <% } %>
+
+        <div class="order-summary-total-box">
+          <div>
+            <span class="total-box-label">Total Amount</span>
+            <span class="total-box-sub">Inclusive of all taxes</span>
+          </div>
+          <strong class="total-box-val">&#8377;<%= Number(order.total_amount).toLocaleString('en-IN') %></strong>
+        </div>
       </div>
-      <% if (order.addr_name) { %>
-        <div class="order-confirmation-row">
-          <span>Delivery To</span>
-          <strong><%= order.addr_name %>, <%= order.city %></strong>
-        </div>
-      <% } else if (order.address_snapshot) { %>
-        <div class="order-confirmation-row">
-          <span>Delivery To</span>
-          <strong><%= order.address_snapshot %></strong>
-        </div>
-      <% } %>
     </article>
 
     <article class="order-confirmation-card">
-      <h2>What Happens Next</h2>
-      <ul class="order-confirmation-steps">
-        <li>We verify your items and prepare your package.</li>
-        <li>You will be notified when your order status changes.</li>
-        <li>Delivery partner will contact you before arrival.</li>
-      </ul>
+      <div class="card-header-luxury">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="header-icon-badge">✨</span>
+          <h2>What Happens Next</h2>
+        </div>
+      </div>
+      <div class="luxury-steps-timeline">
+        <div class="timeline-step">
+          <div class="step-num-bubble">1</div>
+          <div class="step-body">
+            <div class="step-title">Order Verified &amp; Packed</div>
+            <div class="step-desc">We handpick and hermetically pack your organic items with supreme freshness.</div>
+          </div>
+        </div>
+        <div class="timeline-step">
+          <div class="step-num-bubble">2</div>
+          <div class="step-body">
+            <div class="step-title">Express Dispatch</div>
+            <div class="step-desc">Your order is handed over to our delivery partner with live SMS and WhatsApp status alerts.</div>
+          </div>
+        </div>
+        <div class="timeline-step">
+          <div class="step-num-bubble">3</div>
+          <div class="step-body">
+            <div class="step-title">Doorstep Handover</div>
+            <div class="step-desc">Our delivery partner will reach out to you directly upon arrival.</div>
+          </div>
+        </div>
+      </div>
       <div class="order-confirmation-mail-note">
-        A confirmation email has been sent to your registered email address.
+        <span class="mail-icon">✉️</span>
+        <span>A detailed receipt has been sent to your registered email &amp; phone.</span>
       </div>
     </article>
   </div>
 
   <% if (typeof items !== 'undefined' && items.length > 0) { %>
     <article class="order-confirmation-card order-confirmation-items">
-      <h2>Items Ordered</h2>
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th class="text-center">Qty</th>
-            <th class="text-right">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% items.forEach(item => { %>
-            <tr>
-              <td>
-                <span class="order-confirmation-item-name"><%= item.name %></span>
-                <% if (item.selected_weight) { %>
-                  <span class="order-confirmation-item-meta">(<%= item.selected_weight %>)</span>
-                <% } %>
-              </td>
-              <td class="text-center"><%= item.quantity %></td>
-              <td class="text-right">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+      <div class="card-header-luxury">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="header-icon-badge">📦</span>
+          <h2>Items in Your Order (<%= items.reduce((s, i) => s + i.quantity, 0) %>)</h2>
+        </div>
+      </div>
+      <div class="confirmation-items-grid">
+        <% items.forEach(item => { %>
+          <div class="confirmation-item-card">
+            <div class="confirmation-item-img-wrap">
+              <img src="<%= item.image || '/images/placeholder.png' %>" alt="<%= item.name %>" class="confirmation-item-img" onerror="this.src='/images/placeholder.png'">
+              <span class="confirmation-qty-pill">x<%= item.quantity %></span>
+            </div>
+            <div class="confirmation-item-details">
+              <h4 class="confirmation-item-title"><%= item.name %></h4>
+              <% if (item.selected_weight) { %>
+                <span class="confirmation-weight-tag"><%= item.selected_weight %></span>
+              <% } %>
+              <div class="confirmation-item-pricing">
+                <span class="unit-price">&#8377;<%= Number(item.price).toLocaleString('en-IN') %> each</span>
+                <span class="line-subtotal">&#8377;<%= Number(item.price * item.quantity).toLocaleString('en-IN') %></span>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
     </article>
   <% } %>
 
@@ -265,18 +372,341 @@
   }
 
   .order-confirmation-grid {
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 22px;
+    margin-bottom: 26px;
   }
 
   .order-confirmation-card {
-    border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    background: linear-gradient(180deg, #fff 0%, #fcfcfc 100%);
-    box-shadow: 0 12px 28px rgba(10, 10, 10, 0.06);
+    border-radius: 20px;
+    border: 1px solid rgba(28, 74, 48, 0.12);
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    padding: 26px 24px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-header-luxury {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .header-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(28, 74, 48, 0.08);
+    font-size: 18px;
+  }
+
+  .card-header-luxury h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+  }
+
+  .order-confirmation-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .order-confirmation-row {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.07);
+    font-size: 14px;
+  }
+
+  .order-confirmation-row:last-child {
+    border-bottom: none;
+  }
+
+  .order-confirmation-row .row-label {
+    color: #555;
+    font-weight: 500;
+  }
+
+  .order-id-chip {
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+    background: rgba(28, 74, 48, 0.08);
+    color: var(--emerald);
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-pill.status-pending {
+    background: #fff8e6;
+    color: #b45309;
+    border: 1px solid #fef3c7;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+  }
+
+  .total-row {
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 2px solid rgba(28, 74, 48, 0.15);
+  }
+
+  .total-row .row-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .total-val {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--emerald);
+  }
+
+  .discount-row {
+    color: #16a34a;
+  }
+
+  .discount-val {
+    color: #16a34a;
+  }
+
+  .payment-method-tag {
+    font-size: 12px;
+    font-weight: 700;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 3px 9px;
+    border-radius: 6px;
+  }
+
+  .delivery-address {
+    font-size: 13px;
+    text-align: right;
+    max-width: 60%;
+    color: #222;
+  }
+
+  .order-summary-total-box {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f7faf8 0%, #edf5f0 100%);
+    border: 1.5px solid rgba(28, 74, 48, 0.18);
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-box-label {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #1c4a30;
+  }
+
+  .total-box-sub {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .total-box-val {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1c4a30;
+  }
+
+  /* ── ITEMS IN ORDER CARDS ── */
+  .order-confirmation-items {
+    margin-top: 24px;
+  }
+
+  .confirmation-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .confirmation-item-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fbfdfb;
+    border: 1px solid rgba(28, 74, 48, 0.1);
+    border-radius: 14px;
+    padding: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .confirmation-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(28, 74, 48, 0.08);
+  }
+
+  .confirmation-item-img-wrap {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+  }
+
+  .confirmation-item-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(28, 74, 48, 0.12);
+    background: #fff;
+  }
+
+  .confirmation-qty-pill {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #1c4a30;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1.5px solid #fff;
+  }
+
+  .confirmation-item-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .confirmation-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 3px 0;
+    line-height: 1.25;
+  }
+
+  .confirmation-weight-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: #78350f;
+    background: #fef3c7;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .confirmation-item-pricing {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .confirmation-item-pricing .unit-price {
+    color: #6b7280;
+    font-size: 12px;
+  }
+
+  .confirmation-item-pricing .line-subtotal {
+    font-weight: 700;
+    color: #1c4a30;
+    font-size: 14.5px;
+  }
+
+  /* ── TIMELINE WHAT HAPPENS NEXT ── */
+  .luxury-steps-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 0;
+  }
+
+  .timeline-step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .step-num-bubble {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1c4a30 0%, #2d5a3f 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(28, 74, 48, 0.2);
+  }
+
+  .step-body {
+    flex: 1;
+  }
+
+  .step-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 2px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.45;
+  }
+
+  .order-confirmation-mail-note {
+    margin-top: 18px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(28, 74, 48, 0.05);
+    border: 1px solid rgba(28, 74, 48, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--emerald);
+    font-weight: 500;
   }
 
   .order-confirmation-actions {
@@ -387,15 +817,296 @@
     100% { transform: translateX(100%); }
   }
 
+  /* WhatsApp Pay Dynamic QR Card - Website Luxury Style */
+  .whatsapp-pay-hero-card {
+    margin: 10px auto 30px;
+    max-width: 100%;
+    border-radius: 20px;
+    background: #ffffff;
+    border: 1px solid rgba(28, 74, 48, 0.16);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
+    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pay-hero-top-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .pay-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37, 211, 102, 0.12);
+    color: #0f5132;
+    border: 1px solid rgba(37, 211, 102, 0.25);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .pay-order-tag {
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--emerald, #1c4a30);
+    background: rgba(28, 74, 48, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #25d366;
+    box-shadow: 0 0 8px #25d366;
+    animation: stepPulse 1.8s infinite;
+  }
+
+  .pay-hero-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .pay-qr-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .pay-qr-box {
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+    width: 200px;
+    max-width: 100%;
+  }
+
+  .dynamic-upi-qr {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: block;
+  }
+
+  .pay-qr-scan-text {
+    color: #4b5563;
+    font-size: 11px;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  .pay-qr-amount-chip {
+    margin-top: 10px;
+    background: rgba(28, 74, 48, 0.08);
+    color: var(--emerald, #1c4a30);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  .pay-info-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pay-headline h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+
+  .pay-headline p {
+    font-size: 13.5px;
+    color: #64748b;
+    margin: 4px 0 0;
+    line-height: 1.45;
+  }
+
+  .pay-upi-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 14px;
+    border-radius: 10px;
+    width: fit-content;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .upi-tag {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .upi-address {
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-copy-upi {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-upi-instant-pay {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #1c4a30 0%, #2a6f48 100%);
+    color: #ffffff;
+    font-size: 14.5px;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(28, 74, 48, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: fit-content;
+  }
+
+  .btn-upi-instant-pay:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(28, 74, 48, 0.35);
+    color: #ffffff;
+  }
+
+  .pay-screenshot-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-top: 2px;
+  }
+
+  .screenshot-icon {
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .screenshot-content h4 {
+    margin: 0 0 3px;
+    font-size: 13.5px;
+    color: #92400e;
+    font-weight: 700;
+  }
+
+  .screenshot-content p {
+    margin: 0;
+    font-size: 12.5px;
+    color: #78350f;
+    line-height: 1.45;
+  }
+
+  .btn-whatsapp-screenshot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #25d366;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px 18px;
+    border-radius: 10px;
+    text-decoration: none;
+    width: fit-content;
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .btn-whatsapp-screenshot:hover {
+    background: #1ebe5d;
+    transform: translateY(-1px);
+    color: #ffffff;
+  }
+
   @media (max-width: 768px) {
     .order-confirmation-actions .btn-primary,
     .order-confirmation-actions .btn-secondary {
       width: 100%;
     }
+    .pay-hero-grid {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    .pay-info-side {
+      align-items: center;
+    }
+    .pay-upi-row {
+      justify-content: center;
+    }
+    .btn-upi-instant-pay,
+    .btn-whatsapp-screenshot {
+      width: 100%;
+      text-align: center;
+    }
   }
 </style>
 
 <script>
+  function copyMerchantUpi() {
+    const el = document.getElementById('merchantUpiText');
+    const btn = document.getElementById('copyUpiBtn');
+    if (!el) return;
+    const text = el.innerText.trim();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ Copied!';
+          btn.style.background = '#10b981';
+          btn.style.color = '#fff';
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.background = '';
+            btn.style.color = '';
+          }, 2000);
+        }
+      }).catch(() => { prompt("Copy UPI ID:", text); });
+    } else {
+      prompt("Copy UPI ID:", text);
+    }
+  }
+
   (function () {
     const popup = document.getElementById('orderSuccessPopup');
     const closeBtn = document.getElementById('orderSuccessClose');
@@ -420,9 +1131,44 @@
 
     closeBtn?.addEventListener('click', closePopup);
 
-
     setTimeout(closePopup, 5200);
   })();
+
+  // Instant optimistic wishlist toggle
+  document.querySelectorAll('.wishlist-toggle-form').forEach((form) => {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const productId = this.dataset.productId;
+      const btn = this.querySelector('button');
+      const wasActive = btn.classList.contains('active');
+      const willBeActive = !wasActive;
+
+      btn.classList.toggle('active', willBeActive);
+      btn.classList.add('animating');
+      setTimeout(() => btn.classList.remove('animating'), 450);
+      btn.textContent = willBeActive ? '♥' : '♡';
+
+      try {
+        const res = await fetch(`/wishlist/toggle/${productId}`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          btn.classList.toggle('active', wasActive);
+          btn.textContent = wasActive ? '♥' : '♡';
+          if (data && data.redirect) window.location.href = data.redirect;
+          return;
+        }
+        const serverActive = data.status === 'added';
+        btn.classList.toggle('active', serverActive);
+        btn.textContent = serverActive ? '♥' : '♡';
+      } catch (err) {
+        btn.classList.toggle('active', wasActive);
+        btn.textContent = wasActive ? '♥' : '♡';
+      }
+    });
+  });
 </script>
 
 <%- include('./partials/footer') %>

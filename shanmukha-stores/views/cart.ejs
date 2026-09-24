@@ -70,41 +70,188 @@
             <a href="/products" class="btn-secondary">Continue Shopping</a>
           </div>
         </div>
-        <div class="cart-summary">
-          <h2>Order Summary</h2>
-          <div class="summary-row"><span>Subtotal</span><span id="cartSubtotal">&#8377;<%= Number(typeof originalSubtotal !== 'undefined' ? originalSubtotal : total).toLocaleString('en-IN') %></span></div>
+        <div class="cart-summary luxury-cart-summary">
+          <div class="cart-summary-header">
+            <span class="cart-summary-icon">📋</span>
+            <h2>Order Summary</h2>
+          </div>
+          <div class="summary-row">
+            <span>Subtotal (<%= cartItems.reduce((s, i) => s + i.quantity, 0) %> items)</span>
+            <span id="cartSubtotal">&#8377;<%= Number(typeof originalSubtotal !== 'undefined' ? originalSubtotal : total).toLocaleString('en-IN') %></span>
+          </div>
           <% if (typeof offerDiscount !== 'undefined' && Number(offerDiscount) > 0) { %>
-            <div class="summary-row" style="color:var(--success, green);"><span>Offer Discount</span><span>-&#8377;<%= Number(offerDiscount).toLocaleString('en-IN') %></span></div>
+            <div class="summary-row" style="color:#16a34a; font-weight:600;"><span>Offer Discount</span><span>-&#8377;<%= Number(offerDiscount).toLocaleString('en-IN') %></span></div>
           <% } %>
           <% if (appliedCoupon) { %>
-            <div class="summary-row" style="color:var(--success, green);"><span>Coupon (<%= appliedCoupon.code %>)</span><span>-&#8377;<%= Number(couponDiscount || 0).toLocaleString('en-IN') %></span></div>
+            <div class="summary-row" style="color:#16a34a; font-weight:600;"><span>Coupon (<%= appliedCoupon.code %>)</span><span>-&#8377;<%= Number(couponDiscount || 0).toLocaleString('en-IN') %></span></div>
           <% } %>
-          <div class="summary-row"><span>Delivery</span><span id="cartDeliveryFee">FREE</span></div>
-          <div class="summary-total">
-            <span>Total</span>
-            <span id="cartGrandTotal">&#8377;<%= Number(total).toLocaleString('en-IN') %></span>
+          <div class="summary-row">
+            <span>Delivery</span>
+            <span id="cartDeliveryFee" class="delivery-free-badge">FREE</span>
+          </div>
+
+          <div class="cart-summary-total-card">
+            <div>
+              <span class="total-label-luxury">Total Payable</span>
+              <span class="total-tax-note">All taxes included</span>
+            </div>
+            <span id="cartGrandTotal" class="total-amount-luxury">&#8377;<%= Number(total).toLocaleString('en-IN') %></span>
           </div>
 
           <% if (!appliedCoupon) { %>
-            <form action="/cart/coupon/apply" method="POST" style="display:flex;gap:8px;margin:12px 0;">
-              <input type="text" name="coupon_code" placeholder="Enter coupon code" class="qty-input" style="width:100%;text-transform:uppercase;" required maxlength="50">
-              <button type="submit" class="btn-secondary btn-sm">Apply</button>
+            <form action="/cart/coupon/apply" method="POST" class="cart-coupon-form">
+              <input type="text" name="coupon_code" placeholder="Enter coupon code" class="coupon-input-luxury" required maxlength="50">
+              <button type="submit" class="btn-apply-coupon-luxury">Apply</button>
             </form>
           <% } else { %>
             <form action="/cart/coupon/remove" method="POST" style="margin:12px 0;">
-              <button type="submit" class="btn-secondary btn-sm">Remove Coupon</button>
+              <button type="submit" class="btn-secondary btn-sm" style="width:100%; border-radius:999px;">Remove Coupon</button>
             </form>
           <% } %>
 
           <% if (couponError) { %>
-            <p id="freeDeliveryHint" class="free-delivery-hint" style="color:#d9534f;"><%= couponError %></p>
+            <p id="freeDeliveryHint" class="free-delivery-hint" style="color:#dc2626; font-size:12px; margin-top:4px;"><%= couponError %></p>
           <% } %>
 
-          <a href="/orders/checkout" class="checkout-btn">Proceed to Checkout</a>
-          <p class="secure-note">Secure and encrypted checkout</p>
+          <a href="/orders/checkout" class="btn-checkout-luxury">
+            <span>Proceed to Checkout</span>
+            <span style="font-size:18px;">→</span>
+          </a>
+          <p class="secure-note" style="margin-top:12px; font-size:11px; color:#6b7280; text-align:center; display:flex; align-items:center; justify-content:center; gap:6px;">
+            <span>🔒</span> 256-Bit SSL Encrypted &bull; 100% Genuine Certified
+          </p>
         </div>
       </div>
     <% } %>
+  </div>
+</section>
+
+<style>
+  .luxury-cart-summary {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(28, 74, 48, 0.14) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 16px 36px rgba(28, 74, 48, 0.08) !important;
+    padding: 24px !important;
+  }
+  .cart-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid rgba(28, 74, 48, 0.1);
+  }
+  .cart-summary-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(28, 74, 48, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .cart-summary-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1c4a30;
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .delivery-free-badge {
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .cart-summary-total-card {
+    margin: 16px 0;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f7faf8 0%, #edf5f0 100%);
+    border: 1.5px solid rgba(28, 74, 48, 0.18);
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .total-label-luxury {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #1c4a30;
+  }
+  .total-tax-note {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+  }
+  .total-amount-luxury {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1c4a30;
+  }
+  .cart-coupon-form {
+    display: flex;
+    gap: 8px;
+    margin: 14px 0;
+  }
+  .coupon-input-luxury {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid rgba(28, 74, 48, 0.16);
+    border-radius: 999px;
+    font-size: 13px;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .coupon-input-luxury:focus {
+    border-color: #1c4a30;
+  }
+  .btn-apply-coupon-luxury {
+    padding: 10px 18px;
+    background: #1c4a30;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .btn-apply-coupon-luxury:hover {
+    background: #153c26;
+  }
+  .btn-checkout-luxury {
+    width: 100%;
+    min-height: 48px;
+    background: linear-gradient(135deg, #1c4a30 0%, #245e3d 100%);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 999px;
+    font-size: 15.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 10px 24px rgba(28, 74, 48, 0.28);
+    transition: all 0.2s ease;
+    margin-top: 10px;
+  }
+  .btn-checkout-luxury:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(28, 74, 48, 0.38);
+    background: linear-gradient(135deg, #153c26 0%, #1e5235 100%);
+    color: #ffffff !important;
+  }
+</style>
   </div>
 </section>
 

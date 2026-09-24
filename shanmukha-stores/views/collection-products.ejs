@@ -84,7 +84,7 @@
                         <div class="product-image">
                             <a href="/products/<%= p.id %>">
                                 <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
-                                    onerror="this.src='/images/placeholder.png'">
+                                    loading="lazy" decoding="async" onerror="this.src='/images/placeholder.png'">
                             </a>
 
                             <% if (p.stock===0) { %>
@@ -165,6 +165,21 @@
                     e.preventDefault();
                     const productId = this.dataset.productId;
                     const btn = this.querySelector('button');
+
+                    // 1. INSTANT OPTIMISTIC UPDATE (0ms)
+                    const wasActive = btn.classList.contains('active');
+                    const willBeActive = !wasActive;
+
+                    document.querySelectorAll(`.wishlist-toggle-form[data-product-id="${productId}"] button`).forEach(b => {
+                        b.classList.toggle('active', willBeActive);
+                        b.classList.add('animating');
+                        setTimeout(() => b.classList.remove('animating'), 450);
+                        const s = b.querySelector('svg');
+                        if (s) s.setAttribute('fill', willBeActive ? 'currentColor' : 'none');
+                        else b.textContent = willBeActive ? '♥' : '♡';
+                    });
+
+                    // 2. BACKGROUND SERVER SYNC
                     try {
                         const res = await fetch(`/wishlist/toggle/${productId}`, {
                             method: 'POST',
@@ -172,23 +187,30 @@
                         });
                         const data = await res.json();
                         if (!res.ok || !data.ok) {
+                            document.querySelectorAll(`.wishlist-toggle-form[data-product-id="${productId}"] button`).forEach(b => {
+                                b.classList.toggle('active', wasActive);
+                                const s = b.querySelector('svg');
+                                if (s) s.setAttribute('fill', wasActive ? 'currentColor' : 'none');
+                                else b.textContent = wasActive ? '♥' : '♡';
+                            });
                             if (data && data.redirect) window.location.href = data.redirect;
                             return;
                         }
-                        const svg = btn.querySelector('svg');
-                        if (svg) {
-                            if (data.status === 'added') {
-                                btn.classList.add('active');
-                                svg.setAttribute('fill', 'currentColor');
-                            } else {
-                                btn.classList.remove('active');
-                                svg.setAttribute('fill', 'none');
-                            }
-                        } else {
-                            btn.textContent = data.status === 'added' ? '♥' : '♡';
-                        }
+                        const serverActive = data.status === 'added';
+                        document.querySelectorAll(`.wishlist-toggle-form[data-product-id="${productId}"] button`).forEach(b => {
+                            b.classList.toggle('active', serverActive);
+                            const s = b.querySelector('svg');
+                            if (s) s.setAttribute('fill', serverActive ? 'currentColor' : 'none');
+                            else b.textContent = serverActive ? '♥' : '♡';
+                        });
                     } catch (err) {
                         console.error(err);
+                        document.querySelectorAll(`.wishlist-toggle-form[data-product-id="${productId}"] button`).forEach(b => {
+                            b.classList.toggle('active', wasActive);
+                            const s = b.querySelector('svg');
+                            if (s) s.setAttribute('fill', wasActive ? 'currentColor' : 'none');
+                            else b.textContent = wasActive ? '♥' : '♡';
+                        });
                     }
                 });
             });

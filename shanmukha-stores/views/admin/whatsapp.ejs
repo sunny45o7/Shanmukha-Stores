@@ -1,0 +1,116 @@
+<%- include('_header') %>
+
+<div class="page-hd">
+    <div>
+        <h2>WhatsApp Bot Integration</h2>
+        <p>Auto-reply with dynamic UPI QR code when customers send their order bill on WhatsApp.</p>
+    </div>
+</div>
+
+<div class="card luxury-card" style="padding: 28px; max-width: 800px; margin: 0 auto 30px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #25d366; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff;">
+                💬
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700;">WhatsApp Business Bot</h3>
+                <p style="margin: 2px 0 0; font-size: 13px; color: var(--muted);" id="statusSubtext">
+                    <%= botStatus.connected ? 'Active & listening for customer bills' : 'Waiting for connection' %>
+                </p>
+            </div>
+        </div>
+
+        <div id="statusBadge">
+            <% if (botStatus.connected) { %>
+                <span class="status-pill status-delivered" style="background:#e8f8f0; color:#1f9d62; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">
+                    🟢 Connected (<%= botStatus.phoneNumber || 'Linked' %>)
+                </span>
+            <% } else if (botStatus.status === 'qr_ready') { %>
+                <span class="status-pill" style="background:#fff4df; color:#c97f16; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">
+                    🟡 Scan QR to Link
+                </span>
+            <% } else { %>
+                <span class="status-pill" style="background:#f1f5f9; color:#64748b; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">
+                    ⚪ Initializing...
+                </span>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- QR Code Scan Section -->
+    <div id="qrSection" style="<%= botStatus.connected ? 'display:none;' : '' %> text-align: center; padding: 20px 0;">
+        <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 20px; padding: 30px; display: inline-block; max-width: 380px;">
+            <div id="qrImageWrap" style="background: #fff; padding: 16px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); display: inline-block;">
+                <% if (botStatus.qrCodeDataUrl) { %>
+                    <img id="botQrImg" src="<%= botStatus.qrCodeDataUrl %>" alt="Scan WhatsApp QR" style="width: 240px; height: 240px; display: block;" />
+                <% } else { %>
+                    <div id="botQrPlaceholder" style="width: 240px; height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
+                        <span style="font-size: 32px; margin-bottom: 8px;">⏳</span>
+                        <span>Generating WhatsApp QR...</span>
+                    </div>
+                <% } %>
+            </div>
+
+            <h4 style="margin: 20px 0 8px; font-size: 16px;">Link Your WhatsApp Number</h4>
+            <ol style="text-align: left; font-size: 13px; color: #475569; padding-left: 20px; line-height: 1.6; margin: 0;">
+                <li>Open <strong>WhatsApp</strong> on your phone (<strong>+91 88863 83838</strong>).</li>
+                <li>Tap <strong>Menu (⋮)</strong> or <strong>Settings</strong> ➔ <strong>Linked Devices</strong>.</li>
+                <li>Tap <strong>Link a Device</strong> and point your camera at this QR code.</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Connected State View -->
+    <div id="connectedSection" style="<%= botStatus.connected ? '' : 'display:none;' %> text-align: center; padding: 30px 20px;">
+        <div style="width: 70px; height: 70px; border-radius: 50%; background: #e8f8f0; color: #1f9d62; display: inline-flex; align-items: center; justify-content: center; font-size: 34px; margin-bottom: 16px;">
+            ✅
+        </div>
+        <h3 style="margin: 0 0 8px; font-size: 20px;">WhatsApp Bot is Online!</h3>
+        <p style="color: #64748b; font-size: 14px; max-width: 500px; margin: 0 auto 20px;">
+            Linked to phone number <strong id="connectedPhoneDisplay"><%= botStatus.phoneNumber ? ('+' + botStatus.phoneNumber) : 'Store Number' %></strong>. Whenever a customer sends an order bill, the bot will immediately reply with the dynamic UPI QR code image!
+        </p>
+
+        <div style="background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: left; font-size: 13px; color: #475569; max-width: 540px; margin: 0 auto;">
+            <strong>⚡ What Happens Automatically:</strong>
+            <ul style="margin: 8px 0 0; padding-left: 20px; line-height: 1.6;">
+                <li>Detects order ID (e.g. <code>#ORD-1048</code>) sent by customer.</li>
+                <li>Generates custom UPI QR with <code>6302603728-pc97@ybl</code> for exact bill amount.</li>
+                <li>Sends the QR photo + Thank You note + Payment Screenshot request.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Poll bot connection status every 3 seconds
+    setInterval(async () => {
+        try {
+            const res = await fetch('/admin/whatsapp/status');
+            const data = await res.json();
+
+            const statusBadge = document.getElementById('statusBadge');
+            const statusSubtext = document.getElementById('statusSubtext');
+            const qrSection = document.getElementById('qrSection');
+            const connectedSection = document.getElementById('connectedSection');
+            const qrImageWrap = document.getElementById('qrImageWrap');
+            const connectedPhone = document.getElementById('connectedPhoneDisplay');
+
+            if (data.connected) {
+                statusBadge.innerHTML = `<span class="status-pill" style="background:#e8f8f0; color:#1f9d62; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">🟢 Connected (+${data.phoneNumber || ''})</span>`;
+                statusSubtext.innerText = 'Active & listening for customer bills';
+                qrSection.style.display = 'none';
+                connectedSection.style.display = 'block';
+                if (connectedPhone && data.phoneNumber) connectedPhone.innerText = '+' + data.phoneNumber;
+            } else if (data.status === 'qr_ready' && data.qrCodeDataUrl) {
+                statusBadge.innerHTML = `<span class="status-pill" style="background:#fff4df; color:#c97f16; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px;">🟡 Scan QR to Link</span>`;
+                statusSubtext.innerText = 'Waiting for QR scan on your phone';
+                qrSection.style.display = 'block';
+                connectedSection.style.display = 'none';
+                qrImageWrap.innerHTML = `<img id="botQrImg" src="${data.qrCodeDataUrl}" alt="Scan WhatsApp QR" style="width: 240px; height: 240px; display: block;" />`;
+            }
+        } catch (e) {}
+    }, 3000);
+</script>
+
+<%- include('./partials/footer') || '' %>

@@ -14,3 +14,4 @@ yarn-error.log*
 coverage/
 .system_generated/
 .env*.local
+whatsapp_auth/

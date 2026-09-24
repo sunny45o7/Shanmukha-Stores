@@ -88,7 +88,7 @@
                 <% collections.forEach(c=> { %>
                     <a href="/collections/<%= c.id %>" class="collection-card">
                         <img src="<%= c.image || '/images/placeholder.png' %>" class="collection-img"
-                            alt="<%= c.name %>" onerror="this.src='/images/placeholder.png'">
+                            alt="<%= c.name %>" loading="lazy" decoding="async" onerror="this.src='/images/placeholder.png'">
                         <div class="collection-info">
                             <h3 class="collection-title">
                                 <%= c.name %>

@@ -6,7 +6,12 @@ const { getProductWeightOptions, normalizeWeightLabel, parseWeightToKg } = requi
 const router = express.Router();
 
 const requireAuth = (req, res, next) => {
-  if (!req.session.user) return res.redirect("/auth/login");
+  if (!req.session.user) {
+    if (wantsJson(req)) {
+      return res.status(401).json({ ok: false, error: "Please login to add items to cart", redirect: "/auth/login" });
+    }
+    return res.redirect("/auth/login");
+  }
   next();
 };
 
@@ -175,12 +180,14 @@ router.post("/add/:productId", requireAuth, async (req, res) => {
     );
 
     if (productResult.rows.length === 0) {
+      if (wantsJson(req)) return res.status(404).json({ ok: false, error: "Product not found" });
       return res.redirect("/products?error=Product not found");
     }
 
     const product = productResult.rows[0];
 
     if (product.stock <= 0) {
+      if (wantsJson(req)) return res.status(400).json({ ok: false, error: "This product is out of stock" });
       return res.redirect(`/products/${productId}?error=This product is out of stock`);
     }
 
@@ -205,6 +212,7 @@ router.post("/add/:productId", requireAuth, async (req, res) => {
       selectedWeight = requestedWeight || (weightOptions[0] || null);
 
       if (!selectedWeight || !weightOptions.includes(selectedWeight)) {
+        if (wantsJson(req)) return res.status(400).json({ ok: false, error: "Please select a valid weight option" });
         return res.redirect(`/products/${productId}?error=Please select a valid weight option`);
       }
     }
@@ -220,6 +228,7 @@ router.post("/add/:productId", requireAuth, async (req, res) => {
 
       // Validate against stock
       if (newQuantity > product.stock) {
+        if (wantsJson(req)) return res.status(400).json({ ok: false, error: `Only ${product.stock} units available for "${product.name}"` });
         return res.redirect(`/cart?error=Only ${product.stock} units available for "${product.name}"`);
       }
 
@@ -229,6 +238,7 @@ router.post("/add/:productId", requireAuth, async (req, res) => {
       );
     } else {
       if (quantity > product.stock) {
+        if (wantsJson(req)) return res.status(400).json({ ok: false, error: `Only ${product.stock} units available` });
         return res.redirect(`/products/${productId}?error=Only ${product.stock} units available`);
       }
 
@@ -242,9 +252,27 @@ router.post("/add/:productId", requireAuth, async (req, res) => {
       req.session.appliedCouponCode = couponCode;
     }
 
+    const countRes = await pool.query(
+      "SELECT COALESCE(SUM(quantity), 0) AS total_items FROM cart_items WHERE cart_id = $1",
+      [cart.id]
+    );
+    const newCartCount = parseInt(countRes.rows[0].total_items) || 0;
+
+    if (wantsJson(req)) {
+      return res.json({
+        ok: true,
+        message: `${product.name} added to cart!`,
+        cartCount: newCartCount,
+        product: { id: product.id, name: product.name }
+      });
+    }
+
     res.redirect("/cart?success=Item added to cart");
   } catch (err) {
     console.error("Add to cart error:", err);
+    if (wantsJson(req)) {
+      return res.status(500).json({ ok: false, error: "Failed to add item to cart" });
+    }
     res.redirect("/cart?error=Failed to add item to cart");
   }
 });

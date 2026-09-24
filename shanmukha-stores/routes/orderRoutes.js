@@ -5,6 +5,7 @@ const { normalizeCouponCode, validateCouponForUser } = require("../utils/couponS
 const { parseWeightToKg } = require("../utils/weightUtils");
 const PDFDocument = require("pdfkit");
 const { paymentCircuitBreaker, CircuitBreakerOpenError, TimeoutError } = require("../utils/circuitBreaker");
+const { generateUpiQrCode, DEFAULT_UPI_ID } = require("../utils/upiQrGenerator");
 
 const router = express.Router();
 
@@ -1079,6 +1080,36 @@ router.get("/success/:id", requireAuth, async (req, res, next) => {
        [order.id]
     );
 
+    let upiDetails = null;
+    if (order.payment_method === "whatsapp" || order.payment_method === "upi") {
+      try {
+        const upiId = req.app.locals.settings?.merchant_upi_id || DEFAULT_UPI_ID;
+        const storeName = req.app.locals.settings?.store_name || "Shanmukha Stores";
+        const qrResult = await generateUpiQrCode({
+          upiId,
+          merchantName: storeName,
+          amount: order.total_amount,
+          orderId: order.id,
+        });
+
+        const storeWhatsApp = req.app.locals.settings?.social_whatsapp || "918886383838";
+        const cleanPhone = String(storeWhatsApp).replace(/\D/g, "");
+        const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : (cleanPhone || "918886383838");
+        const screenshotMsg = `Hello Shanmukha Stores! I have paid Rs ${Number(order.total_amount).toLocaleString('en-IN')} for Order #ORD-${order.id}. Here is my payment screenshot / UTR number.`;
+
+        upiDetails = {
+          upiId,
+          upiUri: qrResult.upiUri,
+          qrCodeDataUrl: qrResult.qrDataUrl,
+          amount: Number(order.total_amount),
+          whatsAppPhone: finalPhone,
+          whatsAppScreenshotUrl: `https://wa.me/${finalPhone}?text=${encodeURIComponent(screenshotMsg)}`
+        };
+      } catch (upiErr) {
+        console.error("Failed to generate upiDetails for confirmation:", upiErr);
+      }
+    }
+
     res.render("order-confirmation", {
       title: "Order Confirmation",
       order,
@@ -1087,8 +1118,34 @@ router.get("/success/:id", requireAuth, async (req, res, next) => {
       couponDiscount,
       couponCode: order.coupon_code || null,
       suggestedProducts: suggestedProductsResult.rows,
-      warning: req.query.warning || null
+      warning: req.query.warning || null,
+      upiDetails
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================
+// GET DIRECT UPI PAY REDIRECT (For clickable links in WhatsApp/SMS)
+// ============================================================
+router.get("/pay/:id", async (req, res, next) => {
+  try {
+    const orderId = req.params.id;
+    const orderRes = await pool.query("SELECT id, total_amount, payment_status FROM orders WHERE id = $1", [orderId]);
+    if (orderRes.rows.length === 0) {
+      return res.status(404).send("Order not found");
+    }
+    const order = orderRes.rows[0];
+    const upiId = req.app.locals.settings?.merchant_upi_id || DEFAULT_UPI_ID;
+    const storeName = req.app.locals.settings?.store_name || "Shanmukha Stores";
+    const qrResult = await generateUpiQrCode({
+      upiId,
+      merchantName: storeName,
+      amount: order.total_amount,
+      orderId: order.id,
+    });
+    return res.redirect(qrResult.upiUri);
   } catch (err) {
     next(err);
   }

@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../config/db');
 const fs = require('fs');
 const path = require('path');
-
+const { getBotStatus } = require('../services/whatsappBot');
 
 const multer = require('multer');
 const {
@@ -1465,7 +1465,8 @@ router.get('/settings', isAdmin, async (req, res) => {
             store_name: 'Shanmukha Stores',
             store_tagline: 'Authenticity in Every Piece',
             currency_symbol: '₹',
-            marquee_active: 'false'
+            marquee_active: 'false',
+            merchant_upi_id: '6302603728-pc97@ybl'
         };
         const finalSettings = { ...defaults, ...settings };
 
@@ -1534,6 +1535,24 @@ router.post('/settings', isAdmin, async (req, res) => {
         await logActivity(req.session.user.id, "Updated Settings", { keys: Object.keys(settingsData) });
         res.redirect('/admin/settings?success=Configuration updated successfully');
     } catch (err) { res.redirect('/admin/settings?error=' + encodeURIComponent(err.message)); }
+});
+
+// ==========================================
+// WHATSAPP BOT PAIRING & STATUS
+// ==========================================
+router.get('/whatsapp', isAdmin, (req, res) => {
+    const botStatus = getBotStatus();
+    res.render('admin/whatsapp', {
+        title: 'WhatsApp Bot',
+        user: req.session.user,
+        botStatus,
+        success: req.query.success || null,
+        error: req.query.error || null
+    });
+});
+
+router.get('/whatsapp/status', isAdmin, (req, res) => {
+    res.json(getBotStatus());
 });
 
 router.get('/returns', isAdmin, async (req, res) => {

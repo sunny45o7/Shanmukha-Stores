@@ -29,42 +29,54 @@ const normalizeCouponIds = (value) => {
   return [];
 };
 
+// Short TTL cache for homepage static elements (categories, banners, collaborations)
+let homeStaticCache = null;
+let lastHomeStaticCacheTime = 0;
+const HOME_STATIC_CACHE_TTL = 60 * 1000; // 60 seconds
+
 // ============================================================
 // GET HOME PAGE
 // ============================================================
 router.get("/", async (req, res, next) => {
   try {
-    const [productsResult, categoriesResult, bannersResult, settingsResult, collaborationsResult] = await Promise.all([
-      pool.query(
-        `SELECT p.*, c.name AS category_name, ${effectivePriceSQL},
-         COALESCE(AVG(r.rating), 0)::numeric(3,1) AS average_rating,
-         COUNT(r.id)::int AS review_count
-         FROM products p
-         LEFT JOIN categories c ON c.id = p.category_id
-         LEFT JOIN reviews r ON p.id = r.product_id AND r.is_approved = true
-         WHERE COALESCE(p.is_enabled, true) = true
-         GROUP BY p.id, c.name
-         ORDER BY p.created_at DESC
-         LIMIT 5`
-      ),
-      pool.query("SELECT * FROM categories ORDER BY name"),
-      pool.query("SELECT * FROM banners WHERE is_active = true ORDER BY position ASC"),
-      pool.query("SELECT * FROM store_settings"),
-      pool.query("SELECT * FROM collaborations WHERE is_active = true ORDER BY sort_order ASC, id ASC"),
-    ]);
+    const now = Date.now();
+    let staticData = homeStaticCache;
 
-    const settings = {};
-    settingsResult.rows.forEach((r) => {
-      settings[r.setting_key] = r.setting_value;
-    });
+    if (!staticData || now - lastHomeStaticCacheTime > HOME_STATIC_CACHE_TTL) {
+      const [categoriesResult, bannersResult, collaborationsResult] = await Promise.all([
+        pool.query("SELECT * FROM categories ORDER BY name"),
+        pool.query("SELECT * FROM banners WHERE is_active = true ORDER BY position ASC"),
+        pool.query("SELECT * FROM collaborations WHERE is_active = true ORDER BY sort_order ASC, id ASC"),
+      ]);
+      staticData = {
+        categories: categoriesResult.rows,
+        banners: bannersResult.rows,
+        collaborations: collaborationsResult.rows,
+      };
+      homeStaticCache = staticData;
+      lastHomeStaticCacheTime = now;
+    }
+
+    const productsResult = await pool.query(
+      `SELECT p.*, c.name AS category_name, ${effectivePriceSQL},
+       COALESCE(AVG(r.rating), 0)::numeric(3,1) AS average_rating,
+       COUNT(r.id)::int AS review_count
+       FROM products p
+       LEFT JOIN categories c ON c.id = p.category_id
+       LEFT JOIN reviews r ON p.id = r.product_id AND r.is_approved = true
+       WHERE COALESCE(p.is_enabled, true) = true
+       GROUP BY p.id, c.name
+       ORDER BY p.created_at DESC
+       LIMIT 5`
+    );
 
     res.render("index", {
       title: "Shanmukha Stores",
       products: productsResult.rows,
-      categories: categoriesResult.rows,
-      banners: bannersResult.rows,
-      collaborations: collaborationsResult.rows,
-      settings,
+      categories: staticData.categories,
+      banners: staticData.banners,
+      collaborations: staticData.collaborations,
+      settings: res.locals.settings || {},
     });
   } catch (err) {
     console.error("Home Route Error:", err.message);

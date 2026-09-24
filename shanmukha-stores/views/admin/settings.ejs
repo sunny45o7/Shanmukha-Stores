@@ -97,9 +97,14 @@
                                 <h3>Social & SEO Presence</h3>
                                 <div class="form-grid">
                                     <div class="form-group">
-                                        <label>WhatsApp Link</label>
+                                        <label>WhatsApp Link / Mobile</label>
                                         <input type="text" name="social_whatsapp"
-                                            value="<%= settings.social_whatsapp %>">
+                                            value="<%= settings.social_whatsapp %>" placeholder="e.g. 918886383838">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Merchant UPI ID (WhatsApp Pay QR)</label>
+                                        <input type="text" name="merchant_upi_id"
+                                            value="<%= settings.merchant_upi_id || '6302603728-pc97@ybl' %>" placeholder="e.g. 6302603728-pc97@ybl">
                                     </div>
                                     <div class="form-group">
                                         <label>Instagram Handle</label>

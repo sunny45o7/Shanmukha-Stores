@@ -28,7 +28,7 @@
           <% if (banners[0].image && banners[0].image.match(/\.(mp4|webm|ogg)$/i)) { %>
             <video src="<%= banners[0].image %>" autoplay muted loop playsinline class="floating-img" style="object-fit: cover;"></video>
           <% } else { %>
-            <img src="<%= banners[0].image %>" alt="Luxury Banner" class="floating-img">
+            <img src="<%= banners[0].image %>" alt="Luxury Banner" class="floating-img" fetchpriority="high" decoding="async">
           <% } %>
         </div>
         <% } %>
@@ -62,7 +62,7 @@
                     <% if (p.image && p.image.match(/\.(mp4|webm|ogg)$/i)) { %>
                       <video src="<%= p.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
                     <% } else { %>
-                      <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
+                      <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>" loading="lazy" decoding="async"
                         onerror="this.src='/images/placeholder.png'">
                     <% } %>
                   </a>
@@ -73,7 +73,7 @@
                       <div class="card-actions-float">
                         <form action="/cart/add/<%= p.id %>" method="POST" style="flex: 1;">
                           <input type="hidden" name="quantity" value="1">
-                          <button type="submit" class="btn-luxury-card-atc" <%= p.stock === 0 ? 'disabled' : '' %>><%= p.stock === 0 ? 'Out of Stock' : 'Add to Collection' %></button>
+                          <button type="submit" class="btn-luxury-card-atc" <%= p.stock === 0 ? 'disabled' : '' %>><%= p.stock === 0 ? 'Out of Stock' : 'Add to Cart' %></button>
                         </form>
                         <form action="/wishlist/toggle/<%= p.id %>" method="POST" class="wishlist-toggle-form" data-product-id="<%= p.id %>">
                           <button type="submit" class="btn-circle wishlist-btn-home" aria-label="Toggle wishlist">
@@ -142,7 +142,7 @@
 
   <!-- PROMO AD GRID -->
   <% if (typeof banners !=='undefined' && banners.length> 1) {
-    const ads = banners.filter(b => b.position > 0);
+    const ads = banners.filter(b => b.position > 0 && b.id !== banners[0].id);
     if (ads.length > 0) {
     %>
     <section class="premium-ads-section" data-animate>
@@ -152,7 +152,7 @@
             <% if (ad.image && ad.image.match(/\.(mp4|webm|ogg)$/i)) { %>
               <video src="<%= ad.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
             <% } else { %>
-              <img src="<%= ad.image %>" alt="<%= ad.title %>" onerror="this.style.display='none'">
+              <img src="<%= ad.image %>" alt="<%= ad.title %>" loading="lazy" decoding="async" onerror="this.style.display='none'">
             <% } %>
             <div class="ad-overlay">
               <div class="ad-info">
@@ -180,7 +180,7 @@
         <div class="collab-grid">
           <% collaborations.forEach(function(c) { %>
             <a href="<%= c.website || '#' %>" class="collab-item" <%= c.website ? 'target="_blank" rel="noopener noreferrer"' : '' %>>
-              <img src="<%= c.logo_url %>" alt="<%= c.name %>" onerror="this.style.display='none'">
+              <img src="<%= c.logo_url %>" alt="<%= c.name %>" loading="lazy" decoding="async" onerror="this.style.display='none'">
             </a>
           <% }) %>
         </div>
@@ -196,6 +196,22 @@
               const productId = this.dataset.productId;
               const btn = this.querySelector('button');
               const icon = this.querySelector('svg');
+
+              // 1. INSTANT OPTIMISTIC ANIMATION & PINK COLOR (0ms)
+              const wasActive = btn.classList.contains('active');
+              const willBeActive = !wasActive;
+
+              btn.classList.toggle('active', willBeActive);
+              btn.classList.add('animating');
+              setTimeout(() => btn.classList.remove('animating'), 450);
+
+              if (icon) {
+                icon.setAttribute('fill', willBeActive ? 'currentColor' : 'none');
+              } else {
+                btn.textContent = willBeActive ? '♥' : '♡';
+              }
+
+              // 2. BACKGROUND SERVER SYNC
               try {
                 const res = await fetch(`/wishlist/toggle/${productId}`, {
                   method: 'POST',
@@ -203,18 +219,26 @@
                 });
                 const data = await res.json();
                 if (!res.ok || !data.ok) {
+                  // Revert if error or unauthenticated
+                  btn.classList.toggle('active', wasActive);
+                  if (icon) icon.setAttribute('fill', wasActive ? 'currentColor' : 'none');
+                  else btn.textContent = wasActive ? '♥' : '♡';
                   if (data && data.redirect) window.location.href = data.redirect;
                   return;
                 }
-                const active = data.status === 'added';
-                btn.classList.toggle('active', active);
-                if (icon) icon.setAttribute('fill', active ? 'currentColor' : 'none');
+                const serverActive = data.status === 'added';
+                btn.classList.toggle('active', serverActive);
+                if (icon) icon.setAttribute('fill', serverActive ? 'currentColor' : 'none');
+                else btn.textContent = serverActive ? '♥' : '♡';
               } catch (err) {
                 console.error(err);
+                // Revert on error
+                btn.classList.toggle('active', wasActive);
+                if (icon) icon.setAttribute('fill', wasActive ? 'currentColor' : 'none');
+                else btn.textContent = wasActive ? '♥' : '♡';
               }
             });
           });
-
         </script>
 
         <style>

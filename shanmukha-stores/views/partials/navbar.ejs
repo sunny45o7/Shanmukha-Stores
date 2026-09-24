@@ -12,9 +12,8 @@
         content="<%= settings.seo_description || 'Premium organic groceries & essentials delivered fresh in Vijayawada.' %>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap">
-    <link rel="stylesheet" href="/css/style.css?v=8">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/css/style.css?v=12">
 </head>
 
 <body>
@@ -36,6 +35,13 @@
               }
               body {
                 padding-top: <%= (settings && settings.marquee_active === 'true' && settings.marquee_text) ? '110px' : '72px' %> !important;
+              }
+              @media (max-width: 768px) {
+                .page-loader-overlay {
+                  backdrop-filter: none !important;
+                  -webkit-backdrop-filter: none !important;
+                  background: rgba(253, 252, 248, 0.98) !important;
+                }
               }
             </style>
 
@@ -122,6 +128,8 @@
                                     class="<%= typeof title !== 'undefined' && title === 'Shanmukha Stores' ? 'active' : '' %>">Home</a>
                                 <a href="/products"
                                     class="<%= typeof title !== 'undefined' && title && title.includes('Product') ? 'active' : '' %>">Shop</a>
+                                <a href="/collections"
+                                    class="<%= typeof title !== 'undefined' && title && title.includes('Collection') ? 'active' : '' %>">Collections</a>
                                 <% if (typeof user !=='undefined' && user) { %>
                                     <a href="/wishlist">
                                         ❤️ Wishlist
@@ -146,7 +154,7 @@
                             <div class="nav-right">
 
                                 <% if (typeof user !=='undefined' && user) { %>
-                                    <!-- Profile Dropdown -->
+                                    <!-- Profile Dropdown (Account Specifics Only) -->
                                     <div class="profile-dropdown">
                                         <button class="profile-btn">
                                             <span class="profile-avatar">
@@ -160,14 +168,17 @@
                                             <span class="dropdown-arrow">▾</span>
                                         </button>
                                         <div class="dropdown-menu">
+                                            <div class="dropdown-user-header" style="padding: 12px 16px 10px; border-bottom: 1px solid var(--border); background: var(--gray-50, #f9fafb);">
+                                                <div style="font-size: 11px; color: var(--gray-500, #6b7280); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Signed In As</div>
+                                                <div style="font-size: 13.5px; font-weight: 700; color: #1c4a30; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= user.name || 'My Account' %></div>
+                                            </div>
                                             <a href="/profile">👤 My Profile</a>
                                             <a href="/orders">📦 My Orders</a>
-                                            <a href="/wishlist">❤️ Wishlist</a>
-                                            <a href="/addresses">📍 Addresses</a>
+                                            <a href="/addresses">📍 Saved Addresses</a>
                                             <% if (user.role==='admin' || user.role==='staff' ) { %>
                                                 <a
                                                     href="<%= user.role === 'admin' ? '/admin/dashboard' : '/staff/dashboard' %>">
-                                                    <%= user.role==='admin' ? '⚙️ Admin' : '🧰 Staff Panel' %>
+                                                    <%= user.role==='admin' ? '⚙️ Admin Dashboard' : '🧰 Staff Panel' %>
                                                 </a>
                                                 <% } %>
                                                     <form action="/auth/logout" method="POST">
@@ -196,17 +207,20 @@
                     <div class="mobile-nav" id="mobileNav">
                         <a href="/">🏠 Home</a>
                         <a href="/products">🛒 Shop All Products</a>
+                        <a href="/collections">🏷️ Collections</a>
                         <% if (typeof user !=='undefined' && user) { %>
                             <a href="/cart">🛍 Cart <% if (typeof cartCount !=='undefined' && cartCount> 0) { %>(<%=
                                         cartCount %>)<% } %></a>
                             <a href="/wishlist">❤️ Wishlist <% if (typeof wishlistCount !=='undefined' && wishlistCount>
                                     0) {
                                     %>(<%= wishlistCount %>)<% } %></a>
+                            <div style="border-top: 1px solid var(--border); margin: 8px 0;"></div>
                             <a href="/orders">📦 My Orders</a>
+                            <a href="/addresses">📍 Saved Addresses</a>
                             <a href="/profile">👤 My Profile</a>
                             <% if (user.role==='admin' || user.role==='staff' ) { %><a
                                     href="<%= user.role === 'admin' ? '/admin/dashboard' : '/staff/dashboard' %>">
-                                    <%= user.role==='admin' ? '⚙️ Admin Panel' : '🧰 Staff Panel' %>
+                                    <%= user.role==='admin' ? '⚙️ Admin Dashboard' : '🧰 Staff Panel' %>
                                 </a>
                                 <% } %>
                                     <form action="/auth/logout" method="POST" class="mobile-logout-form">
@@ -252,17 +266,26 @@
                             }
                         });
 
-                        // Page loader
+                        // Page loader - dismiss immediately on DOM ready or quick safety timeout (never block mobile)
                         const loader = document.getElementById('pageLoader');
                         const loaderOverlay = document.getElementById('pageLoaderOverlay');
-                        window.addEventListener('load', () => {
-                            loader.classList.add('done');
-                            if (loaderOverlay) {
-                                loaderOverlay.classList.add('done');
-                                setTimeout(() => loaderOverlay.remove(), 650);
+                        function dismissPageLoader() {
+                            if (loader && !loader.classList.contains('done')) {
+                                loader.classList.add('done');
+                                setTimeout(() => { try { loader.remove(); } catch(e){} }, 400);
                             }
-                            setTimeout(() => loader.remove(), 650);
-                        });
+                            if (loaderOverlay && !loaderOverlay.classList.contains('done')) {
+                                loaderOverlay.classList.add('done');
+                                setTimeout(() => { try { loaderOverlay.remove(); } catch(e){} }, 400);
+                            }
+                        }
+                        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+                            dismissPageLoader();
+                        } else {
+                            document.addEventListener('DOMContentLoaded', dismissPageLoader);
+                        }
+                        window.addEventListener('load', dismissPageLoader);
+                        setTimeout(dismissPageLoader, 250); // Hard maximum 250ms on mobile
 
 
                         // Toast helper

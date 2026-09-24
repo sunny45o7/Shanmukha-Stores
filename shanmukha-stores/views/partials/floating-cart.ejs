@@ -1,0 +1,418 @@
+<% const currentCartCount = (typeof cartCount !== 'undefined') ? Number(cartCount) : 0; %>
+
+<!-- SWIGGY / BLINKIT STYLE FLOATING CART -->
+<div class="swiggy-floating-cart-wrapper <%= currentCartCount > 0 ? 'has-items' : 'is-empty' %>" id="swiggyFloatingCart">
+  <a href="/cart" class="swiggy-floating-cart-inner" id="floatingCartInner" aria-label="View Shopping Cart">
+    <div class="floating-cart-left">
+      <div class="floating-cart-icon-container" id="floatingCartIcon">
+        <svg class="cart-bag-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+          <path d="M3 6h18"></path>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
+        </svg>
+        <span class="floating-cart-badge" id="floatingCartBadge"><%= currentCartCount %></span>
+      </div>
+      <div class="floating-cart-meta">
+        <span class="floating-cart-title">My Cart</span>
+        <span class="floating-cart-subtitle" id="floatingCartSubtitle">
+          <%= currentCartCount > 0 ? (currentCartCount + (currentCartCount === 1 ? ' item added' : ' items added')) : '0 items' %>
+        </span>
+      </div>
+    </div>
+
+    <div class="floating-cart-right">
+      <span class="floating-cart-action-text">View Cart</span>
+      <span class="floating-cart-arrow">→</span>
+    </div>
+  </a>
+</div>
+
+<style>
+  /* ── SWIGGY / BLINKIT FLOATING CART BAR ── */
+  .swiggy-floating-cart-wrapper {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+    z-index: 1040;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 14px 28px rgba(28, 74, 48, 0.28));
+  }
+
+  /* Hidden when empty */
+  .swiggy-floating-cart-wrapper.is-empty {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(24px) scale(0.85);
+  }
+
+  /* Visible everywhere until checkout/ordered */
+  .swiggy-floating-cart-wrapper.has-items {
+    display: block !important;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  .swiggy-floating-cart-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: linear-gradient(135deg, #1c4a30 0%, #153c26 60%, #0f2c1b 100%);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 10px 18px 10px 12px;
+    min-width: 240px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .swiggy-floating-cart-inner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px rgba(28, 74, 48, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+  }
+
+  .floating-cart-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .floating-cart-icon-container {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #ffffff;
+    flex-shrink: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .cart-bag-icon {
+    stroke: #ffffff;
+    transition: transform 0.25s ease;
+  }
+
+  .floating-cart-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #e8a78a;
+    color: #1a1a1a;
+    font-size: 11px;
+    font-weight: 800;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    border: 2px solid #1c4a30;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .floating-cart-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  .floating-cart-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #ffffff;
+  }
+
+  .floating-cart-subtitle {
+    font-size: 11.5px;
+    color: #a7f3d0;
+    font-weight: 500;
+  }
+
+  .floating-cart-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.16);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    transition: background 0.2s ease, padding 0.2s ease;
+  }
+
+  .floating-cart-inner:hover .floating-cart-right {
+    background: rgba(255, 255, 255, 0.26);
+  }
+
+  .floating-cart-arrow {
+    font-size: 15px;
+    transition: transform 0.2s ease;
+  }
+
+  .floating-cart-inner:hover .floating-cart-arrow {
+    transform: translateX(3px);
+  }
+
+  /* ── SWIGGY POP & RIPPLE ANIMATIONS ── */
+  @keyframes cartPopBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.35) rotate(-6deg); }
+    60% { transform: scale(0.92) rotate(4deg); }
+    80% { transform: scale(1.1) rotate(-1deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  @keyframes badgeBump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.6); }
+    100% { transform: scale(1); }
+  }
+
+  .cart-pop-active {
+    animation: cartPopBounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  .badge-bump-active {
+    animation: badgeBump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  /* ── FLYING PRODUCT CLONE (SWIGGY / BLINKIT EFFECT) ── */
+  .flying-item-clone {
+    position: fixed;
+    z-index: 999999;
+    pointer-events: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    box-shadow: 0 10px 24px rgba(28, 74, 48, 0.4), 0 0 0 3px #e8a78a;
+    transition: all 0.75s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform-origin: center center;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .flying-item-clone img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Responsive Mobile Float */
+  @media (max-width: 640px) {
+    .swiggy-floating-cart-wrapper {
+      bottom: 16px;
+      left: 14px;
+      right: 14px;
+    }
+    .swiggy-floating-cart-inner {
+      width: 100%;
+      min-width: unset;
+      padding: 10px 16px 10px 10px;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const currentPath = window.location.pathname;
+    const floatingCart = document.getElementById('swiggyFloatingCart');
+
+    // Do not show floating button if already on /cart or in checkout flow
+    if (currentPath === '/cart' || currentPath.startsWith('/orders/checkout') || currentPath.startsWith('/orders/success')) {
+      if (floatingCart) {
+        floatingCart.style.display = 'none';
+        return;
+      }
+    }
+
+    // Helper for floating luxury toast
+    function showToastNotification(msg) {
+      if (typeof showToast === 'function') {
+        showToast(msg, 'success');
+        return;
+      }
+      let t = document.getElementById('swiggyFloatingToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'swiggyFloatingToast';
+        t.style.cssText = 'position:fixed;bottom:90px;right:28px;background:linear-gradient(135deg,#1c4a30,#153c26);color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 10px 24px rgba(0,0,0,0.22);z-index:999999;transition:all 0.3s ease;opacity:0;transform:translateY(10px);border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;gap:8px;';
+        document.body.appendChild(t);
+      }
+      t.innerHTML = '<span>🛒</span> ' + msg;
+      t.style.opacity = '1';
+      t.style.transform = 'translateY(0)';
+      setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(10px)';
+      }, 2600);
+    }
+
+    // Universal Add-to-Cart Interceptor
+    document.addEventListener('submit', async function (e) {
+      const form = e.target;
+      if (!form || !form.action || !form.action.includes('/cart/add/')) return;
+
+      const badge = document.getElementById('floatingCartBadge');
+      let currentCount = badge ? parseInt(badge.innerText.trim(), 10) : 0;
+      if (isNaN(currentCount)) currentCount = 0;
+
+      // FIRST PRODUCT: If cart is currently empty (0 items), navigate directly to /cart!
+      // Do NOT preventDefault! Let standard form submission execute.
+      if (currentCount === 0) {
+        return;
+      }
+
+      // SUBSEQUENT PRODUCTS (currentCount > 0): Stay on page, fly animation, update floating cart!
+      e.preventDefault();
+
+      const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+      if (submitBtn && submitBtn.disabled) return;
+
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.75';
+      }
+
+      // 1. Locate Product Image for the flying clone
+      const productCard = form.closest('.product-card, .luxury-card, .product-grid-item, .product-details-container, .main-product-layout, .product-detail, .collection-card') || form;
+      const productImgEl = productCard.querySelector('img') || form.querySelector('img');
+      const imgSrc = productImgEl ? productImgEl.src : '/images/placeholder.png';
+
+      // 2. Compute Start Coordinates
+      const startEl = productImgEl || submitBtn || form;
+      const startRect = startEl.getBoundingClientRect();
+
+      // 3. Compute Target Floating Cart Coordinates
+      const cartIconEl = document.getElementById('floatingCartIcon');
+      const targetRect = cartIconEl ? cartIconEl.getBoundingClientRect() : {
+        top: window.innerHeight - 60,
+        left: window.innerWidth - 60,
+        width: 44,
+        height: 44
+      };
+
+      // 4. Create Flying Clone
+      const flyingClone = document.createElement('div');
+      flyingClone.className = 'flying-item-clone';
+      flyingClone.innerHTML = `<img src="${imgSrc}" alt="Product" />`;
+      
+      const startX = startRect.left + (startRect.width / 2) - 30;
+      const startY = startRect.top + (startRect.height / 2) - 30;
+      const targetX = targetRect.left + (targetRect.width / 2) - 15;
+      const targetY = targetRect.top + (targetRect.height / 2) - 15;
+
+      flyingClone.style.left = startX + 'px';
+      flyingClone.style.top = startY + 'px';
+      flyingClone.style.transform = 'scale(1) rotate(0deg)';
+      flyingClone.style.opacity = '1';
+      document.body.appendChild(flyingClone);
+
+      // Trigger Swiggy parabolic animation on next repaint
+      requestAnimationFrame(() => {
+        flyingClone.style.transform = `translate(${targetX - startX}px, ${targetY - startY}px) scale(0.2) rotate(35deg)`;
+        flyingClone.style.opacity = '0.5';
+      });
+
+      // 5. Send AJAX request to server
+      try {
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params.toString()
+        });
+
+        const data = await res.json().catch(() => ({ ok: false }));
+
+        if (res.status === 401 || (data && data.redirect)) {
+          window.location.href = (data && data.redirect) ? data.redirect : '/auth/login';
+          return;
+        }
+
+        if (res.ok && data.ok) {
+          // Flight lands on cart
+          setTimeout(() => {
+            if (flyingClone.parentNode) flyingClone.parentNode.removeChild(flyingClone);
+
+            // Pop & Ripple Animation on Cart
+            const floatingBadge = document.getElementById('floatingCartBadge');
+            const floatingSubtitle = document.getElementById('floatingCartSubtitle');
+
+            if (cartIconEl) {
+              cartIconEl.classList.remove('cart-pop-active');
+              void cartIconEl.offsetWidth; // trigger reflow
+              cartIconEl.classList.add('cart-pop-active');
+              setTimeout(() => cartIconEl.classList.remove('cart-pop-active'), 700);
+            }
+
+            if (floatingBadge) {
+              floatingBadge.innerText = data.cartCount;
+              floatingBadge.classList.remove('badge-bump-active');
+              void floatingBadge.offsetWidth;
+              floatingBadge.classList.add('badge-bump-active');
+              setTimeout(() => floatingBadge.classList.remove('badge-bump-active'), 550);
+            }
+
+            if (floatingSubtitle) {
+              const count = data.cartCount;
+              floatingSubtitle.innerText = count + (count === 1 ? ' item added' : ' items added');
+            }
+
+            if (floatingCart) {
+              floatingCart.classList.remove('is-empty');
+              floatingCart.classList.add('has-items');
+              floatingCart.style.display = 'block';
+            }
+
+            // Also update Desktop Navbar Cart Badges if present
+            document.querySelectorAll('.nav-links a[href="/cart"] .nav-badge, a[href="/cart"] span').forEach((b) => {
+              if (b && !b.classList.contains('floating-cart-badge')) {
+                b.innerText = data.cartCount;
+                b.style.display = 'inline-block';
+              }
+            });
+
+            // Quick Toast notification
+            showToastNotification(data.message || 'Item added to cart!');
+          }, 700);
+        } else {
+          if (flyingClone.parentNode) flyingClone.parentNode.removeChild(flyingClone);
+          alert(data.error || 'Failed to add product to cart');
+        }
+      } catch (err) {
+        console.error('Cart add error:', err);
+        if (flyingClone.parentNode) flyingClone.parentNode.removeChild(flyingClone);
+        // Fallback to normal form submit if fetch fails
+        form.submit();
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '';
+          submitBtn.innerHTML = originalBtnHtml;
+        }
+      }
+    });
+  })();
+</script>

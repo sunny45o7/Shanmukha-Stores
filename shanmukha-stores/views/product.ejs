@@ -13,7 +13,7 @@
                                 <% if (img.image_url && img.image_url.match(/\.(mp4|webm|ogg)$/i)) { %>
                                     <video src="<%= img.image_url %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
                                 <% } else { %>
-                                    <img src="<%= img.image_url %>" alt="Product Image <%= idx + 1 %>"
+                                    <img src="<%= img.image_url %>" alt="Product Image <%= idx + 1 %>" loading="lazy" decoding="async"
                                         onerror="this.src='/images/placeholder.png'">
                                 <% } %>
                             </div>
@@ -23,7 +23,7 @@
                                         <% if (product.image && product.image.match(/\.(mp4|webm|ogg)$/i)) { %>
                                             <video src="<%= product.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
                                         <% } else { %>
-                                            <img src="<%= product.image || '/images/placeholder.png' %>" alt="Product Image"
+                                            <img src="<%= product.image || '/images/placeholder.png' %>" alt="Product Image" loading="lazy" decoding="async"
                                                 onerror="this.src='/images/placeholder.png'">
                                         <% } %>
                                     </div>
@@ -36,7 +36,7 @@
                         <% if (mainMedia && mainMedia.match(/\.(mp4|webm|ogg)$/i)) { %>
                             <video src="<%= mainMedia %>" autoplay muted loop playsinline id="mainProductImg" style="width: 100%; height: 100%; object-fit: contain;"></video>
                         <% } else { %>
-                            <img src="<%= mainMedia %>" alt="<%= product.name %>" id="mainProductImg" onerror="this.src='/images/placeholder.png'">
+                            <img src="<%= mainMedia %>" alt="<%= product.name %>" id="mainProductImg" fetchpriority="high" decoding="async" onerror="this.src='/images/placeholder.png'">
                         <% } %>
                     </div>
                 </div>
@@ -253,7 +253,7 @@
                                                         </div>
 
                                                         <button type="submit" class="btn-luxury-atc">
-                                                            <span>Add to Collection</span>
+                                                            <span>Add to Cart</span>
                                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                                                                 stroke="currentColor" stroke-width="2">
                                                                 <path
@@ -476,7 +476,7 @@
                                         <% if (p.image && p.image.match(/\.(mp4|webm|ogg)$/i)) { %>
                                             <video src="<%= p.image %>" autoplay muted loop playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
                                         <% } else { %>
-                                            <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>"
+                                            <img src="<%= p.image || '/images/placeholder.png' %>" alt="<%= p.name %>" loading="lazy" decoding="async"
                                                 onerror="this.src='/images/placeholder.png'">
                                         <% } %>
                                         <% if (pOffer) { %><span class="sp-badge">
@@ -1929,6 +1929,19 @@
                         })();
 
                         async function toggleWishlist(prodId, btn) {
+                            const icon = btn ? btn.querySelector('svg') : null;
+                            const wasActive = btn ? btn.classList.contains('active') : false;
+                            const willBeActive = !wasActive;
+
+                            // 1. INSTANT OPTIMISTIC ANIMATION & COLOR (0ms)
+                            if (btn) {
+                                btn.classList.toggle('active', willBeActive);
+                                btn.classList.add('animating');
+                                setTimeout(() => btn.classList.remove('animating'), 450);
+                            }
+                            if (icon) icon.setAttribute('fill', willBeActive ? 'currentColor' : 'none');
+
+                            // 2. BACKGROUND SERVER SYNC
                             try {
                                 const res = await fetch('/wishlist/toggle/' + prodId, {
                                     method: 'POST',
@@ -1936,22 +1949,21 @@
                                 });
                                 const data = await res.json();
                                 if (!res.ok || !data.ok) {
+                                    if (btn) btn.classList.toggle('active', wasActive);
+                                    if (icon) icon.setAttribute('fill', wasActive ? 'currentColor' : 'none');
                                     if (data && data.redirect) {
                                         window.location.href = data.redirect;
                                         return;
                                     }
                                     return;
                                 }
-                                const icon = btn ? btn.querySelector('svg') : null;
-                                if (data.status === 'added') {
-                                    btn.classList.add('active');
-                                    if (icon) icon.setAttribute('fill', 'currentColor');
-                                } else {
-                                    btn.classList.remove('active');
-                                    if (icon) icon.setAttribute('fill', 'none');
-                                }
+                                const serverActive = data.status === 'added';
+                                if (btn) btn.classList.toggle('active', serverActive);
+                                if (icon) icon.setAttribute('fill', serverActive ? 'currentColor' : 'none');
                             } catch (err) {
                                 console.error(err);
+                                if (btn) btn.classList.toggle('active', wasActive);
+                                if (icon) icon.setAttribute('fill', wasActive ? 'currentColor' : 'none');
                             }
                         }
                     </script>
