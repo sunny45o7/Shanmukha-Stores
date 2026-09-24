@@ -196,20 +196,15 @@ async function initWhatsAppBot() {
 
           // Build automated response
           const caption =
-`🎉 *Thank You for Ordering with ${storeName.toUpperCase()}!*
+`🛍️ *${storeName.toUpperCase()}* | *Order #ORD-${order.id}*
+💰 *Amount Due:* ₹${formattedAmount}
 
-We have received your order *#ORD-${order.id}*.
-💰 *Total Payable:* ₹${formattedAmount}
+📲 *Pay via UPI:*
+• Scan the dynamic QR code above, OR
+👉 *Tap to Pay:* ${qrData.upiUri}
+• UPI ID: \`${upiId}\`
 
-📲 *HOW TO PAY:*
-1️⃣ Scan the dynamic QR code above with *GPay, PhonePe, or Paytm* (amount is pre-filled!).
-2️⃣ Or tap this UPI payment link on your phone:
-👉 ${qrData.upiUri}
-
-▫️ *Merchant UPI ID:* ${upiId}
-
-📸 *FINAL STEP:*
-Once payment is completed, please reply here with your *Payment Screenshot* or *UTR / Transaction Number*. Our team will verify and dispatch your order immediately! 🚚📦`;
+📸 *Please reply with your payment screenshot / UTR to dispatch order.* 🚚✨`;
 
           // Send QR Code Image with caption directly into WhatsApp chat
           await sock.sendMessage(

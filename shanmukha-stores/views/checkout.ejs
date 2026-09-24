@@ -540,46 +540,35 @@
 
       const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
       const now = new Date();
-      const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' | ' +
+      const formattedDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' +
                             now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-      const itemLines = billItems.map((item, idx) => {
+      const itemLines = billItems.map((item) => {
         const weight = item.selected_weight ? ` (${item.selected_weight})` : '';
-        const unitRate = item.quantity > 0 ? (item.subtotal / item.quantity) : item.subtotal;
-        return `${idx + 1}️⃣ *${item.name}${weight}*\n   • Qty: ${item.quantity}  |  Rate: ${inr(unitRate)}\n   • Subtotal: ${inr(item.subtotal)}`;
-      }).join('\n\n');
+        return `• *${item.name}*${weight} × ${item.quantity} — ${inr(item.subtotal)}`;
+      }).join('\n');
 
       const upiId = '6302603728-pc97@ybl';
       const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(storeName)}&am=${totalValue.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Order_ORD_${orderId || 'NEW'}`)}`;
 
-      let msg = `🧾 ══════════════════════════ 🧾\n`;
-      msg += `      *${storeName.toUpperCase()} - ORDER BILL*\n`;
-      msg += `🧾 ══════════════════════════ 🧾\n\n`;
-      if (orderId) msg += `🔖 *Invoice No:* #ORD-${orderId}\n`;
-      msg += `📅 *Date:* ${formattedDate}\n\n`;
+      let discountText = '';
+      const totalDiscount = offerDiscountValue + couponDiscountValue;
+      if (totalDiscount > 0) {
+        discountText = ` (Saved ${inr(totalDiscount)}${couponCodeValue ? ' with ' + couponCodeValue : ''})`;
+      }
 
-      msg += `📦 *ORDERED ITEMS:*\n──────────────────────────────\n${itemLines}\n──────────────────────────────\n\n`;
-
-      msg += `💵 *BILL SUMMARY:*\n`;
-      msg += `▫️ Items Subtotal:   ${inr(subtotalValue)}\n`;
-      if (offerDiscountValue > 0) msg += `▫️ Store Discount:  -${inr(offerDiscountValue)}\n`;
-      if (couponDiscountValue > 0) msg += `▫️ Coupon (${couponCodeValue}): -${inr(couponDiscountValue)}\n`;
-      msg += `▫️ Delivery Fee:     *FREE*\n`;
-      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      msg += `✨ *FINAL PAYABLE AMOUNT: ${inr(totalValue)}*\n`;
-      msg += `💳 *Payment Mode:* WhatsApp Pay (UPI)\n`;
-      msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-      msg += `📍 *DELIVERY ADDRESS:*\n${addressText}\n`;
-      if (notes) msg += `📝 *Customer Note:* ${notes}\n`;
-
-      msg += `\n📲 *PAYMENT DETAILS (UPI):*\n`;
-      msg += `▫️ UPI ID: *${upiId}*\n`;
-      msg += `▫️ Amount: *${inr(totalValue)}*\n`;
-      msg += `▫️ Tap to Pay directly via UPI:\n👉 ${upiUri}\n\n`;
-
-      msg += `📸 *REQUEST:* \n`;
-      msg += `Please send a *screenshot of your payment* or *UTR / UPI Reference Number* right here once paid to confirm your order dispatch immediately! 🙏✨`;
+      let msg = `🛍️ *${storeName.toUpperCase()}* | *Order #${orderId ? 'ORD-' + orderId : 'NEW'}*\n`;
+      msg += `📅 ${formattedDate}\n`;
+      msg += `─────────────────────────\n`;
+      msg += `📦 *Items:*\n${itemLines}\n`;
+      msg += `─────────────────────────\n`;
+      msg += `💰 *Total Payable: ${inr(totalValue)}*${discountText} (Delivery: FREE)\n`;
+      msg += `📍 *Deliver to:* ${addressText}\n`;
+      if (notes) msg += `📝 *Note:* ${notes}\n`;
+      msg += `─────────────────────────\n`;
+      msg += `📲 *UPI ID:* \`${upiId}\`\n`;
+      msg += `👉 *Tap to Pay:* ${upiUri}\n\n`;
+      msg += `📸 *Please reply with your payment screenshot / UTR to dispatch order.* 🚚✨`;
 
       return msg;
     }
