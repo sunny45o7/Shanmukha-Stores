@@ -99,15 +99,10 @@
                     </a></h3>
 
                   <div class="price home-price-wrap">
-                    <span class="home-price-current">&#8377;<%= effectivePrice.toLocaleString('en-IN') %></span>
+                    <span class="home-price-current">&#8377;<%= effectivePrice.toLocaleString('en-IN') %> <span class="home-price-unit"><%= p.price_type === 'kg' ? '/kg' : '/unit' %></span></span>
                     <% if (hasOffer) { %>
                       <span class="home-price-original">&#8377;<%= basePrice.toLocaleString('en-IN') %></span>
                       <span class="home-offer-pill"><%= offerPercent.toFixed(2).replace(/\.00$/, '') %>% OFF</span>
-                    <% } %>
-                    <% if (p.price_type === 'kg') { %>
-                      <span class="home-price-unit">per kg</span>
-                    <% } else { %>
-                      <span class="home-price-unit">per unit</span>
                     <% } %>
                   </div>
 
@@ -386,9 +381,12 @@
           }
 
           .home-price-unit {
-            font-size: 11px;
-            color: var(--gray-500);
+            display: inline !important;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-600, #52525b);
             text-transform: lowercase;
+            margin-left: 2px;
           }
 
           .luxury-quote-section {

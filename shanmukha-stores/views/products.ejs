@@ -97,11 +97,7 @@
             </div>
 
             <p class="product-price">&#8377;<%= Number(p.effective_price || p.price).toLocaleString('en-IN') %>
-              <% if (p.price_type === 'kg') { %>
-                <span class="price-unit-note">per kg</span>
-              <% } else { %>
-                <span class="price-unit-note">per unit</span>
-              <% } %>
+              <span class="price-unit-note"><%= p.price_type === 'kg' ? '/kg' : '/unit' %></span>
             </p>
 
             <% if (p.price_type === 'kg') { %>

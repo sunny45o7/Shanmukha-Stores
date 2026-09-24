@@ -124,7 +124,7 @@
                                                                     <% } %>
                                                     </div>
                                                     <div class="price-unit-note">
-                                                        <%= product.price_type === 'kg' ? 'per kg' : 'per unit' %>
+                                                        <%= product.price_type === 'kg' ? '/kg' : '/unit' %>
                                                     </div>
                                     </div>
                                     <div class="stock-status">
@@ -506,7 +506,7 @@
                                                         <% } %>
                                                             <span class="sp-price">₹<%= Number(p.effective_price ||
                                                                     p.price).toLocaleString('en-IN') %></span>
-                                                            <span class="price-unit-note"><%= p.price_type === 'kg' ? 'per kg' : 'per unit' %></span>
+                                                            <span class="price-unit-note"><%= p.price_type === 'kg' ? '/kg' : '/unit' %></span>
                                                 </div>
                                                 <a href="/products/<%= p.id %>" class="sp-btn">View Product</a>
                                     </div>

@@ -3308,9 +3308,15 @@ body {
   .products-luxury-grid .home-price-current {
     font-size: 11px;
   }
+  .products-luxury-grid .home-price-unit {
+    display: inline !important;
+    font-size: 9.5px;
+    font-weight: 500;
+    color: #4b5563;
+    margin-left: 1.5px;
+  }
   .products-luxury-grid .home-price-original, 
   .products-luxury-grid .home-offer-pill,
-  .products-luxury-grid .home-price-unit,
   .products-luxury-grid .category,
   .products-luxury-grid .product-sizes-pill-list,
   .products-luxury-grid .card-actions-float {

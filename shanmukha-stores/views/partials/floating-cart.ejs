@@ -13,7 +13,7 @@
         <span class="floating-cart-badge" id="floatingCartBadge"><%= currentCartCount %></span>
       </div>
       <div class="floating-cart-meta">
-        <span class="floating-cart-title">My Cart</span>
+        <span class="floating-cart-title" id="floatingCartTitle">My Cart</span>
         <span class="floating-cart-subtitle" id="floatingCartSubtitle">
           <%= currentCartCount > 0 ? (currentCartCount + (currentCartCount === 1 ? ' item added' : ' items added')) : '0 items' %>
         </span>
@@ -21,7 +21,7 @@
     </div>
 
     <div class="floating-cart-right">
-      <span class="floating-cart-action-text">View Cart</span>
+      <span class="floating-cart-action-text" id="floatingCartActionText">View Cart</span>
       <span class="floating-cart-arrow">→</span>
     </div>
   </a>
@@ -375,9 +375,19 @@
               setTimeout(() => floatingBadge.classList.remove('badge-bump-active'), 550);
             }
 
+            const floatingTitle = document.getElementById('floatingCartTitle');
+            if (floatingTitle) {
+              floatingTitle.innerText = 'My Cart';
+            }
+
             if (floatingSubtitle) {
-              const count = data.cartCount;
+              const count = Number(data.cartCount) || 0;
               floatingSubtitle.innerText = count + (count === 1 ? ' item added' : ' items added');
+            }
+
+            const floatingActionText = document.getElementById('floatingCartActionText');
+            if (floatingActionText) {
+              floatingActionText.innerText = 'View Cart';
             }
 
             if (floatingCart) {
@@ -386,11 +396,13 @@
               floatingCart.style.display = 'block';
             }
 
-            // Also update Desktop Navbar Cart Badges if present
-            document.querySelectorAll('.nav-links a[href="/cart"] .nav-badge, a[href="/cart"] span').forEach((b) => {
-              if (b && !b.classList.contains('floating-cart-badge')) {
+            // Also update Desktop & Mobile Navbar Cart Badges if present (Target only navbar badges, never spans inside floating cart!)
+            document.querySelectorAll('#desktopNav a[href="/cart"] .nav-badge, #mobileNav a[href="/cart"]').forEach((b) => {
+              if (b.classList && b.classList.contains('nav-badge')) {
                 b.innerText = data.cartCount;
                 b.style.display = 'inline-block';
+              } else if (b.tagName === 'A') {
+                b.innerHTML = '🛍 Cart (' + data.cartCount + ')';
               }
             });
 
