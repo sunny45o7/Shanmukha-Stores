@@ -505,6 +505,115 @@ router.post("/resend-verification", authLimiter, async (req, res) => {
   }
 });
 
+/* ===============================
+   GOOGLE OAUTH
+=============================== */
+router.get("/google", (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const callbackUrl = process.env.GOOGLE_CALLBACK_URL || `${req.protocol}://${req.get("host")}/auth/google/callback`;
+
+  if (!clientId || clientId === "your_google_client_id") {
+    return res.redirect("/auth/login?error=" + encodeURIComponent("Google Sign-In is not configured yet. Please login with email/password or configure Google OAuth credentials."));
+  }
+
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(callbackUrl)}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent("openid email profile")}` +
+    `&access_type=offline` +
+    `&prompt=consent`;
+
+  return res.redirect(googleAuthUrl);
+});
+
+router.get("/google/callback", async (req, res) => {
+  try {
+    const { code, error } = req.query;
+    if (error || !code) {
+      return res.redirect("/auth/login?error=" + encodeURIComponent(error || "Google login was cancelled."));
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const callbackUrl = process.env.GOOGLE_CALLBACK_URL || `${req.protocol}://${req.get("host")}/auth/google/callback`;
+
+    if (!clientId || !clientSecret) {
+      return res.redirect("/auth/login?error=" + encodeURIComponent("Google OAuth credentials are not fully configured."));
+    }
+
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: callbackUrl,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok || !tokenData.access_token) {
+      console.error("Google token error:", tokenData);
+      return res.redirect("/auth/login?error=" + encodeURIComponent("Failed to authenticate with Google."));
+    }
+
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await userRes.json();
+
+    if (!profile.email) {
+      return res.redirect("/auth/login?error=" + encodeURIComponent("Could not retrieve email from Google."));
+    }
+
+    const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [profile.email]);
+    let user;
+
+    if (userResult.rows.length === 0) {
+      const crypto = require("crypto");
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 12);
+      
+      const insertResult = await pool.query(
+        "INSERT INTO users (full_name, email, password, role, is_verified, profile_image) VALUES ($1, $2, $3, 'user', true, $4) RETURNING *",
+        [profile.name || "Google User", profile.email, hashedPassword, profile.picture || null]
+      );
+      user = insertResult.rows[0];
+    } else {
+      user = userResult.rows[0];
+      if (user.is_blocked) {
+        return res.redirect("/auth/login?error=" + encodeURIComponent("Your account has been blocked."));
+      }
+      if (!user.is_verified || (profile.picture && !user.profile_image)) {
+        await pool.query(
+          "UPDATE users SET is_verified = true, profile_image = COALESCE(profile_image, $1) WHERE id = $2",
+          [profile.picture || null, user.id]
+        );
+      }
+    }
+
+    req.session.user = {
+      id: user.id,
+      name: user.full_name,
+      role: user.role || "user",
+      profile_image: user.profile_image || profile.picture || null,
+    };
+
+    if (user.role === "admin") {
+      return res.redirect("/admin/dashboard");
+    } else if (user.role === "staff") {
+      return res.redirect("/staff/dashboard");
+    }
+    return res.redirect("/");
+  } catch (err) {
+    console.error("Google callback error:", err);
+    return res.redirect("/auth/login?error=" + encodeURIComponent("Google login failed. Please try again."));
+  }
+});
+
 router.use((req, res) => {
   res.status(404).render("errors/404", {
     title: "Page Not Found",

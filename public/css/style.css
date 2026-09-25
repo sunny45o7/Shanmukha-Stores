@@ -1416,6 +1416,49 @@ body {
   color: var(--green-mid);
 }
 
+.social-auth-wrap {
+  margin-top: 14px;
+}
+
+.google-auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  background: #ffffff;
+  color: #3c4043;
+  border: 1.5px solid #dadce0;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.google-auth-btn:hover {
+  background: #f8f9fa;
+  border-color: #c6c9ce;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #202124;
+  transform: translateY(-1px);
+}
+
+.google-auth-btn:active {
+  background: #f1f3f4;
+  transform: translateY(0);
+}
+
+.google-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
 /* ── CART ── */
 .cart-section {
   padding: 60px 5%;
